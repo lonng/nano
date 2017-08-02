@@ -121,6 +121,12 @@ func main() {
 </html>
 ```
 
+## Dependence
+```
+go get -u github.com/golang/protobuf
+go get -u github.com/gorilla/websocket
+```
+
 ## The MIT License
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
