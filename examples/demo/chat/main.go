@@ -2,12 +2,12 @@ package main
 
 import (
 	"net/http"
+	"log"
 
 	"github.com/lonnng/nano"
 	"github.com/lonnng/nano/component"
 	"github.com/lonnng/nano/serialize/json"
 	"github.com/lonnng/nano/session"
-	"log"
 )
 
 type Room struct {

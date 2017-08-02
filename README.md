@@ -1,7 +1,7 @@
 # Nano -- golang based micro game server framework
 
 ## Chat Room Demo
-implement a chat room in 100 lines with golang and websocket [starx-chat-demo](https://github.com/lonnng/nano-chat-demo)
+implement a chat room in 100 lines with golang and websocket
 
 - server
 ```go
@@ -9,13 +9,14 @@ package main
 
 import (
 	"net/http"
+	"log"
 
 	"github.com/lonnng/nano"
 	"github.com/lonnng/nano/component"
 	"github.com/lonnng/nano/serialize/json"
 	"github.com/lonnng/nano/session"
-	"log"
 )
+
 
 type Room struct {
 	component.Base
