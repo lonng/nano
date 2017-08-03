@@ -1,4 +1,4 @@
-# Nano -- golang based micro game server framework
+# Nano -- golang based lightweight game framework
 
 ## Chat Room Demo
 implement a chat room in 100 lines with golang and websocket
