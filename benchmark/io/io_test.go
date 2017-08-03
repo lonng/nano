@@ -1,6 +1,7 @@
 package io
 
 import (
+	"log"
 	"os"
 	"os/signal"
 	"sync/atomic"
@@ -13,12 +14,11 @@ import (
 	"github.com/lonnng/nano/component"
 	"github.com/lonnng/nano/serialize/protobuf"
 	"github.com/lonnng/nano/session"
-	"log"
 )
 
 const (
 	addr = "127.0.0.1:3250" // local address
-	conc = 100              // concurrent client count
+	conc = 1000             // concurrent client count
 )
 
 type TestHandler struct {
@@ -40,7 +40,7 @@ func (h *TestHandler) AfterInit() {
 
 func (h *TestHandler) Ping(s *session.Session, data *testdata.Ping) error {
 	atomic.AddInt32(&h.metrics, 1)
-	return s.Response(&testdata.Pong{Content: data.Content})
+	return s.Push("pong", &testdata.Pong{Content: data.Content})
 }
 
 func server() {
@@ -57,21 +57,28 @@ func client() {
 		panic(err)
 	}
 
+	chReady := make(chan struct{})
 	c.OnConnected(func() {
-		var i = 0
-		for i < 10 {
-			i++
-			c.Request("TestHandler.Ping", &testdata.Ping{}, func(data interface{}) {
-				println("pong")
-			})
-		}
+		chReady <- struct{}{}
 	})
+
+	c.On("pong", func(data interface{}) {})
+
+	<-chReady
+	for {
+		c.Notify("TestHandler.Ping", &testdata.Ping{})
+		time.Sleep(10 * time.Millisecond)
+	}
 }
 
 func TestIO(t *testing.T) {
 	go server()
-	go client()
 
+	for i := 0; i < conc; i++ {
+		go client()
+	}
+
+	//nano.EnableDebug()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
 	sg := make(chan os.Signal)

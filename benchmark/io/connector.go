@@ -3,6 +3,7 @@ package io
 import (
 	"log"
 	"net"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/lonnng/nano/codec"
@@ -32,13 +33,19 @@ type (
 	Callback func(data interface{})
 
 	Connector struct {
-		conn      net.Conn       // low-level connection
-		codec     *codec.Decoder // decoder
-		die       chan struct{}  // connector close channel
-		chSend    chan []byte    // send queue
-		mid       uint           // message id
-		events    map[string]Callback
-		responses map[uint]Callback
+		conn   net.Conn       // low-level connection
+		codec  *codec.Decoder // decoder
+		die    chan struct{}  // connector close channel
+		chSend chan []byte    // send queue
+		mid    uint           // message id
+
+		// events handler
+		muEvents sync.RWMutex
+		events   map[string]Callback
+
+		// response handler
+		muResponses sync.RWMutex
+		responses   map[uint]Callback
 
 		connectedCallback func() // connected callback
 	}
@@ -91,9 +98,9 @@ func (c *Connector) Request(route string, v proto.Message, callback Callback) er
 		Data:  data,
 	}
 
-	c.responses[c.mid] = callback
+	c.setResponseHandler(c.mid, callback)
 	if err := c.sendMessage(msg); err != nil {
-		delete(c.responses, c.mid)
+		c.setResponseHandler(c.mid, nil)
 		return err
 	}
 
@@ -115,6 +122,9 @@ func (c *Connector) Notify(route string, v proto.Message) error {
 }
 
 func (c *Connector) On(event string, callback Callback) {
+	c.muEvents.Lock()
+	defer c.muEvents.Unlock()
+
 	c.events[event] = callback
 }
 
@@ -123,11 +133,40 @@ func (c *Connector) Close() {
 	close(c.die)
 }
 
+func (c *Connector) eventHandler(event string) (Callback, bool) {
+	c.muEvents.RLock()
+	defer c.muEvents.RUnlock()
+
+	cb, ok := c.events[event]
+	return cb, ok
+}
+
+func (c *Connector) responseHandler(mid uint) (Callback, bool) {
+	c.muResponses.RLock()
+	defer c.muResponses.RUnlock()
+
+	cb, ok := c.responses[mid]
+	return cb, ok
+}
+
+func (c *Connector) setResponseHandler(mid uint, cb Callback) {
+	c.muResponses.Lock()
+	defer c.muResponses.Unlock()
+
+	if cb == nil {
+		delete(c.responses, mid)
+	} else {
+		c.responses[mid] = cb
+	}
+}
+
 func (c *Connector) sendMessage(msg *message.Message) error {
 	data, err := msg.Encode()
 	if err != nil {
 		return err
 	}
+
+	//log.Printf("%+v",msg)
 
 	payload, err := codec.Encode(packet.Data, data)
 	if err != nil {
@@ -162,7 +201,7 @@ func (c *Connector) send(data []byte) {
 }
 
 func (c *Connector) read() {
-	buf := make([]byte, 512)
+	buf := make([]byte, 2048)
 
 	for {
 		n, err := c.conn.Read(buf)
@@ -207,7 +246,7 @@ func (c *Connector) processPacket(p *packet.Packet) {
 func (c *Connector) processMessage(msg *message.Message) {
 	switch msg.Type {
 	case message.Push:
-		cb, ok := c.events[msg.Route]
+		cb, ok := c.eventHandler(msg.Route)
 		if !ok {
 			log.Println("event handler not found", msg.Route)
 			return
@@ -216,14 +255,14 @@ func (c *Connector) processMessage(msg *message.Message) {
 		cb(msg.Data)
 
 	case message.Response:
-		cb, ok := c.responses[msg.ID]
+		cb, ok := c.responseHandler(msg.ID)
 		if !ok {
 			log.Println("response handler not found", msg.ID)
 			return
 		}
 
 		cb(msg.Data)
-		delete(c.responses, msg.ID)
+		c.setResponseHandler(msg.ID, nil)
 	}
 }
 

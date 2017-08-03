@@ -272,7 +272,7 @@ func (h *handlerService) processMessage(session *session.Session, msg *message.M
 	}
 
 	if env.debug {
-		log.Println(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", session.Uid, msg.String(), data))
+		log.Println(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", session.Uid(), msg.String(), data))
 	}
 
 	args := []reflect.Value{handler.Receiver, reflect.ValueOf(session), reflect.ValueOf(data)}
