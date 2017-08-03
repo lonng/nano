@@ -185,7 +185,7 @@ func (c *Group) Leave(uid int64) error {
 }
 
 func (c *Group) LeaveAll() error {
-	if atomic.LoadInt32(&c.status) == groupStatusClosed {
+	if c.isClosed() {
 		return ErrClosedGroup
 	}
 
