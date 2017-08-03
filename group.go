@@ -22,11 +22,12 @@ package nano
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"sync"
 	"sync/atomic"
 
 	"github.com/lonnng/nano/session"
-	"log"
 )
 
 const (
@@ -85,6 +86,10 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 		return err
 	}
 
+	if env.debug {
+		log.Println(fmt.Sprintf("Type=Multicast Route=%s, Data=%+v", route, v))
+	}
+
 	c.RLock()
 	defer c.RUnlock()
 
@@ -110,6 +115,10 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 	data, err := serializeOrRaw(v)
 	if err != nil {
 		return err
+	}
+
+	if env.debug {
+		log.Println(fmt.Sprintf("Type=Broadcast Route=%s, Data=%+v", route, v))
 	}
 
 	c.RLock()

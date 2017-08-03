@@ -23,6 +23,7 @@ package nano
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"sync/atomic"
 	"time"
@@ -31,7 +32,6 @@ import (
 	"github.com/lonnng/nano/message"
 	"github.com/lonnng/nano/packet"
 	"github.com/lonnng/nano/session"
-	"log"
 )
 
 const agentWriteBacklog = 16
@@ -181,6 +181,10 @@ func (a *agent) Push(route string, v interface{}) error {
 		return ErrBufferExceed
 	}
 
+	if env.debug {
+		log.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid, route, v))
+	}
+
 	a.chSend <- pendingMessage{typ: message.Push, route: route, payload: v}
 	return nil
 }
@@ -194,6 +198,10 @@ func (a *agent) Response(v interface{}) error {
 
 	if len(a.chSend) >= agentWriteBacklog {
 		return ErrBufferExceed
+	}
+
+	if env.debug {
+		log.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid, mid, v))
 	}
 
 	a.chSend <- pendingMessage{typ: message.Response, mid: mid, payload: v}

@@ -21,6 +21,7 @@
 package nano
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -28,7 +29,6 @@ import (
 	"time"
 
 	"github.com/lonnng/nano/component"
-	"log"
 )
 
 // ListenWithOptions start a starx application

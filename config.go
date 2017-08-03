@@ -21,7 +21,6 @@
 package nano
 
 import (
-	"github.com/lonnng/nano/session"
 	"net/http"
 	"os"
 	"path"
@@ -29,6 +28,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lonnng/nano/session"
 )
 
 var VERSION = "0.0.1"

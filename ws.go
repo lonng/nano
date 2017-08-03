@@ -22,11 +22,11 @@ package nano
 
 import (
 	"io"
+	"log"
 	"net"
 	"time"
 
 	"github.com/gorilla/websocket"
-	"log"
 )
 
 // wsConn is an adapter to t.Conn, which implements all t.Conn

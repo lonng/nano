@@ -22,19 +22,17 @@ package nano
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net"
 	"reflect"
-
 	"time"
-
-	"fmt"
 
 	"github.com/lonnng/nano/codec"
 	"github.com/lonnng/nano/component"
 	"github.com/lonnng/nano/message"
 	"github.com/lonnng/nano/packet"
 	"github.com/lonnng/nano/session"
-	"log"
 )
 
 // Unhandled message buffer size
@@ -98,7 +96,7 @@ func newHandlerService() *handlerService {
 }
 
 // call handler with protected
-func call(method reflect.Method, args []reflect.Value) {
+func pcall(method reflect.Method, args []reflect.Value) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println(fmt.Sprintf("nano/dispatch: Error=%+v, Stack=%s", err, stack()))
@@ -139,7 +137,7 @@ func (h *handlerService) dispatch() {
 	for {
 		select {
 		case m := <-h.chLocalProcess: // logic dispatch
-			call(m.handler, m.args)
+			pcall(m.handler, m.args)
 
 		case s := <-h.chCloseSession: // session closed callback
 			onSessionClosed(s)
