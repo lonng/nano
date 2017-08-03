@@ -106,7 +106,7 @@ func (a *agent) write() {
 				a.socket.Close()
 				return
 			}
-			chWrite <- heartbeatPacket
+			chWrite <- hbd
 
 		case data := <-chWrite:
 			// close agent while low-level socket broken

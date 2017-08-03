@@ -43,8 +43,10 @@ const packetBacklog = 1024
 var (
 	// handler service singleton
 	handler = newHandlerService()
-	// handshake response data
-	hrd []byte
+
+	// serialized data
+	hrd []byte // handshake response data
+	hbd []byte // heartbeat packet data
 )
 
 func init() {
@@ -57,6 +59,11 @@ func init() {
 	}
 
 	hrd, err = codec.Encode(packet.Handshake, data)
+	if err != nil {
+		panic(err)
+	}
+
+	hbd, err = codec.Encode(packet.Heartbeat, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -117,11 +124,11 @@ func (h *handlerService) dispatch() {
 			call(m.handler, m.args)
 
 		case s := <-h.chCloseSession: // session closed callback
-			transporter.RLock()
-			for _, fn := range transporter.sessionCloseCb {
+			env.muCallbacks.RLock()
+			for _, fn := range env.callbacks {
 				fn(s)
 			}
-			transporter.RUnlock()
+			env.muCallbacks.RUnlock()
 
 		case <-env.die: // application quit signal
 			return
