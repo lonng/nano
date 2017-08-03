@@ -21,7 +21,7 @@ const (
 	msgRouteCompressMask = 0x01
 	msgTypeMask          = 0x07
 	msgRouteLengthMask   = 0xFF
-	msgHeadLength        = 0x03
+	msgHeadLength        = 0x02
 )
 
 var types = map[MessageType]string{
@@ -130,7 +130,7 @@ func Encode(m *Message) ([]byte, error) {
 }
 
 func Decode(data []byte) (*Message, error) {
-	if len(data) <= msgHeadLength {
+	if len(data) < msgHeadLength {
 		return nil, ErrInvalidMessage
 	}
 	m := New()

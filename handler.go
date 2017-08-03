@@ -212,7 +212,7 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) {
 		}
 
 		if env.debug {
-			log.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID, agent.socket.RemoteAddr()))
+			log.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.socket.RemoteAddr()))
 		}
 		agent.setStatus(statusHandshake)
 
@@ -220,7 +220,7 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) {
 		agent.setStatus(statusWorking)
 
 		if env.debug {
-			log.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID, agent.socket.RemoteAddr()))
+			log.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.socket.RemoteAddr()))
 		}
 
 	case packet.Data:

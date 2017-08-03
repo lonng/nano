@@ -75,4 +75,6 @@ func init() {
 
 	env.die = make(chan bool)
 	env.heartbeat = 30 * time.Second
+	env.debug = false
+	env.muCallbacks = sync.RWMutex{}
 }
