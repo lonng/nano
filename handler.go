@@ -176,7 +176,9 @@ func (h *handlerService) handle(conn net.Conn) {
 	agent := newAgent(conn)
 	go agent.write()
 
-	log.Println(fmt.Sprintf("New session established: %s", agent.String()))
+	if env.debug {
+		log.Println(fmt.Sprintf("New session established: %s", agent.String()))
+	}
 
 	// read loop
 	buf := make([]byte, 2048)
@@ -208,12 +210,18 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) {
 			log.Println(err.Error())
 			agent.Close()
 		}
-		log.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID, agent.socket.RemoteAddr()))
+
+		if env.debug {
+			log.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID, agent.socket.RemoteAddr()))
+		}
 		agent.setStatus(statusHandshake)
 
 	case packet.HandshakeAck:
-		log.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID, agent.socket.RemoteAddr()))
 		agent.setStatus(statusWorking)
+
+		if env.debug {
+			log.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID, agent.socket.RemoteAddr()))
+		}
 
 	case packet.Data:
 		if agent.status() < statusWorking {
@@ -231,12 +239,7 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) {
 		fallthrough
 
 	case packet.Heartbeat:
-		agent.heartbeat()
-
-	default:
-		log.Println("invalid packet type")
-		agent.Close()
-		return
+		// expected
 	}
 
 	agent.lastAt = time.Now().Unix()
@@ -248,9 +251,6 @@ func (h *handlerService) processMessage(session *session.Session, msg *message.M
 		session.LastRID = msg.ID
 	case message.Notify:
 		session.LastRID = 0
-	default:
-		log.Println(fmt.Sprintf("invalid message type, Type=%d", msg.Type))
-		return
 	}
 
 	handler, ok := h.handlers[msg.Route]

@@ -155,10 +155,6 @@ func (a *agent) String() string {
 	return fmt.Sprintf("Remote=%s, LastTime=%d", a.socket.RemoteAddr().String(), a.lastAt)
 }
 
-func (a *agent) heartbeat() {
-	a.lastAt = time.Now().Unix()
-}
-
 func (a *agent) Close() {
 	if a.state == statusClosed {
 		return
