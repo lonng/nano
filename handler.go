@@ -101,7 +101,7 @@ func newHandlerService() *handlerService {
 func call(method reflect.Method, args []reflect.Value) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(fmt.Sprintf("nano/dispatch: %+v", err))
+			log.Println(fmt.Sprintf("nano/dispatch: Error=%+v, Stack=%s", err, stack()))
 		}
 	}()
 
@@ -112,10 +112,28 @@ func call(method reflect.Method, args []reflect.Value) {
 	}
 }
 
+func onSessionClosed(s *session.Session) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println(fmt.Sprintf("nano/onSessionClosed: Error=%+v, Stack=%s", err, stack()))
+		}
+	}()
+
+	env.muCallbacks.RLock()
+	defer env.muCallbacks.RUnlock()
+
+	for _, fn := range env.callbacks {
+		fn(s)
+	}
+}
+
 // dispatch message to corresponding logic handler
 func (h *handlerService) dispatch() {
-	// close chLocalProcess when application quit
-	defer close(h.chLocalProcess)
+	// close chLocalProcess & chCloseSession when application quit
+	defer func() {
+		close(h.chLocalProcess)
+		close(h.chCloseSession)
+	}()
 
 	// handle packet that sent to chLocalProcess
 	for {
@@ -124,11 +142,7 @@ func (h *handlerService) dispatch() {
 			call(m.handler, m.args)
 
 		case s := <-h.chCloseSession: // session closed callback
-			env.muCallbacks.RLock()
-			for _, fn := range env.callbacks {
-				fn(s)
-			}
-			env.muCallbacks.RUnlock()
+			onSessionClosed(s)
 
 		case <-env.die: // application quit signal
 			return

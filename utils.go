@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"os"
+	"runtime"
 )
 
 func serializeOrRaw(v interface{}) ([]byte, error) {
@@ -52,4 +53,11 @@ func gobDecode(reply interface{}, data []byte) error {
 func fileExists(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
+}
+
+func stack() string {
+	buf := make([]byte, 10000)
+	n := runtime.Stack(buf, false)
+	buf = buf[:n]
+	return string(buf)
 }
