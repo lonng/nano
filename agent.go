@@ -41,16 +41,16 @@ var (
 	ErrBufferExceed = errors.New("session send buffer exceed")
 )
 
-// Agent corresponding a user, used for store raw socket information
+// Agent corresponding a user, used for store raw conn information
 type (
 	agent struct {
-		lastAt  int64               // last heartbeat unix time stamp
-		socket  net.Conn            // low-level socket fd
-		chSend  chan pendingMessage // push message queue
+		session *session.Session    // session
+		conn    net.Conn            // low-level conn fd
 		state   int32               // current agent state
 		chDie   chan struct{}       // wait for close
-		codec   *codec.Decoder      // coder & decoder
-		session *session.Session    // session
+		chSend  chan pendingMessage // push message queue
+		lastAt  int64               // last heartbeat unix time stamp
+		decoder *codec.Decoder      // binary decoder
 	}
 
 	pendingMessage struct {
@@ -64,12 +64,12 @@ type (
 // Create new agent instance
 func newAgent(conn net.Conn) *agent {
 	a := &agent{
-		socket: conn,
-		lastAt: time.Now().Unix(),
-		chSend: make(chan pendingMessage, agentWriteBacklog),
-		state:  statusStart,
-		chDie:  make(chan struct{}),
-		codec:  codec.NewDecoder(),
+		conn:    conn,
+		state:   statusStart,
+		chDie:   make(chan struct{}),
+		lastAt:  time.Now().Unix(),
+		chSend:  make(chan pendingMessage, agentWriteBacklog),
+		decoder: codec.NewDecoder(),
 	}
 
 	// binding session
@@ -95,6 +95,7 @@ func (a *agent) write() {
 		ticker.Stop()
 		close(a.chSend)
 		close(chWrite)
+		a.Close()
 	}()
 
 	for {
@@ -103,16 +104,14 @@ func (a *agent) write() {
 			deadline := time.Now().Add(-2 * env.heartbeat).Unix()
 			if a.lastAt < deadline {
 				log.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
-				a.socket.Close()
 				return
 			}
 			chWrite <- hbd
 
 		case data := <-chWrite:
-			// close agent while low-level socket broken
-			if _, err := a.socket.Write(data); err != nil {
+			// close agent while low-level conn broken
+			if _, err := a.conn.Write(data); err != nil {
 				log.Println(err.Error())
-				a.socket.Close()
 				return
 			}
 
@@ -146,6 +145,9 @@ func (a *agent) write() {
 
 		case <-a.chDie: // agent closed signal
 			return
+
+		case <-env.die: // application quit
+			return
 		}
 	}
 }
@@ -169,6 +171,10 @@ func (a *agent) Push(route string, v interface{}) error {
 
 // Response message to session
 func (a *agent) Response(v interface{}) error {
+	if a.status() == statusClosed {
+		return ErrBrokenPipe
+	}
+
 	mid := a.session.LastRID
 	if mid <= 0 {
 		return ErrSessionOnNotify
@@ -195,20 +201,20 @@ func (a *agent) Close() error {
 	a.setStatus(statusClosed)
 
 	if env.debug {
-		log.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID, a.socket.RemoteAddr()))
+		log.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID(), a.conn.RemoteAddr()))
 	}
 
 	// close all channel
 	close(a.chDie)
-	return a.socket.Close()
+	return a.conn.Close()
 }
 
 // RemoteAddr returns the remote network address.
 func (a *agent) RemoteAddr() net.Addr {
-	return a.socket.RemoteAddr()
+	return a.conn.RemoteAddr()
 }
 
 // String, implementation for Stringer interface
 func (a *agent) String() string {
-	return fmt.Sprintf("Remote=%s, LastTime=%d", a.socket.RemoteAddr().String(), a.lastAt)
+	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), a.lastAt)
 }

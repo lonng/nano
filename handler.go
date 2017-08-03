@@ -174,11 +174,16 @@ func (h *handlerService) register(receiver component.Component) error {
 func (h *handlerService) handle(conn net.Conn) {
 	// create a client agent and startup write gorontine
 	agent := newAgent(conn)
+
+	// startup write goroutine
 	go agent.write()
 
 	if env.debug {
 		log.Println(fmt.Sprintf("New session established: %s", agent.String()))
 	}
+
+	// guarantee agent related resource be destroyed
+	defer agent.Close()
 
 	// read loop
 	buf := make([]byte, 2048)
@@ -189,8 +194,8 @@ func (h *handlerService) handle(conn net.Conn) {
 			return
 		}
 
-		// TODO(warning): codec use slice for performance, packet data should be copy before next Decode
-		packets, err := agent.codec.Decode(buf[:n])
+		// TODO(warning): decoder use slice for performance, packet data should be copy before next Decode
+		packets, err := agent.decoder.Decode(buf[:n])
 		if err != nil {
 			log.Println(err.Error())
 			return
@@ -198,51 +203,49 @@ func (h *handlerService) handle(conn net.Conn) {
 
 		// process all packet
 		for i := range packets {
-			h.processPacket(agent, packets[i])
+			if err := h.processPacket(agent, packets[i]); err != nil {
+				log.Println(err.Error())
+				return
+			}
 		}
 	}
 }
 
-func (h *handlerService) processPacket(agent *agent, p *packet.Packet) {
+func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
-		if _, err := agent.socket.Write(hrd); err != nil {
-			log.Println(err.Error())
-			agent.Close()
+		if _, err := agent.conn.Write(hrd); err != nil {
+			return err
 		}
 
-		if env.debug {
-			log.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.socket.RemoteAddr()))
-		}
 		agent.setStatus(statusHandshake)
+		if env.debug {
+			log.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
+		}
 
 	case packet.HandshakeAck:
 		agent.setStatus(statusWorking)
-
 		if env.debug {
-			log.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.socket.RemoteAddr()))
+			log.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
 		}
 
 	case packet.Data:
 		if agent.status() < statusWorking {
-			log.Println(fmt.Sprintf("receive data on socket which not yet ACK, remote=%s", agent.socket.RemoteAddr().String()))
-			agent.Close()
-			return
+			return fmt.Errorf("receive data on socket which not yet ACK, remote=%s", agent.conn.RemoteAddr().String())
 		}
 
 		msg, err := message.Decode(p.Data)
 		if err != nil {
-			log.Println(err.Error())
-			return
+			return err
 		}
 		h.processMessage(agent.session, msg)
-		fallthrough
 
 	case packet.Heartbeat:
 		// expected
 	}
 
 	agent.lastAt = time.Now().Unix()
+	return nil
 }
 
 func (h *handlerService) processMessage(session *session.Session, msg *message.Message) {
