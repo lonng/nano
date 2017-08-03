@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	addr = "127.0.0.1:3250" // local address
-	conc = 1000             // concurrent client count
+	addr = "127.0.0.1:13250" // local address
+	conc = 200               // concurrent client count
 )
 
 type TestHandler struct {
@@ -74,11 +74,12 @@ func client() {
 func TestIO(t *testing.T) {
 	go server()
 
+	// wait server startup
+	time.Sleep(1 * time.Second)
 	for i := 0; i < conc; i++ {
 		go client()
 	}
 
-	//nano.EnableDebug()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
 	sg := make(chan os.Signal)

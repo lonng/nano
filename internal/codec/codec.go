@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 
-	"github.com/lonnng/nano/packet"
+	"github.com/lonnng/nano/internal/packet"
 )
 
 const HeadLength = 4

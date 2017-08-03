@@ -28,9 +28,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lonnng/nano/codec"
-	"github.com/lonnng/nano/message"
-	"github.com/lonnng/nano/packet"
+	"github.com/lonnng/nano/internal/codec"
+	"github.com/lonnng/nano/internal/message"
+	"github.com/lonnng/nano/internal/packet"
 	"github.com/lonnng/nano/session"
 )
 
@@ -77,6 +77,77 @@ func newAgent(conn net.Conn) *agent {
 	a.session = s
 
 	return a
+}
+
+// Push, implementation for session.NetworkEntity interface
+func (a *agent) Push(route string, v interface{}) error {
+	if a.status() == statusClosed {
+		return ErrBrokenPipe
+	}
+
+	if len(a.chSend) >= agentWriteBacklog {
+		return ErrBufferExceed
+	}
+
+	if env.debug {
+		log.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid(), route, v))
+	}
+
+	a.chSend <- pendingMessage{typ: message.Push, route: route, payload: v}
+	return nil
+}
+
+// Response, implementation for session.NetworkEntity interface
+// Response message to session
+func (a *agent) Response(v interface{}) error {
+	if a.status() == statusClosed {
+		return ErrBrokenPipe
+	}
+
+	mid := a.session.LastRID
+	if mid <= 0 {
+		return ErrSessionOnNotify
+	}
+
+	if len(a.chSend) >= agentWriteBacklog {
+		return ErrBufferExceed
+	}
+
+	if env.debug {
+		log.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid(), mid, v))
+	}
+
+	a.chSend <- pendingMessage{typ: message.Response, mid: mid, payload: v}
+	return nil
+}
+
+// Close, implementation for session.NetworkEntity interface
+// Close closes the agent, clean inner state and close low-level connection.
+// Any blocked Read or Write operations will be unblocked and return errors.
+func (a *agent) Close() error {
+	if a.status() == statusClosed {
+		return ErrClosedSession
+	}
+	a.setStatus(statusClosed)
+
+	if env.debug {
+		log.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID(), a.conn.RemoteAddr()))
+	}
+
+	// close all channel
+	close(a.chDie)
+	return a.conn.Close()
+}
+
+// RemoteAddr, implementation for session.NetworkEntity interface
+// returns the remote network address.
+func (a *agent) RemoteAddr() net.Addr {
+	return a.conn.RemoteAddr()
+}
+
+// String, implementation for Stringer interface
+func (a *agent) String() string {
+	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), a.lastAt)
 }
 
 func (a *agent) status() int32 {
@@ -150,71 +221,4 @@ func (a *agent) write() {
 			return
 		}
 	}
-}
-
-func (a *agent) Push(route string, v interface{}) error {
-	if a.status() == statusClosed {
-		return ErrBrokenPipe
-	}
-
-	if len(a.chSend) >= agentWriteBacklog {
-		return ErrBufferExceed
-	}
-
-	if env.debug {
-		log.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid(), route, v))
-	}
-
-	a.chSend <- pendingMessage{typ: message.Push, route: route, payload: v}
-	return nil
-}
-
-// Response message to session
-func (a *agent) Response(v interface{}) error {
-	if a.status() == statusClosed {
-		return ErrBrokenPipe
-	}
-
-	mid := a.session.LastRID
-	if mid <= 0 {
-		return ErrSessionOnNotify
-	}
-
-	if len(a.chSend) >= agentWriteBacklog {
-		return ErrBufferExceed
-	}
-
-	if env.debug {
-		log.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid(), mid, v))
-	}
-
-	a.chSend <- pendingMessage{typ: message.Response, mid: mid, payload: v}
-	return nil
-}
-
-// Close closes the agent, clean inner state and close low-level connection.
-// Any blocked Read or Write operations will be unblocked and return errors.
-func (a *agent) Close() error {
-	if a.status() == statusClosed {
-		return ErrClosedSession
-	}
-	a.setStatus(statusClosed)
-
-	if env.debug {
-		log.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID(), a.conn.RemoteAddr()))
-	}
-
-	// close all channel
-	close(a.chDie)
-	return a.conn.Close()
-}
-
-// RemoteAddr returns the remote network address.
-func (a *agent) RemoteAddr() net.Addr {
-	return a.conn.RemoteAddr()
-}
-
-// String, implementation for Stringer interface
-func (a *agent) String() string {
-	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), a.lastAt)
 }
