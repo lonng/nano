@@ -150,24 +150,6 @@ func (a *agent) write() {
 	}
 }
 
-// String, implementation for Stringer interface
-func (a *agent) String() string {
-	return fmt.Sprintf("Remote=%s, LastTime=%d", a.socket.RemoteAddr().String(), a.lastAt)
-}
-
-func (a *agent) Close() {
-	if a.state == statusClosed {
-		return
-	}
-
-	a.state = statusClosed
-	log.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID, a.socket.RemoteAddr()))
-
-	// close all channel
-	close(a.chDie)
-	a.socket.Close()
-}
-
 func (a *agent) Push(route string, v interface{}) error {
 	if a.status() == statusClosed {
 		return ErrBrokenPipe
@@ -202,4 +184,31 @@ func (a *agent) Response(v interface{}) error {
 
 	a.chSend <- pendingMessage{typ: message.Response, mid: mid, payload: v}
 	return nil
+}
+
+// Close closes the agent, clean inner state and close low-level connection.
+// Any blocked Read or Write operations will be unblocked and return errors.
+func (a *agent) Close() error {
+	if a.status() == statusClosed {
+		return ErrClosedSession
+	}
+	a.setStatus(statusClosed)
+
+	if env.debug {
+		log.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID, a.socket.RemoteAddr()))
+	}
+
+	// close all channel
+	close(a.chDie)
+	return a.socket.Close()
+}
+
+// RemoteAddr returns the remote network address.
+func (a *agent) RemoteAddr() net.Addr {
+	return a.socket.RemoteAddr()
+}
+
+// String, implementation for Stringer interface
+func (a *agent) String() string {
+	return fmt.Sprintf("Remote=%s, LastTime=%d", a.socket.RemoteAddr().String(), a.lastAt)
 }

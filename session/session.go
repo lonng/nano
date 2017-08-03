@@ -2,24 +2,23 @@ package session
 
 import (
 	"errors"
-	"strings"
+	"net"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/lonnng/nano/service"
-	"log"
 )
 
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
 	Response(v interface{}) error
-	Close()
+	Close() error
+	RemoteAddr() net.Addr
 }
 
 var (
-	ErrIllegalUID       = errors.New("illegal uid")
-	ErrKeyNotFound      = errors.New("current session does not contain key")
-	ErrWrongValueType   = errors.New("current key has different data type")
-	ErrReplyShouldBePtr = errors.New("reply should be a pointer")
+	ErrIllegalUID = errors.New("illegal uid")
 )
 
 // This session type as argument pass to Handler method, is a proxy session
@@ -29,49 +28,23 @@ var (
 //
 // This is user sessions, does not contain raw sockets information
 type Session struct {
-	ID        int64                  // session global unique id
-	Uid       int64                  // binding user id
-	Entity    NetworkEntity          // raw session id, agent in frontend server, or acceptor in backend server
-	LastRID   uint                   // last request id
-	data      map[string]interface{} // session data store
-	lastTime  int64                  // last heartbeat time
-	serverIDs map[string]string      // map of server type -> server id
+	sync.RWMutex                        // protect data
+	id           int64                  // session global unique id
+	uid          int64                  // binding user id
+	LastRID      uint                   // last request id
+	lastTime     int64                  // last heartbeat time
+	Entity       NetworkEntity          // raw session id, agent in frontend server, or acceptor in backend server
+	data         map[string]interface{} // session data store
 }
 
 // Create new session instance
 func New(entity NetworkEntity) *Session {
 	return &Session{
-		ID:        service.Connections.SessionID(),
-		Entity:    entity,
-		data:      make(map[string]interface{}),
-		lastTime:  time.Now().Unix(),
-		serverIDs: make(map[string]string),
+		id:       service.Connections.SessionID(),
+		Entity:   entity,
+		data:     make(map[string]interface{}),
+		lastTime: time.Now().Unix(),
 	}
-}
-
-func (s *Session) ServerID(svrType string) string {
-	id, ok := s.serverIDs[svrType]
-	if !ok {
-		return ""
-	}
-	return id
-}
-
-// Set server id of the special type, delete type when id empty
-func (s *Session) SetServerID(svrType, svrID string) {
-	svrType = strings.TrimSpace(svrType)
-	svrID = strings.TrimSpace(svrID)
-
-	if svrType == "" {
-		log.Println("empty server type")
-		return
-	}
-
-	if svrID == "" {
-		delete(s.serverIDs, svrType)
-		return
-	}
-	s.serverIDs[svrType] = svrID
 }
 
 // Push message to session
@@ -84,12 +57,20 @@ func (s *Session) Response(v interface{}) error {
 	return s.Entity.Response(v)
 }
 
+func (s *Session) ID() int64 {
+	return s.id
+}
+
+func (s *Session) Uid() int64 {
+	return atomic.LoadInt64(&s.uid)
+}
+
 func (s *Session) Bind(uid int64) error {
 	if uid < 1 {
-		log.Println("uid invalid:", uid)
 		return ErrIllegalUID
 	}
-	s.Uid = uid
+
+	atomic.StoreInt64(&s.uid, uid)
 	return nil
 }
 
@@ -98,19 +79,31 @@ func (s *Session) Close() {
 }
 
 func (s *Session) Remove(key string) {
+	s.Lock()
+	defer s.Unlock()
+
 	delete(s.data, key)
 }
 
 func (s *Session) Set(key string, value interface{}) {
+	s.Lock()
+	defer s.Unlock()
+
 	s.data[key] = value
 }
 
 func (s *Session) HasKey(key string) bool {
+	s.RLock()
+	defer s.RUnlock()
+
 	_, has := s.data[key]
 	return has
 }
 
 func (s *Session) Int(key string) int {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -124,6 +117,9 @@ func (s *Session) Int(key string) int {
 }
 
 func (s *Session) Int8(key string) int8 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -137,6 +133,9 @@ func (s *Session) Int8(key string) int8 {
 }
 
 func (s *Session) Int16(key string) int16 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -150,6 +149,9 @@ func (s *Session) Int16(key string) int16 {
 }
 
 func (s *Session) Int32(key string) int32 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -163,6 +165,9 @@ func (s *Session) Int32(key string) int32 {
 }
 
 func (s *Session) Int64(key string) int64 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -176,6 +181,9 @@ func (s *Session) Int64(key string) int64 {
 }
 
 func (s *Session) Uint(key string) uint {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -189,6 +197,9 @@ func (s *Session) Uint(key string) uint {
 }
 
 func (s *Session) Uint8(key string) uint8 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -202,6 +213,9 @@ func (s *Session) Uint8(key string) uint8 {
 }
 
 func (s *Session) Uint16(key string) uint16 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -215,6 +229,9 @@ func (s *Session) Uint16(key string) uint16 {
 }
 
 func (s *Session) Uint32(key string) uint32 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -228,6 +245,9 @@ func (s *Session) Uint32(key string) uint32 {
 }
 
 func (s *Session) Uint64(key string) uint64 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -241,6 +261,9 @@ func (s *Session) Uint64(key string) uint64 {
 }
 
 func (s *Session) Float32(key string) float32 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -254,6 +277,9 @@ func (s *Session) Float32(key string) float32 {
 }
 
 func (s *Session) Float64(key string) float64 {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return 0
@@ -267,6 +293,9 @@ func (s *Session) Float64(key string) float64 {
 }
 
 func (s *Session) String(key string) string {
+	s.RLock()
+	defer s.RUnlock()
+
 	v, ok := s.data[key]
 	if !ok {
 		return ""
@@ -280,11 +309,17 @@ func (s *Session) String(key string) string {
 }
 
 func (s *Session) Value(key string) interface{} {
+	s.RLock()
+	defer s.RUnlock()
+
 	return s.data[key]
 }
 
 // Retrieve all session state
 func (s *Session) State() map[string]interface{} {
+	s.RLock()
+	defer s.RUnlock()
+
 	return s.data
 }
 
@@ -294,5 +329,8 @@ func (s *Session) Restore(data map[string]interface{}) {
 }
 
 func (s *Session) Clear() {
+	s.Lock()
+	defer s.Unlock()
+
 	s.data = map[string]interface{}{}
 }

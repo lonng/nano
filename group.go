@@ -21,7 +21,6 @@
 package nano
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -36,12 +35,6 @@ const (
 )
 
 type SessionFilter func(*session.Session) bool
-
-var (
-	ErrCloseClosedGroup = errors.New("close closed group")
-	ErrClosedGroup      = errors.New("group closed")
-	ErrMemberNotFound   = errors.New("member not found in the group")
-)
 
 // Group represents a session group which used to manage a number of
 // sessions, data send to the group will send to all session in it.
@@ -153,8 +146,9 @@ func (c *Group) Add(session *session.Session) error {
 	c.Lock()
 	defer c.Unlock()
 
-	c.uids[session.Uid] = session
-	c.members = append(c.members, session.Uid)
+	uid := session.Uid()
+	c.uids[uid] = session
+	c.members = append(c.members, uid)
 
 	return nil
 }

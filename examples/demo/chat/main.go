@@ -32,7 +32,7 @@ func NewRoom() *Room {
 }
 
 func (r *Room) Join(s *session.Session, msg []byte) error {
-	s.Bind(s.ID)   // binding session uid
+	s.Bind(s.ID()) // binding session uid
 	r.group.Add(s) // add session to group
 	return s.Response(JoinResponse{Result: "sucess"})
 }
