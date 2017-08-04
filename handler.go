@@ -28,8 +28,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/lonnng/nano/internal/codec"
 	"github.com/lonnng/nano/component"
+	"github.com/lonnng/nano/internal/codec"
 	"github.com/lonnng/nano/internal/message"
 	"github.com/lonnng/nano/internal/packet"
 	"github.com/lonnng/nano/session"
@@ -183,7 +183,12 @@ func (h *handlerService) handle(conn net.Conn) {
 	}
 
 	// guarantee agent related resource be destroyed
-	defer agent.Close()
+	defer func() {
+		agent.Close()
+		if env.debug {
+			log.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.Uid()))
+		}
+	}()
 
 	// read loop
 	buf := make([]byte, 2048)
@@ -231,7 +236,8 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 
 	case packet.Data:
 		if agent.status() < statusWorking {
-			return fmt.Errorf("receive data on socket which not yet ACK, remote=%s", agent.conn.RemoteAddr().String())
+			return fmt.Errorf("Receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
+				agent.conn.RemoteAddr().String())
 		}
 
 		msg, err := message.Decode(p.Data)

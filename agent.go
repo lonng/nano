@@ -167,6 +167,9 @@ func (a *agent) write() {
 		close(a.chSend)
 		close(chWrite)
 		a.Close()
+		if env.debug {
+			log.Println(fmt.Sprintf("Session write goroutine exit, SessionID=%d, UID=%d", a.session.ID(), a.session.Uid()))
+		}
 	}()
 
 	for {
