@@ -18,7 +18,7 @@ import (
 
 const (
 	addr = "127.0.0.1:13250" // local address
-	conc = 200               // concurrent client count
+	conc = 1000              // concurrent client count
 )
 
 type TestHandler struct {
@@ -67,7 +67,7 @@ func client() {
 	<-chReady
 	for {
 		c.Notify("TestHandler.Ping", &testdata.Ping{})
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
 }
 
