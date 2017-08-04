@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"reflect"
 	"sync/atomic"
 	"time"
 
@@ -34,7 +35,13 @@ import (
 	"github.com/lonnng/nano/session"
 )
 
-const agentWriteBacklog = 16
+const (
+	agentWriteBacklog   = 16
+	handlerArgsCount    = 3 // number of handler cacheArgs, include receiver
+	handlerReceiverSlot = 0 // receiver location
+	handlerSessionSlot  = 1 // session location(index)
+	handlerPayloadSlot  = 2 // payload location
+)
 
 var (
 	ErrBrokenPipe   = errors.New("broken low-level pipe")
@@ -44,6 +51,7 @@ var (
 // Agent corresponding a user, used for store raw conn information
 type (
 	agent struct {
+		// regular agent member
 		session *session.Session    // session
 		conn    net.Conn            // low-level conn fd
 		state   int32               // current agent state
@@ -51,6 +59,9 @@ type (
 		chSend  chan pendingMessage // push message queue
 		lastAt  int64               // last heartbeat unix time stamp
 		decoder *codec.Decoder      // binary decoder
+
+		// performance promotion member
+		cacheArgs []reflect.Value // cache handler arguments slice, decrease memory allocation
 	}
 
 	pendingMessage struct {
@@ -70,11 +81,14 @@ func newAgent(conn net.Conn) *agent {
 		lastAt:  time.Now().Unix(),
 		chSend:  make(chan pendingMessage, agentWriteBacklog),
 		decoder: codec.NewDecoder(),
+
+		cacheArgs: make([]reflect.Value, handlerArgsCount),
 	}
 
 	// binding session
 	s := session.New(a)
 	a.session = s
+	a.cacheArgs[handlerSessionSlot] = reflect.ValueOf(s)
 
 	return a
 }

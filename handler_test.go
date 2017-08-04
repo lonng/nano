@@ -103,6 +103,10 @@ func (t *TestComp) HandleProto(s *session.Session, m *ProtoMessage) error {
 	return nil
 }
 
+func (t *TestComp) RawData(s *session.Session, _ []byte) error {
+	return nil
+}
+
 func TestHandlerCallJSON(t *testing.T) {
 	SetSerializer(json.NewSerializer())
 	handler.register(&TestComp{})
@@ -118,9 +122,8 @@ func TestHandlerCallJSON(t *testing.T) {
 	msg.Type = message.Request
 	msg.Data = data
 
-	s := session.New(nil)
-
-	handler.processMessage(s, msg)
+	agent := newAgent(nil)
+	handler.processMessage(agent, msg)
 }
 
 func TestHandlerCallProtobuf(t *testing.T) {
@@ -138,9 +141,8 @@ func TestHandlerCallProtobuf(t *testing.T) {
 	msg.Type = message.Request
 	msg.Data = data
 
-	s := session.New(nil)
-
-	handler.processMessage(s, msg)
+	agent := newAgent(nil)
+	handler.processMessage(agent, msg)
 }
 
 func BenchmarkHandlerCallJSON(b *testing.B) {
@@ -158,11 +160,11 @@ func BenchmarkHandlerCallJSON(b *testing.B) {
 	msg.Type = message.Request
 	msg.Data = data
 
-	s := session.New(nil)
+	agent := newAgent(nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		handler.processMessage(s, msg)
+		handler.processMessage(agent, msg)
 	}
 
 	b.ReportAllocs()
@@ -183,11 +185,35 @@ func BenchmarkHandlerCallProtobuf(b *testing.B) {
 	msg.Type = message.Request
 	msg.Data = data
 
-	s := session.New(nil)
+	agent := newAgent(nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		handler.processMessage(s, msg)
+		handler.processMessage(agent, msg)
+	}
+	b.ReportAllocs()
+}
+
+func BenchmarkHandlerCallRawData(b *testing.B) {
+	SetSerializer(protobuf.NewSerializer())
+	handler.register(&TestComp{})
+
+	m := &ProtoMessage{Data: proto.String("hello world")}
+	data, err := serializeOrRaw(m)
+	if err != nil {
+		b.Fail()
+	}
+
+	msg := message.New()
+	msg.Route = "TestComp.RawData"
+	msg.Type = message.Request
+	msg.Data = data
+
+	agent := newAgent(nil)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		handler.processMessage(agent, msg)
 	}
 	b.ReportAllocs()
 }

@@ -71,7 +71,7 @@ type (
 	handlerService struct {
 		services       map[string]*component.Service // all registered service
 		handlers       map[string]*component.Handler // all handler method
-		chLocalProcess chan *unhandledMessage        // packets that process locally
+		chLocalProcess chan unhandledMessage         // packets that process locally
 		chCloseSession chan *session.Session         // closed session
 	}
 
@@ -85,7 +85,7 @@ func newHandlerService() *handlerService {
 	h := &handlerService{
 		services:       make(map[string]*component.Service),
 		handlers:       make(map[string]*component.Handler),
-		chLocalProcess: make(chan *unhandledMessage, packetBacklog),
+		chLocalProcess: make(chan unhandledMessage, packetBacklog),
 		chCloseSession: make(chan *session.Session, packetBacklog),
 	}
 
@@ -244,7 +244,7 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 		if err != nil {
 			return err
 		}
-		h.processMessage(agent.session, msg)
+		h.processMessage(agent, msg)
 
 	case packet.Heartbeat:
 		// expected
@@ -254,12 +254,12 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 	return nil
 }
 
-func (h *handlerService) processMessage(session *session.Session, msg *message.Message) {
+func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 	switch msg.Type {
 	case message.Request:
-		session.LastRID = msg.ID
+		agent.session.LastRID = msg.ID
 	case message.Notify:
-		session.LastRID = 0
+		agent.session.LastRID = 0
 	}
 
 	handler, ok := h.handlers[msg.Route]
@@ -281,11 +281,13 @@ func (h *handlerService) processMessage(session *session.Session, msg *message.M
 	}
 
 	if env.debug {
-		log.Println(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", session.Uid(), msg.String(), data))
+		log.Println(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", agent.session.Uid(), msg.String(), data))
 	}
 
-	args := []reflect.Value{handler.Receiver, reflect.ValueOf(session), reflect.ValueOf(data)}
-	h.chLocalProcess <- &unhandledMessage{handler.Method, args}
+	args := agent.cacheArgs
+	args[handlerReceiverSlot] = handler.Receiver
+	args[handlerPayloadSlot] = reflect.ValueOf(data)
+	h.chLocalProcess <- unhandledMessage{handler.Method, args}
 }
 
 func (h *handlerService) dumpServiceMap() {
