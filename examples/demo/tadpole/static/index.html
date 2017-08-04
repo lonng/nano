@@ -1,0 +1,83 @@
+<!doctype html>
+
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Tadpole</title>
+    <link rel="stylesheet" type="text/css" href="./css/main.css"/>
+
+    <meta name="viewport"
+          content="width=device-width; initial-scale=1.0; maximum-scale=1.0; minimum-scale=1.0; user-scalable=0;"/>
+    <meta name="apple-mobile-web-app-capable" content="YES">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="./images/apple-touch-icon.png"/>
+    <meta property="fb:app_id" content="149260988448984"/>
+    <meta name="title" content="Enjoy Random"/>
+    <meta name="description" content="random joy"/>
+    <link rel="image_src" href="./images/fb-image.jpg"/>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="ui">
+    <div id="message-dialog">
+        <div class="message-header">
+            <img :src="message.avatar" alt="">
+        </div>
+        <div class="message-content">
+            <% message.content %>
+        </div>
+
+        <div class="message-controls">
+            <input type="button" class="message-drop" @click="drop" value="没兴趣">
+            <input type="button" class="message-send" @click="try" value="聊一聊">
+        </div>
+    </div>
+
+    <div id="fps"></div>
+    <input id="chat" type="text"/>
+    <div id="chatText"></div>
+    <div id="instructions">
+        <h2>玩法</h2>
+        <p>使用鼠标或者触屏, 四处游动</p>
+    </div>
+
+    <div id="cant-connect">
+        糟糕, 你和青蛙妈妈走散了~
+    </div>
+    <div id="unsupported-browser">
+        <p>亲爱的玩家: <br/>
+            你的浏览器版本太低, 或者<a rel="external" href="http://en.wikipedia.org/wiki/WebSocket">WebSockets</a>功能被禁用,
+            推荐使用下列浏览器.
+        </p>
+        <ul>
+            <li><a rel="external" href="http://www.google.com/chrome">Google Chrome</a></li>
+            <li><a rel="external" href="http://apple.com/safari">Safari 4</a></li>
+            <li><a rel="external" href="http://www.mozilla.com/firefox/">Firefox 4</a></li>
+            <li><a rel="external" href="http://www.opera.com/">Opera 11</a></li>
+        </ul>
+        <p>
+            <a href="#" id="force-init-button">我要试试!</a>
+        </p>
+    </div>
+</div>
+</body>
+
+<script src="./js/lib/parseUri.js"></script>
+<script src="./js/lib/modernizr-1.5.min.js"></script>
+<script src="./js/lib/jquery-1.4.2.min.js"></script>
+<script src="./js/lib/Stats.js"></script>
+<script src="./js/lib/protocol.js"></script>
+<script src="./js/lib/starx-wsclient.js"></script>
+<script src="./js/lib/vue.min.js"></script>
+
+<script src="./js/StarXService.js"></script>
+<script src="./js/App.js"></script>
+<script src="./js/Model.js"></script>
+<script src="./js/Settings.js"></script>
+<script src="./js/Keys.js"></script>
+<script src="./js/Camera.js"></script>
+<script src="./js/Components.js"></script>
+<script src="./js/formControls.js"></script>
+<script src="./js/main.js"></script>
+
+</html>
