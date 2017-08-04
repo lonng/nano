@@ -1,5 +1,5 @@
 # starx-chat-demo
-chat room demo base on StarX in 100 lines
+chat room demo base on [nano](https://github.com/lonnng/nano) in 100 lines
 
 refs: https://github.com/lonnng/nano
 
@@ -12,4 +12,4 @@ refs: https://github.com/lonnng/nano
 go run main.go
 ```
 
-open web/index.html in you browser.
+open browser => http://localhost:3250/web/
