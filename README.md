@@ -1,5 +1,17 @@
 # Nano -- golang based lightweight game framework
 
+## Benchmark
+```shell
+cd $GOPATH/src/github.com/lonnng/nano/benchmark/io
+go test
+```
+
+- Case:   PingPong
+- OS:     Windows 10
+- Device: i5-6500 32.GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
+- Other:  ...
+
+
 ## Chat Room Demo
 implement a chat room in 100 lines with golang and websocket
 
