@@ -136,6 +136,8 @@ func (a *agent) Close() error {
 
 	// close all channel
 	close(a.chDie)
+	handler.chCloseSession <- a.session
+
 	return a.conn.Close()
 }
 
