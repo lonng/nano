@@ -133,7 +133,7 @@ func main() {
 </html>
 ```
 
-## Dependence
+## Dependencies
 ```
 go get -u github.com/golang/protobuf
 go get -u github.com/gorilla/websocket
