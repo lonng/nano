@@ -47,7 +47,7 @@ func server() {
 	nano.Register(&TestHandler{})
 	nano.SetSerializer(protobuf.NewSerializer())
 
-	nano.ListenWithOptions(addr, false)
+	nano.ListenWS(addr)
 }
 
 func client() {

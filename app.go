@@ -21,12 +21,46 @@
 package nano
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gorilla/websocket"
 )
+
+func listen(addr string, isWs bool) {
+	startupComps()
+
+	go func() {
+		if isWs {
+			listenAndServeWS(addr)
+		} else {
+			listenAndServe(addr)
+		}
+	}()
+
+	log.Println(fmt.Sprintf("starting application %s, listen at %s", app.name, addr))
+	sg := make(chan os.Signal)
+	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
+
+	// stop server
+	select {
+	case <-env.die:
+		log.Println("The app will shutdown in a few seconds")
+	case s := <-sg:
+		log.Println("got signal", s)
+	}
+
+	log.Println("server is stopping...")
+
+	// shutdown all components registered by application, that
+	// call by reverse order against register
+	shutdownComps()
+}
 
 // Enable current server accept connection
 func listenAndServe(addr string) {

@@ -34,7 +34,7 @@ func NewSerializer() *Serializer {
 	return &Serializer{}
 }
 
-func (s *Serializer) Serialize(v interface{}) ([]byte, error) {
+func (s *Serializer) Marshal(v interface{}) ([]byte, error) {
 	pb, ok := v.(proto.Message)
 	if !ok {
 		return nil, ErrWrongValueType
@@ -42,7 +42,7 @@ func (s *Serializer) Serialize(v interface{}) ([]byte, error) {
 	return proto.Marshal(pb)
 }
 
-func (s *Serializer) Deserialize(data []byte, v interface{}) error {
+func (s *Serializer) Unmarshal(data []byte, v interface{}) error {
 	pb, ok := v.(proto.Message)
 	if !ok {
 		return ErrWrongValueType

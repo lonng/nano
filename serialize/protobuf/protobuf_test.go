@@ -11,7 +11,7 @@ func TestProtobufSerialezer_Serialize(t *testing.T) {
 	m := &testdata.Ping{Content: "hello"}
 	s := NewSerializer()
 
-	b, err := s.Serialize(m)
+	b, err := s.Marshal(m)
 	if err != nil {
 		t.Error(err)
 	}
@@ -30,7 +30,7 @@ func BenchmarkSerializer_Serialize(b *testing.B) {
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		s.Serialize(m)
+		s.Marshal(m)
 	}
 }
 
@@ -38,7 +38,7 @@ func BenchmarkSerializer_Deserialize(b *testing.B) {
 	m := &testdata.Ping{Content: "hello"}
 	s := NewSerializer()
 
-	d, err := s.Serialize(m)
+	d, err := s.Marshal(m)
 	if err != nil {
 		b.Error(err)
 	}

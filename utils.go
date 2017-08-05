@@ -32,7 +32,7 @@ func serializeOrRaw(v interface{}) ([]byte, error) {
 	if data, ok := v.([]byte); ok {
 		return data, nil
 	}
-	data, err := serializer.Serialize(v)
+	data, err := serializer.Marshal(v)
 	if err != nil {
 		return nil, err
 	}

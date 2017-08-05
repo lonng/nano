@@ -21,46 +21,18 @@
 package nano
 
 import (
-	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
-	"fmt"
 	"github.com/lonnng/nano/component"
 )
 
-// ListenWithOptions start a starx application
-func ListenWithOptions(addr string, isWs bool) {
-	startupComps()
+func Listen(addr string) {
+	listen(addr, false)
+}
 
-	go func() {
-		if isWs {
-			listenAndServeWS(addr)
-		} else {
-			listenAndServe(addr)
-		}
-	}()
-
-	log.Println(fmt.Sprintf("starting application %s, listen at %s", app.name, addr))
-	sg := make(chan os.Signal)
-	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
-
-	// stop server
-	select {
-	case <-env.die:
-		log.Println("The app will shutdown in a few seconds")
-	case s := <-sg:
-		log.Println("got signal", s)
-	}
-
-	log.Println("server is stopping...")
-
-	// shutdown all components registered by application, that
-	// call by reverse order against register
-	shutdownComps()
+func ListenWS(addr string) {
+	listen(addr, true)
 }
 
 func Register(c component.Component) {

@@ -20,7 +20,17 @@
 
 package serialize
 
-type Serializer interface {
-	Serialize(interface{}) ([]byte, error)
-	Deserialize([]byte, interface{}) error
-}
+type (
+	Marshaler interface {
+		Marshal(interface{}) ([]byte, error)
+	}
+
+	Unmarshaler interface {
+		Unmarshal([]byte, interface{}) error
+	}
+
+	Serializer interface {
+		Marshaler
+		Unmarshaler
+	}
+)

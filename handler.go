@@ -273,7 +273,7 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 		data = msg.Data
 	} else {
 		data = reflect.New(handler.Type.Elem()).Interface()
-		err := serializer.Deserialize(msg.Data, data)
+		err := serializer.Unmarshal(msg.Data, data)
 		if err != nil {
 			log.Println("deserialize error", err.Error())
 			return

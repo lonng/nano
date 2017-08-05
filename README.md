@@ -14,7 +14,7 @@ go test
 ## Documents
 
 - [How to build game server application with nano](./docs/get_started.md)
-- [Design patters](./docs/design_patterns.md)
+- [Design patterns](./docs/design_patterns.md)
 
 ## Chat Room Demo
 implement a chat room in 100 lines with golang and websocket

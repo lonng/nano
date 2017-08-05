@@ -140,7 +140,7 @@ func (a *agent) Response(v interface{}) error {
 // Any blocked Read or Write operations will be unblocked and return errors.
 func (a *agent) Close() error {
 	if a.status() == statusClosed {
-		return ErrClosedSession
+		return ErrCloseClosedSession
 	}
 	a.setStatus(statusClosed)
 
