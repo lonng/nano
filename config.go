@@ -23,7 +23,6 @@ package nano
 import (
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -63,7 +62,7 @@ type (
 // init default configs
 func init() {
 	// application initialize
-	app.name = strings.TrimLeft(path.Base(os.Args[0]), "/")
+	app.name = strings.TrimLeft(filepath.Base(os.Args[0]), "/")
 	app.startAt = time.Now()
 
 	// environment initialize

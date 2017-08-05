@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"time"
 
+	"fmt"
 	"github.com/lonnng/nano/component"
 )
 
@@ -43,7 +44,7 @@ func ListenWithOptions(addr string, isWs bool) {
 		}
 	}()
 
-	log.Println("listen at", addr)
+	log.Println(fmt.Sprintf("starting application %s, listen at %s", app.name, addr))
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
 
