@@ -11,6 +11,9 @@ go test
 - Device: i5-6500 32.GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
 - Other:  ...
 
+## Documents
+
+- [How to build game server application with nano](./docs/get_started.md)
 
 ## Chat Room Demo
 implement a chat room in 100 lines with golang and websocket
