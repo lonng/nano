@@ -99,7 +99,7 @@ func newHandlerService() *handlerService {
 func pcall(method reflect.Method, args []reflect.Value) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(fmt.Sprintf("nano/dispatch: Error=%+v, Stack=%s", err, stack()))
+			log.Println(fmt.Sprintf("nano/dispatch: %+v\n%s", err, stack()))
 		}
 	}()
 
@@ -113,7 +113,7 @@ func pcall(method reflect.Method, args []reflect.Value) {
 func onSessionClosed(s *session.Session) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(fmt.Sprintf("nano/onSessionClosed: Error=%+v, Stack=%s", err, stack()))
+			log.Println(fmt.Sprintf("nano/onSessionClosed: %+v\n%s", err, stack()))
 		}
 	}()
 

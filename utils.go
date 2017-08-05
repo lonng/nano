@@ -25,6 +25,7 @@ import (
 	"encoding/gob"
 	"os"
 	"runtime"
+	"strings"
 )
 
 func serializeOrRaw(v interface{}) ([]byte, error) {
@@ -59,5 +60,18 @@ func stack() string {
 	buf := make([]byte, 10000)
 	n := runtime.Stack(buf, false)
 	buf = buf[:n]
-	return string(buf)
+
+	s := string(buf)
+
+	// skip nano frames lines
+	const skip = 7
+	count := 0
+	index := strings.IndexFunc(s, func(c rune) bool {
+		if c != '\n' {
+			return false
+		}
+		count++
+		return count == skip
+	})
+	return s[index+1:]
 }
