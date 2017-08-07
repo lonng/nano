@@ -33,7 +33,7 @@ import (
 )
 
 func listen(addr string, isWs bool) {
-	startupComps()
+	startupComponents()
 
 	go func() {
 		if isWs {
@@ -59,7 +59,7 @@ func listen(addr string, isWs bool) {
 
 	// shutdown all components registered by application, that
 	// call by reverse order against register
-	shutdownComps()
+	shutdownComponents()
 }
 
 // Enable current server accept connection
