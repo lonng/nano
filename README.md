@@ -1,22 +1,45 @@
 # Nano -- golang based lightweight game framework
 
+Nano is an easy to use, fast, lightweight game server networking library for Go.
+It provides a core network architecture and a series of tools and libraries that
+can help developers eliminate boring duplicate work for common underlying logic.
+The goal of nano is to improve development efficiency by eliminating the need to
+spend time on repetitious network related programming.
+
+Nano was designed for server-side applications like real-time games, social games,
+mobile games, etc of all sizes.
+
+## Installation
+
+```shell
+go get github.com/lonnng/nano
+
+# dependencies
+go get -u github.com/golang/protobuf
+go get -u github.com/gorilla/websocket
+```
+
+## Documents
+
+- [How to build your first nano application](./docs/get_started.md)
+- [Design patterns](./docs/design_patterns.md)
+
 ## Benchmark
+
 ```shell
 cd $GOPATH/src/github.com/lonnng/nano/benchmark/io
 go test
 ```
 
+```
 - Case:   PingPong
 - OS:     Windows 10
 - Device: i5-6500 32.GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
 - Other:  ...
-
-## Documents
-
-- [How to build game server application with nano](./docs/get_started.md)
-- [Design patterns](./docs/design_patterns.md)
+```
 
 ## Chat Room Demo
+
 implement a chat room in 100 lines with golang and websocket
 
 - server
@@ -72,7 +95,7 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
 	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
-	nano.ListenWithOptions(":3250", true)
+	nano.ListenWS(":3250")
 }
 ```
   
@@ -135,12 +158,6 @@ func main() {
 </script>
 </body>
 </html>
-```
-
-## Dependencies
-```
-go get -u github.com/golang/protobuf
-go get -u github.com/gorilla/websocket
 ```
 
 ## The MIT License
