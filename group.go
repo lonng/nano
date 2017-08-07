@@ -162,6 +162,10 @@ func (c *Group) Leave(uid int64) error {
 		return ErrMemberNotFound
 	}
 
+	if env.debug {
+		log.Println(fmt.Sprintf("Remove session from group %s, Uid=%d", c.name, uid))
+	}
+
 	c.Lock()
 	defer c.Unlock()
 
