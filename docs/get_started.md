@@ -12,7 +12,6 @@ framework. In addition to some special parts of the game library in the library 
 the rest of the framework can be used for development of real-time web application.
 
 ## Preface
-===============
 
 - This tutorial is suitable for beginners, if you have some development experience in nano,
 please skip this tutorial. You can read the developer guide, there will be some topics
@@ -32,9 +31,8 @@ Windows, we hope you know the corresponding manner, such as some .sh script, and
 file with the same name. This tutorial would not make any special instructions for Windows system.
 
 ## Terminologies
-===============
 
-- Nano has it's own terminology which some may find confusing without a brief explanation. Here
+Nano has it's own terminology which some may find confusing without a brief explanation. Here
 we will try and give readers an overview of some common terms you may come across in this tutorial.
 
 ### Component
@@ -47,8 +45,21 @@ can be regarded as a container of component. Each component defines callbacks: `
 
 Handler is used to do business logic, which signature is declared as follows:
 ```go
+// handler that receives unmarshalled data
 func (c *DemoComponent) DemoHandler(s *session.Session, payload *pb.DemoPayload) error {
-    // business logic
+    // business logic begin
+    // ...
+    // business logic end
+
+    return nil
+}
+
+// handler that receives raw data from client
+func (c *DemoComponent) DemoHandler(s *session.Session, raw []byte) error {
+    // business logic begin
+    // ...
+    // business logic end
+
     return nil
 }
 ```
@@ -85,7 +96,6 @@ is also sent to server by client, but it does not need a response. Pushing messa
 server to client actively.
 
 ## Get started
-===============
 
 ### Server
 ```go
@@ -101,20 +111,24 @@ import (
 	"github.com/lonnng/nano/session"
 )
 
-type Room struct {
-	component.Base
-	group *nano.Group
-}
+type (
+	// define component
+	Room struct {
+		component.Base
+		group *nano.Group
+	}
 
-type UserMessage struct {
-	Name    string `json:"name"`
-	Content string `json:"content"`
-}
+	// protocol messages
+	UserMessage struct {
+		Name    string `json:"name"`
+		Content string `json:"content"`
+	}
 
-type JoinResponse struct {
-	Code   int    `json:"code"`
-	Result string `json:"result"`
-}
+	JoinResponse struct {
+		Code   int    `json:"code"`
+		Result string `json:"result"`
+	}
+)
 
 func NewRoom() *Room {
 	return &Room{
@@ -122,12 +136,14 @@ func NewRoom() *Room {
 	}
 }
 
+// Join room
 func (r *Room) Join(s *session.Session, msg []byte) error {
 	s.Bind(s.ID()) // binding session uid
 	r.group.Add(s) // add session to group
 	return s.Response(JoinResponse{Result: "sucess"})
 }
 
+// Send message
 func (r *Room) Message(s *session.Session, msg *UserMessage) error {
 	return r.group.Broadcast("onMessage", msg)
 }
@@ -143,6 +159,21 @@ func main() {
 	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	nano.ListenWS(":3250")
 }
+
 ```
+
+1. First of all, we import packages that required in this code snippet.
+2. Define room component
+3. Define all protocol structure, we use JSON in this tutorial.
+4. Define handlers, `Join` and `Message` in this tutorial.
+5. Startup our application
+   - Register component
+   - Set serializer
+   - Enable debug information
+   - Set log flags
+   - Set WebSocket check origin function
+   - Listen with ":3250" use WebSocket
+
+### Client
 
 To be continued...
