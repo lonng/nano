@@ -50,6 +50,7 @@ import (
 	"log"
 	"net/http"
 
+	"fmt"
 	"github.com/lonnng/nano"
 	"github.com/lonnng/nano/component"
 	"github.com/lonnng/nano/serialize/json"
@@ -69,6 +70,14 @@ type (
 		Content string `json:"content"`
 	}
 
+	NewUser struct {
+		Content string `json:"content"`
+	}
+
+	AllMembers struct {
+		Members []int64 `json:"members"`
+	}
+
 	JoinResponse struct {
 		Code   int    `json:"code"`
 		Result string `json:"result"`
@@ -81,11 +90,21 @@ func NewRoom() *Room {
 	}
 }
 
+func (r *Room) AfterInit(){
+	nano.OnSessionClosed(func(s *session.Session) {
+		r.group.Leave(s.Uid())
+	})
+}
+
 // Join room
 func (r *Room) Join(s *session.Session, msg []byte) error {
 	s.Bind(s.ID()) // binding session uid
+	s.Push("onMembers", &AllMembers{Members:r.group.Members()})
+	// notify others
+	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+	// new user join group
 	r.group.Add(s) // add session to group
-	return s.Response(JoinResponse{Result: "sucess"})
+	return s.Response(&JoinResponse{Result: "sucess"})
 }
 
 // Send message
@@ -104,6 +123,7 @@ func main() {
 	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	nano.ListenWS(":3250")
 }
+
 ```
   
 - client
@@ -158,8 +178,14 @@ func main() {
         }
     };
 
+    var onNewUser = function (data) {
+        console.log(data);
+        v.messages.push({name:'system', content:data.content});
+    };
+
     starx.init({host: '127.0.0.1', port: 3250}, function () {
-        console.log("initialized")
+        console.log("initialized");
+        starx.on("onNewUser", onNewUser);
         starx.request("Room.Join", {}, join);
     })
 </script>
