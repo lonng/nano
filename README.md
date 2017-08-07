@@ -1,4 +1,4 @@
-# Nano -- golang based lightweight game framework
+# Nano [![Build Status](https://travis-ci.org/lonnng/nano.svg?branch=master)](https://travis-ci.org/lonnng/nano) [![GoDoc](https://godoc.org/github.com/lonnng/nano?status.png)](https://godoc.org/github.com/lonnng/nano) [![Go Report Card](https://goreportcard.com/badge/github.com/lonnng/nano)](https://goreportcard.com/report/github.com/lonnng/nano)
 
 Nano is an easy to use, fast, lightweight game server networking library for Go.
 It provides a core network architecture and a series of tools and libraries that
