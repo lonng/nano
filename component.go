@@ -28,7 +28,7 @@ var (
 	comps = make([]component.Component, 0)
 )
 
-func startupComps() {
+func startupComponents() {
 	for _, c := range comps {
 		c.Init()
 	}
@@ -43,7 +43,7 @@ func startupComps() {
 	handler.dumpServiceMap()
 }
 
-func shutdownComps() {
+func shutdownComponents() {
 	for _, c := range comps {
 		c.BeforeShutdown()
 	}
