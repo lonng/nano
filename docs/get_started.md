@@ -40,6 +40,14 @@ we will try and give readers an overview of some common terms you may come acros
 The nano framework is composed of a number of loosely coupled components and the nano framework
 can be regarded as a container of component. Each component defines callbacks: `Init`, `AfterInit`,
 `BeforeShutdown`, `Shutdown`.
+```go
+type DemoComponent struct{}
+
+func (c *DemoComponent) Init()           {}
+func (c *DemoComponent) AfterInit()      {}
+func (c *DemoComponent) BeforeShutdown() {}
+func (c *DemoComponent) Shutdown()       {}
+```
 
 ### Handler
 
