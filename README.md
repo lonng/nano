@@ -47,10 +47,10 @@ implement a chat room in 100 lines with golang and websocket
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
-	"fmt"
 	"github.com/lonnng/nano"
 	"github.com/lonnng/nano/component"
 	"github.com/lonnng/nano/serialize/json"
@@ -90,16 +90,16 @@ func NewRoom() *Room {
 	}
 }
 
-func (r *Room) AfterInit(){
+func (r *Room) AfterInit() {
 	nano.OnSessionClosed(func(s *session.Session) {
-		r.group.Leave(s.Uid())
+		r.group.Leave(s)
 	})
 }
 
 // Join room
 func (r *Room) Join(s *session.Session, msg []byte) error {
 	s.Bind(s.ID()) // binding session uid
-	s.Push("onMembers", &AllMembers{Members:r.group.Members()})
+	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
 	// notify others
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	// new user join group
@@ -123,7 +123,6 @@ func main() {
 	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 	nano.ListenWS(":3250")
 }
-
 ```
   
 - client
