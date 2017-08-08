@@ -9,9 +9,7 @@ can be replaced independently since neither of them relies on each other directl
 
 The layers of nano protocol is shown as below :
 
-<center>
-![Nano Protocol](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/data-trans.png)
-</center>
+![Nano Protocol](images/data-trans.png)
 
 ## Nano Package
 
@@ -26,9 +24,7 @@ Nano package is composed of two parts: header and body. The header part describe
 length of the package while body contains the binary payload which is encoded/decoded by
 message layer. The format is shown as follows:
 
-<center>
-![nano package](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/packet-format.png)
-</center>
+![nano package](images/packet-format.png)
 
 * type - package type, 1 byte
     - 0x01: package for handshake request from client to server and handshake response from server to client;
@@ -90,9 +86,7 @@ A handshake response is shown as follows:
 
 The process flow of handshake is shown as follows:
 
-<center>
-![handshake](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/handshake.png)
-</center>
+![handshake](images/handshake.png)
 
 After the underlying connection is established, client sends handshake request to the server
 with required data. Server will check the handshake request and then respond to this handshake
@@ -104,9 +98,7 @@ A heartbeat package does not carry any data, so its length is 0 and its body is 
 
 The process flow of heartbeat is shown as follows:
 
-<center>
-![heartbeat](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/heartbeat.png)
-</center>
+![heartbeat](images/heartbeat.png)
 
 After handshaking phase, client will initiate the first heartbeat and then when server and
 client receives a heartbeat package, it will delay for a heartbeat interval before sending
@@ -136,9 +128,7 @@ header, so message header format is complex for it supporting several message ty
 Message header is composed of three parts: flag, message id (a.k.a requestId), route. As
 shown below:
 
-<center>
-![Message Head](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/message-header.png)
-</center>
+![Message Head](images/message-header.png)
 
 As can be seen from the figure, nano message header is variant, depending on the particular
 message type and content:
@@ -153,9 +143,7 @@ message type and content:
 
 Flag occupies first byte of message header, its content is shown as follows:
 
-<center>
-![flag](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/message-flag.png)
-</center>
+![flag](images/message-flag.png)
 
 Now we only use 4 bits and others are reserved, 3 bits for message type, the rest 1 bit for
 route compression flag:
@@ -169,9 +157,7 @@ Different message types is corresponding to different message header, message ty
 by 2-4 bit of flag field. The relationship between message types and message header is presented
  as follows:
 
-<center>
-![Message Head Content](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/message-type.png)
-</center>
+![Message Head Content](images/message-type.png)
 
 **-** The figure above indicates that the bit does not affect the type of message.
 
@@ -181,9 +167,7 @@ We use the last 1 bit(route compression flag) of flag field to identify if the r
 where 1 means it's a compressed route and 0 for un-compressed. Route field encoding/decoding depends
 on this bit, the format is shown as follows:
 
-<center>
-![Message Type](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/route-compre.png)
-</center>
+![Message Type](images/route-compre.png)
 
 As seen from the figure above:
 * If route compression flag is 1 , route is a compressed route and it will be an uInt16 using which can obtain real route by querying the dictionary.
