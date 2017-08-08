@@ -44,12 +44,15 @@ const (
 )
 
 var (
-	ErrBrokenPipe   = errors.New("broken low-level pipe")
+	// ErrBrokenPipe represents the low-level connection has broken.
+	ErrBrokenPipe = errors.New("broken low-level pipe")
+	// ErrBufferExceed indicates that the current session buffer is full and
+	// can not receive more data.
 	ErrBufferExceed = errors.New("session send buffer exceed")
 )
 
-// Agent corresponding a user, used for store raw conn information
 type (
+	// Agent corresponding a user, used for store raw conn information
 	agent struct {
 		// regular agent member
 		session *session.Session    // session

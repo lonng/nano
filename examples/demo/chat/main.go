@@ -58,7 +58,7 @@ func (r *Room) Join(s *session.Session, msg []byte) error {
 	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	// new user join group
 	r.group.Add(s) // add session to group
-	return s.Response(&JoinResponse{Result: "sucess"})
+	return s.Response(&JoinResponse{Result: "success"})
 }
 
 // Send message

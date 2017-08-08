@@ -31,6 +31,7 @@ import (
 	"github.com/lonnng/nano/session"
 )
 
+// VERSION returns current nano version
 var VERSION = "0.0.1"
 
 var (
@@ -56,6 +57,8 @@ var (
 )
 
 type (
+	// SessionClosedHandler represents a callback that will be called when a session
+	// close or session low-level connection broken.
 	SessionClosedHandler func(session *session.Session)
 )
 
