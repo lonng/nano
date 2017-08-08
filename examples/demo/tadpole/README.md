@@ -1,3 +1,3 @@
 # Tadpole
 
-online chat demo
+Online chat demo, ref: http://rumpetroll.com/
