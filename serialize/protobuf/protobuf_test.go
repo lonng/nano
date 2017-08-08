@@ -17,7 +17,7 @@ func TestProtobufSerialezer_Serialize(t *testing.T) {
 	}
 
 	m1 := &testdata.Ping{}
-	s.Deserialize(b, m1)
+	s.Unmarshal(b, m1)
 
 	if !reflect.DeepEqual(m, m1) {
 		t.Fail()
@@ -46,6 +46,6 @@ func BenchmarkSerializer_Deserialize(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		m1 := &testdata.Ping{}
-		s.Deserialize(d, m1)
+		s.Unmarshal(d, m1)
 	}
 }

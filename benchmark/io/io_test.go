@@ -1,3 +1,5 @@
+// +build benchmark
+
 package io
 
 import (

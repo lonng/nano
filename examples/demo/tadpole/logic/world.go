@@ -24,7 +24,7 @@ func NewWorld() *World {
 
 func (w *World) Init() {
 	nano.OnSessionClosed(func(s *session.Session) {
-		w.Leave(s.Uid())
+		w.Leave(s)
 		w.Broadcast("leave", &protocol.LeaveWorldResponse{ID: s.ID()})
 		log.Println(fmt.Sprintf("session count: %d", w.Count()))
 	})

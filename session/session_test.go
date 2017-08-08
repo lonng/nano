@@ -4,7 +4,7 @@ import "testing"
 
 func TestNewSession(t *testing.T) {
 	s := New(nil)
-	if s.ID < 1 {
+	if s.ID() < 1 {
 		t.Fail()
 	}
 }
@@ -14,7 +14,7 @@ func TestSession_Bind(t *testing.T) {
 	uids := []int64{100, 1000, 10000000}
 	for i, uid := range uids {
 		s.Bind(uid)
-		if s.Uid != uids[i] {
+		if s.Uid() != uids[i] {
 			t.Fail()
 		}
 	}

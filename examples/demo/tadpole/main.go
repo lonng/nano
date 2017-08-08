@@ -48,7 +48,7 @@ func serve(ctx *cli.Context) error {
 	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
 
 	addr := ctx.String("addr")
-	nano.Listen(addr, true)
+	nano.ListenWS(addr)
 
 	return nil
 }
