@@ -25,6 +25,7 @@ go get -u github.com/gorilla/websocket
 - [Route compression](./docs/route_compression.md)
 - [Communication protocol](./docs/communication_protocol.md)
 - [Design patterns](./docs/design_patterns.md)
+- [How to integrate Lua into Nano component(incomplete)](.)
 
 ## Demo
 
