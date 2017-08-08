@@ -10,7 +10,7 @@ can be replaced independently since neither of them relies on each other directl
 The layers of nano protocol is shown as below :
 
 <center>
-![Nano Protocol] (images/data-trans.png)
+![Nano Protocol](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/data-trans.png)
 </center>
 
 ## Nano Package
@@ -27,7 +27,7 @@ length of the package while body contains the binary payload which is encoded/de
 message layer. The format is shown as follows:
 
 <center>
-![nano package](images/packet-format.png)
+![nano package](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/packet-format.png)
 </center>
 
 * type - package type, 1 byte
@@ -64,9 +64,9 @@ A handshake request is shown as follows:
 ```
 
 * sys.version - client version. Each version of client SDK should be assigned a constant
-version, and it should be uploaded to server during the handshake phase.
+  version, and it should be uploaded to server during the handshake phase.
 * sys.type - client type, such as C, android, iOS. Server can check whether it is compatible
-between server and client using sys.version and sys.type.
+  between server and client using sys.version and sys.type.
 
 A handshake response is shown as follows:
 
@@ -91,7 +91,7 @@ A handshake response is shown as follows:
 The process flow of handshake is shown as follows:
 
 <center>
-![handshake](images/handshake.png)
+![handshake](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/handshake.png)
 </center>
 
 After the underlying connection is established, client sends handshake request to the server
@@ -105,7 +105,7 @@ A heartbeat package does not carry any data, so its length is 0 and its body is 
 The process flow of heartbeat is shown as follows:
 
 <center>
-![heartbeat](images/heartbeat.png)
+![heartbeat](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/heartbeat.png)
 </center>
 
 After handshaking phase, client will initiate the first heartbeat and then when server and
@@ -137,24 +137,24 @@ Message header is composed of three parts: flag, message id (a.k.a requestId), r
 shown below:
 
 <center>
-![Message Head] (images/message-header.png)
+![Message Head](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/message-header.png)
 </center>
 
 As can be seen from the figure, nano message header is variant, depending on the particular
 message type and content:
 
 * flag is required and occupies one byte, which determines type of the message and format of
-the message content;
+  the message content;
 * message id and the route is optional. Message id is encoded using [base 128 varints](https://developers.google.com/protocol-buffers/docs/encoding#varints),
-and the length of message id is between the 0~5 bytes according to its value. The length of
-route is between 0~255 bytes according to type and content of the message.
+  and the length of message id is between the 0~5 bytes according to its value. The length of
+  route is between 0~255 bytes according to type and content of the message.
 
 ### Flag Field
 
 Flag occupies first byte of message header, its content is shown as follows:
 
 <center>
-![flag](images/message-flag.png)
+![flag](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/message-flag.png)
 </center>
 
 Now we only use 4 bits and others are reserved, 3 bits for message type, the rest 1 bit for
@@ -170,7 +170,7 @@ by 2-4 bit of flag field. The relationship between message types and message hea
  as follows:
 
 <center>
-![Message Head Content](images/message-type.png)
+![Message Head Content](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/message-type.png)
 </center>
 
 **-** The figure above indicates that the bit does not affect the type of message.
@@ -182,7 +182,7 @@ where 1 means it's a compressed route and 0 for un-compressed. Route field encod
 on this bit, the format is shown as follows:
 
 <center>
-![Message Type](images/route-compre.png)
+![Message Type](https://raw.githubusercontent.com/lonnng/nano/master/docs/images/route-compre.png)
 </center>
 
 As seen from the figure above:

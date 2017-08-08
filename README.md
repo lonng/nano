@@ -25,6 +25,11 @@ go get -u github.com/gorilla/websocket
 - [Communication protocol](./docs/communication_protocol.md)
 - [Design patterns](./docs/design_patterns.md)
 
+## Demo
+
+- [Implement a chat room in 100 lines with nano and WebSocket](./examples/demo/chat)
+- [Tadpole demo](./examples/demo/tadpole)
+
 ## Benchmark
 
 ```shell
@@ -36,12 +41,6 @@ go get -u github.com/gorilla/websocket
 cd $GOPATH/src/github.com/lonnng/nano/benchmark/io
 go test -v -tags "benchmark"
 ```
-
-## Demo
-
-- [Implement a chat room in 100 lines with nano and WebSocket](./examples/demo/chat)
-- [Tadpole demo](./examples/demo/tadpole)
-
 
 ## License
 
