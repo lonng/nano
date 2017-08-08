@@ -22,6 +22,7 @@ go get -u github.com/gorilla/websocket
 ## Documents
 
 - [How to build your first nano application](./docs/get_started.md)
+- [Communication protocol](./docs/communication_protocol.md)
 - [Design patterns](./docs/design_patterns.md)
 
 ## Benchmark
