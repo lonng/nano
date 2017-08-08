@@ -49,7 +49,7 @@ func server() {
 	nano.Register(&TestHandler{})
 	nano.SetSerializer(protobuf.NewSerializer())
 
-	nano.ListenWS(addr)
+	nano.Listen(addr)
 }
 
 func client() {
@@ -69,7 +69,7 @@ func client() {
 	<-chReady
 	for {
 		c.Notify("TestHandler.Ping", &testdata.Ping{})
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 

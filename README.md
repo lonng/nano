@@ -33,7 +33,7 @@ go get -u github.com/gorilla/websocket
 # Other:  ...
 
 cd $GOPATH/src/github.com/lonnng/nano/benchmark/io
-go test
+go test -v -tags "benchmark"
 ```
 
 ## Demo
