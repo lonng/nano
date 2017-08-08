@@ -202,4 +202,9 @@ func main() {
 
 ### Client
 
-To be continued...
+Reference Client SDK documents.
+
+## Summary
+
+In this section, we obtain a simple chat application and make it run, and briefly analyze its
+source code.
