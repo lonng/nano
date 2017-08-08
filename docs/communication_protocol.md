@@ -14,7 +14,6 @@ The layers of nano protocol is shown as below :
 </center>
 
 ## Nano Package
-=======================
 
 Package layer is used to encapsulate nano message for transmitting via a connection-oriented
 communication such as tcp. There are two kinds of package: control package and data package.
@@ -196,5 +195,5 @@ This document describes the wire-protocol for nano, including package layer and 
 developers uses nano underlying network library, they can implement client SDK for various platforms
 according to the protocol illustrated here.
 
-===================
+
 ***Copyright***:Parts of above content and figures come from [Pomelo Protocol](https://github.com/NetEase/pomelo/wiki/Communication-Protocol)
