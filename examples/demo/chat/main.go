@@ -12,38 +12,44 @@ import (
 )
 
 type (
-	// define component
+	// Room represents a component that contains a bundle of room related handler
+	// like Join/Message
 	Room struct {
 		component.Base
 		group *nano.Group
 	}
 
-	// protocol messages
+	// UserMessage represents a message that user sent
 	UserMessage struct {
 		Name    string `json:"name"`
 		Content string `json:"content"`
 	}
 
+	// NewUser message will be received when new user join room
 	NewUser struct {
 		Content string `json:"content"`
 	}
 
+	// AllMembers contains all members uid
 	AllMembers struct {
 		Members []int64 `json:"members"`
 	}
 
+	// JoinResponse represents the result of joining room
 	JoinResponse struct {
 		Code   int    `json:"code"`
 		Result string `json:"result"`
 	}
 )
 
+// NewRoom returns a new room
 func NewRoom() *Room {
 	return &Room{
 		group: nano.NewGroup("room"),
 	}
 }
 
+// AfterInit component lifetime callback
 func (r *Room) AfterInit() {
 	nano.OnSessionClosed(func(s *session.Session) {
 		r.group.Leave(s)
@@ -61,7 +67,7 @@ func (r *Room) Join(s *session.Session, msg []byte) error {
 	return s.Response(&JoinResponse{Result: "success"})
 }
 
-// Send message
+// Message sync last message to all members
 func (r *Room) Message(s *session.Session, msg *UserMessage) error {
 	return r.group.Broadcast("onMessage", msg)
 }
