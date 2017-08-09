@@ -54,12 +54,12 @@ func startupComponents() {
 func shutdownComponents() {
 	// reverse call `BeforeShutdown` hooks
 	length := len(comps)
-	for i := 0; i < length; i++ {
-		comps[length-i].BeforeShutdown()
+	for i := length - 1; i >= 0; i++ {
+		comps[i].BeforeShutdown()
 	}
 
 	// reverse call `Shutdown` hooks
-	for i := 0; i < length; i++ {
-		comps[length-i].Shutdown()
+	for i := length - 1; i >= 0; i++ {
+		comps[i].Shutdown()
 	}
 }
