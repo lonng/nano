@@ -290,7 +290,8 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 	h.chLocalProcess <- unhandledMessage{handler.Method, args}
 }
 
-func (h *handlerService) dumpServiceMap() {
+// DumpServices outputs all registered services
+func (h *handlerService) DumpServices() {
 	for name := range h.handlers {
 		log.Println("registered service", name)
 	}

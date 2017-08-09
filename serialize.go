@@ -28,7 +28,8 @@ import (
 // Default serializer
 var serializer serialize.Serializer = protobuf.NewSerializer()
 
-// Customize serializer
+// SetSerializer customize application serializer, which automatically Marshal
+// and UnMarshal handler payload
 func SetSerializer(seri serialize.Serializer) {
 	serializer = seri
 }

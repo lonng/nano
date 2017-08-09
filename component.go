@@ -21,6 +21,8 @@
 package nano
 
 import (
+	"log"
+
 	"github.com/lonnng/nano/component"
 )
 
@@ -29,25 +31,35 @@ var (
 )
 
 func startupComponents() {
+	// component initialize hooks
 	for _, c := range comps {
 		c.Init()
 	}
+
+	// component after initialize hooks
 	for _, c := range comps {
 		c.AfterInit()
 	}
 
+	// register all components
 	for _, c := range comps {
-		handler.register(c)
+		if err := handler.register(c); err != nil {
+			log.Println(err.Error())
+		}
 	}
 
-	handler.dumpServiceMap()
+	handler.DumpServices()
 }
 
 func shutdownComponents() {
-	for _, c := range comps {
-		c.BeforeShutdown()
+	// reverse call `BeforeShutdown` hooks
+	length := len(comps)
+	for i := length-1; i >= 0; i-- {
+		comps[i].BeforeShutdown()
 	}
-	for _, c := range comps {
-		c.Shutdown()
+
+	// reverse call `Shutdown` hooks
+	for i := length-1; i >= 0; i-- {
+		comps[i].Shutdown()
 	}
 }
