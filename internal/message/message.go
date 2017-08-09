@@ -28,8 +28,10 @@ import (
 	"strings"
 )
 
+// MessageType represents the type of message, which could be Request/Notify/Response/Push
 type MessageType byte
 
+// Message types
 const (
 	Request  MessageType = 0x00
 	Notify               = 0x01
@@ -52,16 +54,18 @@ var types = map[MessageType]string{
 }
 
 var (
-	routeDict = make(map[string]uint16)
-	codeDict  = make(map[uint16]string)
+	routes = make(map[string]uint16) // route map to code
+	codes  = make(map[uint16]string) // code map to route
 )
 
+// Errors that could be occurred in message codec
 var (
 	ErrWrongMessageType  = errors.New("wrong message type")
 	ErrInvalidMessage    = errors.New("invalid message")
 	ErrRouteInfoNotFound = errors.New("route info not found in dictionary")
 )
 
+// Message represents a unmarshalled message or a message which to be marshaled
 type Message struct {
 	Type       MessageType // message type
 	ID         uint        // unique id, zero while notify mode
@@ -95,17 +99,19 @@ func invalidType(t MessageType) bool {
 	return t < Request || t > Push
 }
 
-// Encode message. Different message types is corresponding to different message header,
-// message types is identified by 2-4 bit of flag field. The relationship between message
-// types and message header is presented as follows:
-//
-//   type      flag      other
-//   ----      ----      -----
-// request  |----000-|<message id>|<route>
-// notify   |----001-|<route>
-// response |----010-|<message id>
-// push     |----011-|<route>
+// Encode marshals message to binary format. Different message types is corresponding to
+// different message header, message types is identified by 2-4 bit of flag field. The
+// relationship between message types and message header is presented as follows:
+// ------------------------------------------
+// |   type   |  flag  |       other        |
+// |----------|--------|--------------------|
+// | request  |----000-|<message id>|<route>|
+// | notify   |----001-|<route>             |
+// | response |----010-|<message id>        |
+// | push     |----011-|<route>             |
+// ------------------------------------------
 // The figure above indicates that the bit does not affect the type of message.
+// See ref: https://github.com/lonnng/nano/blob/master/docs/communication_protocol.md
 func Encode(m *Message) ([]byte, error) {
 	if invalidType(m.Type) {
 		return nil, ErrWrongMessageType
@@ -114,7 +120,7 @@ func Encode(m *Message) ([]byte, error) {
 	buf := make([]byte, 0)
 	flag := byte(m.Type) << 1
 
-	code, compressed := routeDict[m.Route]
+	code, compressed := routes[m.Route]
 	if compressed {
 		flag |= msgRouteCompressMask
 	}
@@ -149,6 +155,8 @@ func Encode(m *Message) ([]byte, error) {
 	return buf, nil
 }
 
+// Decode unmarshals bytes slice to a message
+// See ref: https://github.com/lonnng/nano/blob/master/docs/communication_protocol.md
 func Decode(data []byte) (*Message, error) {
 	if len(data) < msgHeadLength {
 		return nil, ErrInvalidMessage
@@ -182,7 +190,7 @@ func Decode(data []byte) (*Message, error) {
 		if flag&msgRouteCompressMask == 1 {
 			m.compressed = true
 			code := binary.BigEndian.Uint16(data[offset:(offset + 2)])
-			route, ok := codeDict[code]
+			route, ok := codes[code]
 			if !ok {
 				return nil, ErrRouteInfoNotFound
 			}
@@ -201,23 +209,23 @@ func Decode(data []byte) (*Message, error) {
 	return m, nil
 }
 
-// TODO: ***NOTICE***
-// Runtime set dictionary will be a dangerous operation!!!!!!
-func SetDict(dict map[string]uint16) {
+// SetDictionary set routes map which be used to compress route.
+// TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!
+func SetDictionary(dict map[string]uint16) {
 	for route, code := range dict {
 		r := strings.TrimSpace(route)
 
 		// duplication check
-		if _, ok := routeDict[r]; ok {
+		if _, ok := routes[r]; ok {
 			log.Printf("duplicated route(route: %s, code: %d)\n", r, code)
 		}
 
-		if _, ok := codeDict[code]; ok {
+		if _, ok := codes[code]; ok {
 			log.Printf("duplicated route(route: %s, code: %d)\n", r, code)
 		}
 
 		// update map, using last value when key duplicated
-		routeDict[r] = code
-		codeDict[code] = r
+		routes[r] = code
+		codes[code] = r
 	}
 }

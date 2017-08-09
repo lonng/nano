@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/lonnng/nano/component"
+	"github.com/lonnng/nano/internal/message"
 )
 
 func Listen(addr string) {
@@ -64,4 +65,9 @@ func OnSessionClosed(cb SessionClosedHandler) {
 	defer env.muCallbacks.Unlock()
 
 	env.callbacks = append(env.callbacks, cb)
+}
+
+// SetDictionary set routes map, TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!
+func SetDictionary(dict map[string]uint16) {
+	message.SetDictionary(dict)
 }
