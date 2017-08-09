@@ -74,10 +74,12 @@ type Message struct {
 	compressed bool        // is message compressed
 }
 
+// New returns a new message instance
 func New() *Message {
 	return &Message{}
 }
 
+// String, implementation of fmt.Stringer interface
 func (m *Message) String() string {
 	return fmt.Sprintf("Type: %s, ID: %d, Route: %s, Compressed: %t, BodyLength: %d",
 		types[m.Type],
@@ -87,11 +89,12 @@ func (m *Message) String() string {
 		len(m.Data))
 }
 
+// Encode marshals message to binary format.
 func (m *Message) Encode() ([]byte, error) {
 	return Encode(m)
 }
 
-func msgRoute(t MessageType) bool {
+func routable(t MessageType) bool {
 	return t == Request || t == Notify || t == Push
 }
 
@@ -141,7 +144,7 @@ func Encode(m *Message) ([]byte, error) {
 		}
 	}
 
-	if msgRoute(m.Type) {
+	if routable(m.Type) {
 		if compressed {
 			buf = append(buf, byte((code>>8)&0xFF))
 			buf = append(buf, byte(code&0xFF))
@@ -186,7 +189,7 @@ func Decode(data []byte) (*Message, error) {
 		m.ID = id
 	}
 
-	if msgRoute(m.Type) {
+	if routable(m.Type) {
 		if flag&msgRouteCompressMask == 1 {
 			m.compressed = true
 			code := binary.BigEndian.Uint16(data[offset:(offset + 2)])
