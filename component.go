@@ -21,9 +21,8 @@
 package nano
 
 import (
-	"log"
-
 	"github.com/lonnng/nano/component"
+	"log"
 )
 
 var (
@@ -54,12 +53,12 @@ func startupComponents() {
 func shutdownComponents() {
 	// reverse call `BeforeShutdown` hooks
 	length := len(comps)
-	for i := length - 1; i >= 0; i++ {
+	for i := length - 1; i >= 0; i-- {
 		comps[i].BeforeShutdown()
 	}
 
 	// reverse call `Shutdown` hooks
-	for i := length - 1; i >= 0; i++ {
+	for i := length - 1; i >= 0; i-- {
 		comps[i].Shutdown()
 	}
 }
