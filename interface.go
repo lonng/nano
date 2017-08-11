@@ -28,10 +28,16 @@ import (
 	"github.com/lonnng/nano/internal/message"
 )
 
+// Listen listens on the TCP network address addr
+// and then calls Serve with handler to handle requests
+// on incoming connections.
 func Listen(addr string) {
 	listen(addr, false)
 }
 
+// ListenWS listens on the TCP network address addr
+// and then upgrades the HTTP server connection to the WebSocket protocol
+// to handle requests on incoming connections.
 func ListenWS(addr string) {
 	listen(addr, true)
 }
