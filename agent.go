@@ -105,9 +105,7 @@ func (a *agent) Push(route string, v interface{}) error {
 		return ErrBufferExceed
 	}
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid(), route, v))
-	}
+	debugPrintln(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid(), route, v))
 
 	a.chSend <- pendingMessage{typ: message.Push, route: route, payload: v}
 	return nil
@@ -129,9 +127,7 @@ func (a *agent) Response(v interface{}) error {
 		return ErrBufferExceed
 	}
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid(), mid, v))
-	}
+	debugPrintln(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid(), mid, v))
 
 	a.chSend <- pendingMessage{typ: message.Response, mid: mid, payload: v}
 	return nil
@@ -146,9 +142,7 @@ func (a *agent) Close() error {
 	}
 	a.setStatus(statusClosed)
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID(), a.conn.RemoteAddr()))
-	}
+	debugPrintln(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID(), a.conn.RemoteAddr()))
 
 	// close all channel
 	close(a.chDie)
@@ -185,9 +179,9 @@ func (a *agent) write() {
 		close(a.chSend)
 		close(chWrite)
 		a.Close()
-		if env.debug {
-			logger.Println(fmt.Sprintf("Session write goroutine exit, SessionID=%d, UID=%d", a.session.ID(), a.session.Uid()))
-		}
+
+		debugPrintln(fmt.Sprintf("Session write goroutine exit, SessionID=%d, UID=%d", a.session.ID(), a.session.Uid()))
+
 	}()
 
 	for {
