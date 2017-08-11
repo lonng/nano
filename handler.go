@@ -177,16 +177,14 @@ func (h *handlerService) handle(conn net.Conn) {
 	// startup write goroutine
 	go agent.write()
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("New session established: %s", agent.String()))
-	}
+	debugPrintln(fmt.Sprintf("New session established: %s", agent.String()))
 
 	// guarantee agent related resource be destroyed
 	defer func() {
 		agent.Close()
-		if env.debug {
-			logger.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.Uid()))
-		}
+
+		debugPrintln(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.Uid()))
+
 	}()
 
 	// read loop
@@ -223,15 +221,13 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 		}
 
 		agent.setStatus(statusHandshake)
-		if env.debug {
-			logger.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
-		}
+
+		debugPrintln(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
 
 	case packet.HandshakeAck:
 		agent.setStatus(statusWorking)
-		if env.debug {
-			logger.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
-		}
+
+		debugPrintln(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
 
 	case packet.Data:
 		if agent.status() < statusWorking {
@@ -279,9 +275,7 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 		}
 	}
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", agent.session.Uid(), msg.String(), data))
-	}
+	debugPrintln(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", agent.session.Uid(), msg.String(), data))
 
 	args := agent.cacheArgs
 	args[handlerReceiverSlot] = handler.Receiver

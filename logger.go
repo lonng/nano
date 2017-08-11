@@ -19,3 +19,10 @@ func SetLogger(l Logger) {
 		logger = l
 	}
 }
+
+// debugPrintln enable output when running under debug mode
+func debugPrintln(v ...interface{}) {
+	if env.debug {
+		logger.Println(v...)
+	}
+}
