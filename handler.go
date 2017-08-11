@@ -23,7 +23,6 @@ package nano
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"reflect"
 	"time"
@@ -99,13 +98,13 @@ func newHandlerService() *handlerService {
 func pcall(method reflect.Method, args []reflect.Value) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(fmt.Sprintf("nano/dispatch: %+v\n%s", err, stack()))
+			logger.Println(fmt.Sprintf("nano/dispatch: %+v\n%s", err, stack()))
 		}
 	}()
 
 	if r := method.Func.Call(args); len(r) > 0 {
 		if err := r[0].Interface(); err != nil {
-			log.Println(err.(error).Error())
+			logger.Println(err.(error).Error())
 		}
 	}
 }
@@ -113,7 +112,7 @@ func pcall(method reflect.Method, args []reflect.Value) {
 func onSessionClosed(s *session.Session) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(fmt.Sprintf("nano/onSessionClosed: %+v\n%s", err, stack()))
+			logger.Println(fmt.Sprintf("nano/onSessionClosed: %+v\n%s", err, stack()))
 		}
 	}()
 
@@ -179,14 +178,14 @@ func (h *handlerService) handle(conn net.Conn) {
 	go agent.write()
 
 	if env.debug {
-		log.Println(fmt.Sprintf("New session established: %s", agent.String()))
+		logger.Println(fmt.Sprintf("New session established: %s", agent.String()))
 	}
 
 	// guarantee agent related resource be destroyed
 	defer func() {
 		agent.Close()
 		if env.debug {
-			log.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.Uid()))
+			logger.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.Uid()))
 		}
 	}()
 
@@ -195,21 +194,21 @@ func (h *handlerService) handle(conn net.Conn) {
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			log.Println(fmt.Sprintf("Read message error: %s, session will be closed immediately", err.Error()))
+			logger.Println(fmt.Sprintf("Read message error: %s, session will be closed immediately", err.Error()))
 			return
 		}
 
 		// TODO(warning): decoder use slice for performance, packet data should be copy before next Decode
 		packets, err := agent.decoder.Decode(buf[:n])
 		if err != nil {
-			log.Println(err.Error())
+			logger.Println(err.Error())
 			return
 		}
 
 		// process all packet
 		for i := range packets {
 			if err := h.processPacket(agent, packets[i]); err != nil {
-				log.Println(err.Error())
+				logger.Println(err.Error())
 				return
 			}
 		}
@@ -225,13 +224,13 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 
 		agent.setStatus(statusHandshake)
 		if env.debug {
-			log.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
+			logger.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
 		}
 
 	case packet.HandshakeAck:
 		agent.setStatus(statusWorking)
 		if env.debug {
-			log.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
+			logger.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
 		}
 
 	case packet.Data:
@@ -264,7 +263,7 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 
 	handler, ok := h.handlers[msg.Route]
 	if !ok {
-		log.Println(fmt.Sprintf("nano/handler: %s not found(forgot registered?)", msg.Route))
+		logger.Println(fmt.Sprintf("nano/handler: %s not found(forgot registered?)", msg.Route))
 		return
 	}
 
@@ -275,13 +274,13 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 		data = reflect.New(handler.Type.Elem()).Interface()
 		err := serializer.Unmarshal(msg.Data, data)
 		if err != nil {
-			log.Println("deserialize error", err.Error())
+			logger.Println("deserialize error", err.Error())
 			return
 		}
 	}
 
 	if env.debug {
-		log.Println(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", agent.session.Uid(), msg.String(), data))
+		logger.Println(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", agent.session.Uid(), msg.String(), data))
 	}
 
 	args := agent.cacheArgs
@@ -293,6 +292,6 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 // DumpServices outputs all registered services
 func (h *handlerService) DumpServices() {
 	for name := range h.handlers {
-		log.Println("registered service", name)
+		logger.Println("registered service", name)
 	}
 }

@@ -22,7 +22,6 @@ package nano
 
 import (
 	"github.com/lonnng/nano/component"
-	"log"
 )
 
 var (
@@ -43,7 +42,7 @@ func startupComponents() {
 	// register all components
 	for _, c := range comps {
 		if err := handler.register(c); err != nil {
-			log.Println(err.Error())
+			logger.Println(err.Error())
 		}
 	}
 

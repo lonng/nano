@@ -23,7 +23,6 @@ package nano
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"reflect"
 	"sync/atomic"
@@ -107,7 +106,7 @@ func (a *agent) Push(route string, v interface{}) error {
 	}
 
 	if env.debug {
-		log.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid(), route, v))
+		logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid(), route, v))
 	}
 
 	a.chSend <- pendingMessage{typ: message.Push, route: route, payload: v}
@@ -131,7 +130,7 @@ func (a *agent) Response(v interface{}) error {
 	}
 
 	if env.debug {
-		log.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid(), mid, v))
+		logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid(), mid, v))
 	}
 
 	a.chSend <- pendingMessage{typ: message.Response, mid: mid, payload: v}
@@ -148,7 +147,7 @@ func (a *agent) Close() error {
 	a.setStatus(statusClosed)
 
 	if env.debug {
-		log.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID(), a.conn.RemoteAddr()))
+		logger.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID(), a.conn.RemoteAddr()))
 	}
 
 	// close all channel
@@ -187,7 +186,7 @@ func (a *agent) write() {
 		close(chWrite)
 		a.Close()
 		if env.debug {
-			log.Println(fmt.Sprintf("Session write goroutine exit, SessionID=%d, UID=%d", a.session.ID(), a.session.Uid()))
+			logger.Println(fmt.Sprintf("Session write goroutine exit, SessionID=%d, UID=%d", a.session.ID(), a.session.Uid()))
 		}
 	}()
 
@@ -196,7 +195,7 @@ func (a *agent) write() {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * env.heartbeat).Unix()
 			if a.lastAt < deadline {
-				log.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
+				logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
 				return
 			}
 			chWrite <- hbd
@@ -204,14 +203,14 @@ func (a *agent) write() {
 		case data := <-chWrite:
 			// close agent while low-level conn broken
 			if _, err := a.conn.Write(data); err != nil {
-				log.Println(err.Error())
+				logger.Println(err.Error())
 				return
 			}
 
 		case data := <-a.chSend:
 			payload, err := serializeOrRaw(data.payload)
 			if err != nil {
-				log.Println(err.Error())
+				logger.Println(err.Error())
 				break
 			}
 
@@ -224,14 +223,14 @@ func (a *agent) write() {
 			}
 			em, err := m.Encode()
 			if err != nil {
-				log.Println(err.Error())
+				logger.Println(err.Error())
 				break
 			}
 
 			// packet encode
 			p, err := codec.Encode(packet.Data, em)
 			if err != nil {
-				log.Println(err)
+				logger.Println(err)
 				break
 			}
 			chWrite <- p
