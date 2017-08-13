@@ -25,6 +25,7 @@ import (
 	"reflect"
 )
 
+//Handler represents a message.Message's handler's meta information.
 type Handler struct {
 	Receiver reflect.Value  // receiver of method
 	Method   reflect.Method // method stub
@@ -32,6 +33,8 @@ type Handler struct {
 	IsRawArg bool           // whether the data need to serialize
 }
 
+// Service implements a specific service, some of it's methods will be
+// called when the correspond events is occurred.
 type Service struct {
 	Name     string              // name of service
 	Receiver reflect.Value       // receiver of methods for the service
@@ -39,18 +42,18 @@ type Service struct {
 	Methods  map[string]*Handler // registered methods
 }
 
-// Register publishes in the service the set of methods of the
-// receiver value that satisfy the following conditions:
+// ExtractHandler extract the set of methods from the
+// receiver value which satisfy the following conditions:
 // - exported method of exported type
 // - two arguments, both of exported type
 // - the first argument is *session.Session
 // - the second argument is []byte or a pointer
-func (s *Service) ScanHandler() error {
+func (s *Service) ExtractHandler() error {
 	if s.Name == "" {
-		return errors.New("handler.Register: no service name for type " + s.Type.String())
+		return errors.New("no service name for type " + s.Type.String())
 	}
 	if !isExported(s.Name) {
-		return errors.New("handler.Register: type " + s.Name + " is not exported")
+		return errors.New("type " + s.Name + " is not exported")
 	}
 
 	// Install the methods
@@ -61,9 +64,9 @@ func (s *Service) ScanHandler() error {
 		// To help the user, see if a pointer receiver would work.
 		method := suitableHandlerMethods(reflect.PtrTo(s.Type))
 		if len(method) != 0 {
-			str = "handler.Register: type " + s.Name + " has no exported methods of suitable type (hint: pass a pointer to value of that type)"
+			str = "type " + s.Name + " has no exported methods of suitable type (hint: pass a pointer to value of that type)"
 		} else {
-			str = "handler.Register: type " + s.Name + " has no exported methods of suitable type"
+			str = "type " + s.Name + " has no exported methods of suitable type"
 		}
 		return errors.New(str)
 	}
