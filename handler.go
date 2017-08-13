@@ -147,10 +147,10 @@ func (h *handlerService) dispatch() {
 	}
 }
 
-func (h *handlerService) register(receiver component.Component) error {
+func (h *handlerService) register(c component.Component) error {
 	s := &component.Service{
-		Type:     reflect.TypeOf(receiver),
-		Receiver: reflect.ValueOf(receiver),
+		Type:     reflect.TypeOf(c),
+		Receiver: reflect.ValueOf(c),
 	}
 	s.Name = reflect.Indirect(s.Receiver).Type().Name()
 
@@ -158,7 +158,7 @@ func (h *handlerService) register(receiver component.Component) error {
 		return fmt.Errorf("handler: service already defined: %s", s.Name)
 	}
 
-	if err := s.ScanHandler(); err != nil {
+	if err := s.ExtractHandler(); err != nil {
 		return err
 	}
 
