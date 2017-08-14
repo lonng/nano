@@ -61,6 +61,11 @@ func (t *Timer) ID() int64 {
 
 // Stop turns off a timer. After Stop, fn will not be called forever
 func (t *Timer) Stop() {
+	// guarantee that logic is not blocked
+	if len(timerManager.chClosingTimer) < timerBacklog {
+		t.counter = 0 // automatically closed in next cron
+		return
+	}
 	if atomic.LoadInt32(&t.closed) > 0 {
 		return
 	}
@@ -68,8 +73,8 @@ func (t *Timer) Stop() {
 	timerManager.chClosingTimer <- t.id
 }
 
-// call job function with protection
-func pjob(id int64, fn TimerFunc) {
+// execute job function with protection
+func pexec(id int64, fn TimerFunc) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println(fmt.Sprintf("Call timer funtion error, TimerID=%d, Error=%v\n%s", id, err, stack()))
@@ -91,7 +96,7 @@ func cron() {
 
 		// execute job
 		if t.createAt+t.elapse <= now {
-			pjob(id, t.fn)
+			pexec(id, t.fn)
 			t.elapse += int64(t.interval)
 
 			// update timer counter
