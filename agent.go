@@ -106,7 +106,12 @@ func (a *agent) Push(route string, v interface{}) error {
 	}
 
 	if env.debug {
-		logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid(), route, v))
+		switch d := v.(type) {
+		case []byte:
+			logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%dbytes", a.session.Uid(), route, len(d)))
+		default:
+			logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid(), route, v))
+		}
 	}
 
 	a.chSend <- pendingMessage{typ: message.Push, route: route, payload: v}
@@ -130,7 +135,12 @@ func (a *agent) Response(v interface{}) error {
 	}
 
 	if env.debug {
-		logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid(), mid, v))
+		switch d := v.(type) {
+		case []byte:
+			logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%dbytes", a.session.Uid(), mid, len(d)))
+		default:
+			logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid(), mid, v))
+		}
 	}
 
 	a.chSend <- pendingMessage{typ: message.Response, mid: mid, payload: v}
