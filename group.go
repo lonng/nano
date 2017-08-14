@@ -40,7 +40,7 @@ type SessionFilter func(*session.Session) bool
 // Group represents a session group which used to manage a number of
 // sessions, data send to the group will send to all session in it.
 type Group struct {
-	sync.RWMutex
+	mu       sync.RWMutex
 	status   int32                      // channel current status
 	name     string                     // channel name
 	sessions map[int64]*session.Session // session id map to session instance
@@ -57,8 +57,8 @@ func NewGroup(n string) *Group {
 
 // Member returns specified UID's session
 func (c *Group) Member(uid int64) (*session.Session, error) {
-	c.RLock()
-	defer c.RUnlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	for _, s := range c.sessions {
 		if s.Uid() == uid {
@@ -71,8 +71,8 @@ func (c *Group) Member(uid int64) (*session.Session, error) {
 
 // Members returns all member's UID in current group
 func (c *Group) Members() []int64 {
-	c.RLock()
-	defer c.RUnlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	members := []int64{}
 	for _, s := range c.sessions {
@@ -97,8 +97,8 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 		logger.Println(fmt.Sprintf("Type=Multicast Route=%s, Data=%+v", route, v))
 	}
 
-	c.RLock()
-	defer c.RUnlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	for _, s := range c.sessions {
 		if !filter(s) {
@@ -127,8 +127,8 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 		logger.Println(fmt.Sprintf("Type=Broadcast Route=%s, Data=%+v", route, v))
 	}
 
-	c.RLock()
-	defer c.RUnlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	for _, s := range c.sessions {
 		if err = s.Push(route, data); err != nil {
@@ -155,8 +155,8 @@ func (c *Group) Add(session *session.Session) error {
 		logger.Println(fmt.Sprintf("Add session to group %s, Uid=%d", c.name, session.Uid()))
 	}
 
-	c.Lock()
-	defer c.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	id := session.ID()
 	_, ok := c.sessions[session.ID()]
@@ -178,8 +178,8 @@ func (c *Group) Leave(s *session.Session) error {
 		logger.Println(fmt.Sprintf("Remove session from group %s, Uid=%d", c.name, s.Uid()))
 	}
 
-	c.Lock()
-	defer c.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	delete(c.sessions, s.ID())
 	return nil
@@ -191,8 +191,8 @@ func (c *Group) LeaveAll() error {
 		return ErrClosedGroup
 	}
 
-	c.Lock()
-	defer c.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	c.sessions = make(map[int64]*session.Session)
 	return nil
@@ -200,8 +200,8 @@ func (c *Group) LeaveAll() error {
 
 // Count get current member amount in the group
 func (c *Group) Count() int {
-	c.RLock()
-	defer c.RUnlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	return len(c.sessions)
 }
