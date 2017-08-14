@@ -46,8 +46,8 @@ func Register(c component.Component) {
 	comps = append(comps, c)
 }
 
-// Set heartbeat time internal
-func SetHeartbeatInternal(d time.Duration) {
+// Set heartbeat time interval
+func SetHeartbeatInterval(d time.Duration) {
 	env.heartbeat = d
 }
 
