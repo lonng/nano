@@ -46,13 +46,13 @@ var (
 // Session instance related to the client will be passed to Handler method as the first
 // parameter.
 type Session struct {
-	sync.RWMutex                    // protect data
-	id       int64                  // session global unique id
-	uid      int64                  // binding user id
-	LastRID  uint                   // last request id
-	lastTime int64                  // last heartbeat time
-	entity   NetworkEntity          // low-level network entity
-	data     map[string]interface{} // session data store
+	sync.RWMutex                        // protect data
+	id           int64                  // session global unique id
+	uid          int64                  // binding user id
+	LastRID      uint                   // last request id
+	lastTime     int64                  // last heartbeat time
+	entity       NetworkEntity          // low-level network entity
+	data         map[string]interface{} // session data store
 }
 
 // New returns a new session instance
@@ -103,7 +103,7 @@ func (s *Session) Close() {
 }
 
 // RemoteAddr returns the remote network address.
-func (s *Session) RemoteAddr()net.Addr {
+func (s *Session) RemoteAddr() net.Addr {
 	return s.entity.RemoteAddr()
 }
 
