@@ -9,6 +9,7 @@ import (
 	"github.com/lonnng/nano/component"
 	"github.com/lonnng/nano/serialize/json"
 	"github.com/lonnng/nano/session"
+	"time"
 )
 
 type (
@@ -17,6 +18,7 @@ type (
 	Room struct {
 		component.Base
 		group *nano.Group
+		timer *nano.Timer
 	}
 
 	// UserMessage represents a message that user sent
@@ -53,6 +55,9 @@ func NewRoom() *Room {
 func (r *Room) AfterInit() {
 	nano.OnSessionClosed(func(s *session.Session) {
 		r.group.Leave(s)
+	})
+	r.timer = nano.NewTimer(time.Minute, func() {
+		println("UserCount: Time=>", time.Now().String(), "Count=>", r.group.Count())
 	})
 }
 

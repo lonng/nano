@@ -88,9 +88,6 @@ func newHandlerService() *handlerService {
 		chCloseSession: make(chan *session.Session, packetBacklog),
 	}
 
-	// startup logic dispatcher
-	go h.dispatch()
-
 	return h
 }
 
@@ -130,6 +127,7 @@ func (h *handlerService) dispatch() {
 	defer func() {
 		close(h.chLocalProcess)
 		close(h.chCloseSession)
+		globalTicker.Stop()
 	}()
 
 	// handle packet that sent to chLocalProcess
@@ -140,6 +138,15 @@ func (h *handlerService) dispatch() {
 
 		case s := <-h.chCloseSession: // session closed callback
 			onSessionClosed(s)
+
+		case <-globalTicker.C: // execute cron task
+			cron()
+
+		case t := <-timerManager.chCreatedTimer: // new timers
+			timerManager.timers[t.id] = t
+
+		case id := <-timerManager.chClosingTimer: // closing timers
+			delete(timerManager.timers, id)
 
 		case <-env.die: // application quit signal
 			return

@@ -29,10 +29,18 @@ import (
 	"syscall"
 
 	"github.com/gorilla/websocket"
+	"time"
 )
 
 func listen(addr string, isWs bool) {
 	startupComponents()
+
+	// create global ticker instance, timer precision could be customized
+	// by SetTimerPrecision
+	globalTicker = time.NewTicker(timerPrecision)
+
+	// startup logic dispatcher
+	go handler.dispatch()
 
 	go func() {
 		if isWs {
