@@ -8,11 +8,13 @@ import (
 )
 
 const (
-	timerBacklog = 512
-	loopForever  = -1
+	loopForever = -1
 )
 
 var (
+	// default timer backlog
+	timerBacklog = 128
+
 	// timerManager manager for all timers
 	timerManager = &struct {
 		incrementId    int64            // auto increment id
@@ -81,16 +83,20 @@ func pjob(id int64, fn TimerFunc) {
 func cron() {
 	now := time.Now().UnixNano()
 	for id, t := range timerManager.timers {
+		// prevent chClosingTimer exceed
+		if t.counter == 0 && len(timerManager.chClosingTimer) < timerBacklog {
+			t.Stop()
+			continue
+		}
+
+		// execute job
 		if t.createAt+t.elapse <= now {
 			pjob(id, t.fn)
 			t.elapse += int64(t.interval)
 
-			// check timer counter
+			// update timer counter
 			if t.counter != loopForever && t.counter > 0 {
 				t.counter--
-				if t.counter == 0 {
-					t.Stop()
-				}
 			}
 		}
 	}
@@ -134,10 +140,21 @@ func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 }
 
 // SetTimerPrecision set the ticker precision, and time precision can not less
-// than a Millisecond, and can not change after application running.
+// than a Millisecond, and can not change after application running. The default
+// precision is time.Second
 func SetTimerPrecision(precision time.Duration) {
 	if precision < time.Millisecond {
 		panic("time precision can not less than a Millisecond")
 	}
 	timerPrecision = precision
+}
+
+// SetTimerBacklog set the timer created/closing channel backlog, A small backlog
+// may cause the logic to be blocked when call NewTimer/NewCountTimer/timer.Stop
+// in main logic gorontine.
+func SetTimerBacklog(c int) {
+	if c < 16 {
+		c = 16
+	}
+	timerBacklog = c
 }
