@@ -78,7 +78,8 @@ func (t *Timer) Stop() {
 func pexec(id int64, fn TimerFunc) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(fmt.Sprintf("Call timer function error, TimerID=%d, Error=%v\n%s", id, err, stack()))
+			log.Println(fmt.Sprintf("Call timer function error, TimerID=%d, Error=%v", id, err))
+			println(stack())
 		}
 	}()
 

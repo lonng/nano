@@ -35,11 +35,7 @@ import (
 )
 
 const (
-	agentWriteBacklog   = 16
-	handlerArgsCount    = 3 // number of handler cacheArgs, include receiver
-	handlerReceiverSlot = 0 // receiver location
-	handlerSessionSlot  = 1 // session location(index)
-	handlerPayloadSlot  = 2 // payload location
+	agentWriteBacklog = 16
 )
 
 var (
@@ -62,8 +58,7 @@ type (
 		lastAt  int64               // last heartbeat unix time stamp
 		decoder *codec.Decoder      // binary decoder
 
-		// performance promotion member
-		cacheArgs []reflect.Value // cache handler arguments slice, decrease memory allocation
+		srv reflect.Value // cached session reflect.Value
 	}
 
 	pendingMessage struct {
@@ -83,14 +78,12 @@ func newAgent(conn net.Conn) *agent {
 		lastAt:  time.Now().Unix(),
 		chSend:  make(chan pendingMessage, agentWriteBacklog),
 		decoder: codec.NewDecoder(),
-
-		cacheArgs: make([]reflect.Value, handlerArgsCount),
 	}
 
 	// binding session
 	s := session.New(a)
 	a.session = s
-	a.cacheArgs[handlerSessionSlot] = reflect.ValueOf(s)
+	a.srv = reflect.ValueOf(s)
 
 	return a
 }

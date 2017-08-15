@@ -95,7 +95,8 @@ func newHandlerService() *handlerService {
 func pcall(method reflect.Method, args []reflect.Value) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Println(fmt.Sprintf("nano/dispatch: %+v\n%s", err, stack()))
+			logger.Println(fmt.Sprintf("nano/dispatch: %v", err))
+			println(stack())
 		}
 	}()
 
@@ -109,7 +110,8 @@ func pcall(method reflect.Method, args []reflect.Value) {
 func onSessionClosed(s *session.Session) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.Println(fmt.Sprintf("nano/onSessionClosed: %+v\n%s", err, stack()))
+			logger.Println(fmt.Sprintf("nano/onSessionClosed: %v", err))
+			println(stack())
 		}
 	}()
 
@@ -298,9 +300,7 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 		logger.Println(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", agent.session.Uid(), msg.String(), data))
 	}
 
-	args := agent.cacheArgs
-	args[handlerReceiverSlot] = handler.Receiver
-	args[handlerPayloadSlot] = reflect.ValueOf(data)
+	args := []reflect.Value{handler.Receiver, agent.srv, reflect.ValueOf(data)}
 	h.chLocalProcess <- unhandledMessage{handler.Method, args}
 }
 
