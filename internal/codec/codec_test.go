@@ -27,7 +27,7 @@ func TestPack(t *testing.T) {
 		t.Fatalf("expect: %v, got: %v", p1, packets[0])
 	}
 
-	p2 := &Packet{Type: PacketType(5), Data: data, Length: len(data)}
+	p2 := &Packet{Type: Type(5), Data: data, Length: len(data)}
 	pp2, err := Encode(Kick, data)
 	if err != nil {
 		t.Error(err.Error())
@@ -45,17 +45,17 @@ func TestPack(t *testing.T) {
 		t.Fatalf("expect: %v, got: %v", p2, upp2[0])
 	}
 
-	_ = &Packet{Type: PacketType(0), Data: data, Length: len(data)}
-	if _, err := Encode(PacketType(0), data); err == nil {
+	_ = &Packet{Type: Type(0), Data: data, Length: len(data)}
+	if _, err := Encode(Type(0), data); err == nil {
 		t.Error("should err")
 	}
 
-	_ = &Packet{Type: PacketType(6), Data: data, Length: len(data)}
-	if _, err = Encode(PacketType(6), data); err == nil {
+	_ = &Packet{Type: Type(6), Data: data, Length: len(data)}
+	if _, err = Encode(Type(6), data); err == nil {
 		t.Error("should err")
 	}
 
-	p5 := &Packet{Type: PacketType(5), Data: data, Length: len(data)}
+	p5 := &Packet{Type: Type(5), Data: data, Length: len(data)}
 	pp5, err := Encode(Kick, data)
 	if err != nil {
 		t.Fatal(err.Error())

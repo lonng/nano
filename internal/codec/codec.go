@@ -67,7 +67,7 @@ func (c *Decoder) Decode(data []byte) (packets []*packet.Packet, err error) {
 	}
 
 	for c.size <= c.Len() {
-		p := &packet.Packet{Type: packet.PacketType(c.typ), Length: c.size, Data: c.Next(c.size)}
+		p := &packet.Packet{Type: packet.Type(c.typ), Length: c.size, Data: c.Next(c.size)}
 		packets = append(packets, p)
 
 		// more packet
@@ -97,7 +97,7 @@ func (c *Decoder) Decode(data []byte) (packets []*packet.Packet, err error) {
 // -<type>-|--------<length>--------|-<data>-
 // --------|------------------------|--------
 // 1 byte packet type, 3 bytes packet data length(big end), and data segment
-func Encode(typ packet.PacketType, data []byte) ([]byte, error) {
+func Encode(typ packet.Type, data []byte) ([]byte, error) {
 	if typ < packet.Handshake || typ > packet.Kick {
 		return nil, packet.ErrWrongPacketType
 	}
