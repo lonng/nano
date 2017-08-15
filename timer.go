@@ -61,16 +61,17 @@ func (t *Timer) ID() int64 {
 
 // Stop turns off a timer. After Stop, fn will not be called forever
 func (t *Timer) Stop() {
-	// guarantee that logic is not blocked
-	if len(timerManager.chClosingTimer) < timerBacklog {
-		t.counter = 0 // automatically closed in next cron
-		return
-	}
 	if atomic.LoadInt32(&t.closed) > 0 {
 		return
 	}
-	atomic.StoreInt32(&t.closed, 1)
-	timerManager.chClosingTimer <- t.id
+
+	// guarantee that logic is not blocked
+	if len(timerManager.chClosingTimer) < timerBacklog {
+		timerManager.chClosingTimer <- t.id
+		atomic.StoreInt32(&t.closed, 1)
+	} else {
+		t.counter = 0 // automatically closed in next Cron
+	}
 }
 
 // execute job function with protection
