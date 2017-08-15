@@ -30,6 +30,7 @@ import (
 	"github.com/lonnng/nano/service"
 )
 
+//  NetworkEntity represent low-level network instance
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
 	Response(v interface{}) error
@@ -38,6 +39,7 @@ type NetworkEntity interface {
 }
 
 var (
+	//ErrIllegalUID represents a invalid uid
 	ErrIllegalUID = errors.New("illegal uid")
 )
 
@@ -56,7 +58,7 @@ type Session struct {
 }
 
 // New returns a new session instance
-// a NetworkEntity represent low-level network instace
+// a NetworkEntity represent low-level network instance
 func New(entity NetworkEntity) *Session {
 	return &Session{
 		id:       service.Connections.SessionID(),

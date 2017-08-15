@@ -139,8 +139,8 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 	return err
 }
 
-// IsContain decide whether a UID is contained in current group
-func (c *Group) IsContain(uid int64) bool {
+// Contains check whether a UID is contained in current group or not
+func (c *Group) Contains(uid int64) bool {
 	_, err := c.Member(uid)
 	return err == nil
 }
