@@ -29,6 +29,7 @@ go get -u github.com/gorilla/websocket
 
 ## Community
 - QQGroup: [289680347](https://jq.qq.com/?_wv=1027&k=4EMMaha)
+- Reddit: [nanolabs](https://www.reddit.com/r/nanolabs/)
 
 ## Demo
 
