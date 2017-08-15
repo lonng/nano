@@ -28,7 +28,7 @@ go get -u github.com/gorilla/websocket
 - [How to integrate Lua into Nano component(incomplete)](.)
 
 ## Community
-- QQGroup: 289680347
+- QQGroup: [289680347](https://jq.qq.com/?_wv=1027&k=4EMMaha)
 
 ## Demo
 
