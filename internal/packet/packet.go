@@ -25,6 +25,7 @@ import (
 	"fmt"
 )
 
+// PacketType represents the network packet's type such as: handshake and so on.
 type PacketType byte
 
 const (
@@ -36,18 +37,22 @@ const (
 	Kick                    = 0x05 // disconnect message from server
 )
 
+// ErrWrongPacketType represents a wrong packet type.
 var ErrWrongPacketType = errors.New("wrong packet type")
 
+// Packet represents a network packet.
 type Packet struct {
 	Type   PacketType
 	Length int
 	Data   []byte
 }
 
+//New create a Packet instance.
 func New() *Packet {
 	return &Packet{}
 }
 
+//String represents the Packet's in text mode.
 func (p *Packet) String() string {
 	return fmt.Sprintf("Type: %d, Length: %d, Data: %s", p.Type, p.Length, string(p.Data))
 }
