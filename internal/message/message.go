@@ -158,7 +158,7 @@ func Encode(m *Message) ([]byte, error) {
 	return buf, nil
 }
 
-// Decode unmarshals bytes slice to a message
+// Decode unmarshal the bytes slice to a message
 // See ref: https://github.com/lonnng/nano/blob/master/docs/communication_protocol.md
 func Decode(data []byte) (*Message, error) {
 	if len(data) < msgHeadLength {
