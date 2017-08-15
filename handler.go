@@ -116,6 +116,10 @@ func onSessionClosed(s *session.Session) {
 	env.muCallbacks.RLock()
 	defer env.muCallbacks.RUnlock()
 
+	if len(env.callbacks) < 1 {
+		return
+	}
+
 	for _, fn := range env.callbacks {
 		fn(s)
 	}
@@ -210,6 +214,10 @@ func (h *handlerService) handle(conn net.Conn) {
 		if err != nil {
 			logger.Println(err.Error())
 			return
+		}
+
+		if len(packets) < 1 {
+			continue
 		}
 
 		// process all packet

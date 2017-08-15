@@ -87,6 +87,10 @@ func pexec(id int64, fn TimerFunc) {
 
 // TODO: if closing timers'count in single cron call more than timerBacklog will case problem.
 func cron() {
+	if len(timerManager.timers) < 1 {
+		return
+	}
+
 	now := time.Now().UnixNano()
 	for id, t := range timerManager.timers {
 		// prevent chClosingTimer exceed
