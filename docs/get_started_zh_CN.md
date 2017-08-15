@@ -13,11 +13,9 @@
 - 本教程适用于对`nano`零基础的用户，如果你已经有过一定的`nano`开发基础，请跳过这个教程，你可以阅读
 开发指南，那里会对一些话题作较为详细的探讨。
 
-- Since nano is based on Go, so we hope you have some familiarity with Go before reading this
-tutorial.
 - 由于`nano`是基于Go开发的，因此希望你在阅读本教程前对Go语言有一些了解。
 
-- 本教程的示例源码放在github上[complete code](https://github.com/lonnng/nano/tree/master/examples/demo/chat)
+- 本教程的示例源码放在github上[完整代码](https://github.com/lonnng/nano/tree/master/examples/demo/chat)
 
 - 本教程将以一个实时聊天应用为例子，通过对这个应用进行不同的修改来展示`nano`框架的一些功能特性，让用
 户能大致了解`nano`，熟悉并能够使用`nano`进行应用程序的开发。
