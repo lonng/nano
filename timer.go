@@ -17,7 +17,7 @@ var (
 
 	// timerManager manager for all timers
 	timerManager = &struct {
-		incrementId    int64            // auto increment id
+		incrementID    int64            // auto increment id
 		timers         map[int64]*Timer // all timers
 		chClosingTimer chan int64       // timer for closing
 		chCreatedTimer chan *Timer
@@ -134,7 +134,7 @@ func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 		panic("non-positive interval for NewTimer")
 	}
 
-	id := atomic.AddInt64(&timerManager.incrementId, 1)
+	id := atomic.AddInt64(&timerManager.incrementID, 1)
 	t := &Timer{
 		id:       id,
 		fn:       fn,
