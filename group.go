@@ -82,7 +82,7 @@ func (c *Group) Members() []int64 {
 	return members
 }
 
-// Push message to partial client, which filter return true
+// Multicast  push  the message to the filtered clients
 func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) error {
 	if c.isClosed() {
 		return ErrClosedGroup
@@ -112,7 +112,7 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 	return nil
 }
 
-// Push message to all client
+// Broadcast push  the message(s) to  all members
 func (c *Group) Broadcast(route string, v interface{}) error {
 	if c.isClosed() {
 		return ErrClosedGroup

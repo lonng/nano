@@ -5,6 +5,7 @@ import (
 	"os"
 )
 
+//Logger represents  the log interface
 type Logger interface {
 	Println(v ...interface{})
 	Fatal(v ...interface{})

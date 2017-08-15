@@ -81,7 +81,7 @@ type (
 		component.Base
 	}
 
-	JsonMessage struct {
+	JSONMessage struct {
 		Code int    `json:"code"`
 		Data string `json:"data"`
 	}
@@ -95,7 +95,7 @@ func (m *ProtoMessage) Reset()         { *m = ProtoMessage{} }
 func (m *ProtoMessage) String() string { return proto.CompactTextString(m) }
 func (*ProtoMessage) ProtoMessage()    {}
 
-func (t *TestComp) HandleJson(s *session.Session, m *JsonMessage) error {
+func (t *TestComp) HandleJSON(s *session.Session, m *JSONMessage) error {
 	return nil
 }
 
@@ -111,14 +111,14 @@ func TestHandlerCallJSON(t *testing.T) {
 	SetSerializer(json.NewSerializer())
 	handler.register(&TestComp{})
 
-	m := JsonMessage{Code: 1, Data: "hello world"}
+	m := JSONMessage{Code: 1, Data: "hello world"}
 	data, err := serializeOrRaw(m)
 	if err != nil {
 		t.Fail()
 	}
 
 	msg := message.New()
-	msg.Route = "TestComp.HandleJson"
+	msg.Route = "TestComp.HandleJSON"
 	msg.Type = message.Request
 	msg.Data = data
 
@@ -149,14 +149,14 @@ func BenchmarkHandlerCallJSON(b *testing.B) {
 	SetSerializer(json.NewSerializer())
 	handler.register(&TestComp{})
 
-	m := JsonMessage{Code: 1, Data: "hello world"}
+	m := JSONMessage{Code: 1, Data: "hello world"}
 	data, err := serializeOrRaw(m)
 	if err != nil {
 		b.Fail()
 	}
 
 	msg := message.New()
-	msg.Route = "TestComp.HandleJson"
+	msg.Route = "TestComp.HandleJSON"
 	msg.Type = message.Request
 	msg.Data = data
 

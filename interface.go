@@ -67,7 +67,7 @@ func EnableDebug() {
 	env.debug = true
 }
 
-// Callback when session closed
+// OnSessionClosed set the Callback which will be called when session is closed
 // Waring: session has closed,
 func OnSessionClosed(cb SessionClosedHandler) {
 	env.muCallbacks.Lock()
