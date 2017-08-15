@@ -42,11 +42,12 @@ func ListenWS(addr string) {
 	listen(addr, true)
 }
 
+// Register register a component
 func Register(c component.Component) {
 	comps = append(comps, c)
 }
 
-// Set heartbeat time interval
+// SetHeartbeatInterval set heartbeat time interval
 func SetHeartbeatInterval(d time.Duration) {
 	env.heartbeat = d
 }
@@ -56,10 +57,12 @@ func SetCheckOriginFunc(fn func(*http.Request) bool) {
 	env.checkOrigin = fn
 }
 
+// Shutdown send a signal to let 'nano' shutdown itself.
 func Shutdown() {
 	close(env.die)
 }
 
+// EnableDebug let 'nano' to run under debug mode.
 func EnableDebug() {
 	env.debug = true
 }

@@ -30,7 +30,7 @@ func TestChannel_Add(t *testing.T) {
 	}
 
 	n := rand.Int63n(int64(paraCount) + 1)
-	if !c.IsContain(n) {
+	if !c.Contains(n) {
 		t.Fail()
 	}
 
