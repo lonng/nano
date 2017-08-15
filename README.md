@@ -21,11 +21,15 @@ go get -u github.com/gorilla/websocket
 
 ## Documents
 
-- [How to build your first nano application](./docs/get_started.md)
-- [Route compression](./docs/route_compression.md)
-- [Communication protocol](./docs/communication_protocol.md)
-- [Design patterns](./docs/design_patterns.md)
-- [How to integrate Lua into Nano component(incomplete)](.)
+- English
+    + [How to build your first nano application](./docs/get_started.md)
+    + [Route compression](./docs/route_compression.md)
+    + [Communication protocol](./docs/communication_protocol.md)
+    + [Design patterns](./docs/design_patterns.md)
+    + [How to integrate `Lua` into `Nano` component(incomplete)](.)
+    
+- 简体中文
+    + [如何构建你的第一个nano应用](./docs/get_started_zh_CN.md)
 
 ## Community
 - QQGroup: [289680347](https://jq.qq.com/?_wv=1027&k=4EMMaha)
