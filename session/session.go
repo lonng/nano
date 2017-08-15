@@ -51,7 +51,7 @@ type Session struct {
 	uid          int64                  // binding user id
 	LastRID      uint                   // last request id
 	lastTime     int64                  // last heartbeat time
-	Entity       NetworkEntity          // low-level network entity
+	entity       NetworkEntity          // low-level network entity
 	data         map[string]interface{} // session data store
 }
 
@@ -60,7 +60,7 @@ type Session struct {
 func New(entity NetworkEntity) *Session {
 	return &Session{
 		id:       service.Connections.SessionID(),
-		Entity:   entity,
+		entity:   entity,
 		data:     make(map[string]interface{}),
 		lastTime: time.Now().Unix(),
 	}
@@ -68,12 +68,12 @@ func New(entity NetworkEntity) *Session {
 
 // Push message to client
 func (s *Session) Push(route string, v interface{}) error {
-	return s.Entity.Push(route, v)
+	return s.entity.Push(route, v)
 }
 
 // Response message to client
 func (s *Session) Response(v interface{}) error {
-	return s.Entity.Response(v)
+	return s.entity.Response(v)
 }
 
 // ID returns the session id
@@ -99,7 +99,12 @@ func (s *Session) Bind(uid int64) error {
 // Close terminate current session, session related data will not be released,
 // all related data should be Clear explicitly in Session closed callback
 func (s *Session) Close() {
-	s.Entity.Close()
+	s.entity.Close()
+}
+
+// RemoteAddr returns the remote network address.
+func (s *Session) RemoteAddr() net.Addr {
+	return s.entity.RemoteAddr()
 }
 
 // Remove delete data associated with the key from session storage
@@ -374,5 +379,6 @@ func (s *Session) Clear() {
 	s.Lock()
 	defer s.Unlock()
 
+	s.uid = 0
 	s.data = map[string]interface{}{}
 }

@@ -22,7 +22,6 @@ package nano
 
 import (
 	"io"
-	"log"
 	"net"
 	"time"
 
@@ -140,7 +139,7 @@ func (c *wsConn) SetWriteDeadline(t time.Time) error {
 func (h *handlerService) handleWS(conn *websocket.Conn) {
 	c, err := newWSConn(conn)
 	if err != nil {
-		log.Println(err)
+		logger.Println(err)
 		return
 	}
 	h.handle(c)

@@ -27,6 +27,10 @@ go get -u github.com/gorilla/websocket
 - [Design patterns](./docs/design_patterns.md)
 - [How to integrate Lua into Nano component(incomplete)](.)
 
+## Community
+- QQGroup: [289680347](https://jq.qq.com/?_wv=1027&k=4EMMaha)
+- Reddit: [nanolabs](https://www.reddit.com/r/nanolabs/)
+
 ## Demo
 
 - [Implement a chat room in 100 lines with nano and WebSocket](./examples/demo/chat)

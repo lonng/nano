@@ -22,7 +22,6 @@ package nano
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -43,19 +42,19 @@ func listen(addr string, isWs bool) {
 		}
 	}()
 
-	log.Println(fmt.Sprintf("starting application %s, listen at %s", app.name, addr))
+	logger.Println(fmt.Sprintf("starting application %s, listen at %s", app.name, addr))
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
 
 	// stop server
 	select {
 	case <-env.die:
-		log.Println("The app will shutdown in a few seconds")
+		logger.Println("The app will shutdown in a few seconds")
 	case s := <-sg:
-		log.Println("got signal", s)
+		logger.Println("got signal", s)
 	}
 
-	log.Println("server is stopping...")
+	logger.Println("server is stopping...")
 
 	// shutdown all components registered by application, that
 	// call by reverse order against register
@@ -66,14 +65,14 @@ func listen(addr string, isWs bool) {
 func listenAndServe(addr string) {
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal(err.Error())
 	}
 
 	defer listener.Close()
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println(err.Error())
+			logger.Println(err.Error())
 			continue
 		}
 
@@ -91,7 +90,7 @@ func listenAndServeWS(addr string) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			log.Println(err.Error())
+			logger.Println(err.Error())
 			return
 		}
 
@@ -99,6 +98,6 @@ func listenAndServeWS(addr string) {
 	})
 
 	if err := http.ListenAndServe(addr, nil); err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal(err.Error())
 	}
 }

@@ -12,7 +12,7 @@ func TestEncode(t *testing.T) {
 		"test.test.test2": 102,
 		"test.test.test3": 103,
 	}
-	SetDict(dict)
+	SetDictionary(dict)
 	m1 := &Message{
 		Type:       Request,
 		ID:         100,

@@ -25,12 +25,19 @@ import (
 	"time"
 
 	"github.com/lonnng/nano/component"
+	"github.com/lonnng/nano/internal/message"
 )
 
+// Listen listens on the TCP network address addr
+// and then calls Serve with handler to handle requests
+// on incoming connections.
 func Listen(addr string) {
 	listen(addr, false)
 }
 
+// ListenWS listens on the TCP network address addr
+// and then upgrades the HTTP server connection to the WebSocket protocol
+// to handle requests on incoming connections.
 func ListenWS(addr string) {
 	listen(addr, true)
 }
@@ -39,8 +46,8 @@ func Register(c component.Component) {
 	comps = append(comps, c)
 }
 
-// Set heartbeat time internal
-func SetHeartbeatInternal(d time.Duration) {
+// Set heartbeat time interval
+func SetHeartbeatInterval(d time.Duration) {
 	env.heartbeat = d
 }
 
@@ -64,4 +71,9 @@ func OnSessionClosed(cb SessionClosedHandler) {
 	defer env.muCallbacks.Unlock()
 
 	env.callbacks = append(env.callbacks, cb)
+}
+
+// SetDictionary set routes map, TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!
+func SetDictionary(dict map[string]uint16) {
+	message.SetDictionary(dict)
 }

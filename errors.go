@@ -22,6 +22,7 @@ package nano
 
 import "errors"
 
+// Errors that could be occurred during message handling.
 var (
 	ErrSessionOnNotify    = errors.New("current session working on notify mode")
 	ErrCloseClosedGroup   = errors.New("close closed group")
