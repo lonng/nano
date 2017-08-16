@@ -26,7 +26,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-// ErrWrongValueType  is the error used for marshal the value with protobuf encoding.
+// ErrWrongValueType is the error used for marshal the value with protobuf encoding.
 var ErrWrongValueType = errors.New("protobuf: convert on wrong type value")
 
 // Serializer implements the serialize.Serializer interface
