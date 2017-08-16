@@ -79,8 +79,7 @@ func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
 
 	// first time
 	if c.size < 0 {
-		err = f()
-		if err != nil {
+		if err = f(); err != nil {
 			return nil, err
 		}
 	}
@@ -100,8 +99,7 @@ func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
 			break
 		}
 
-		err = f()
-		if err != nil {
+		if err = f(); err != nil {
 			return nil, err
 		}
 
