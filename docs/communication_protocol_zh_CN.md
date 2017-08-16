@@ -36,7 +36,7 @@ package分为header和body两部分。header描述package包的类型和包的�
 #### 握手(Handshake Package)
 
 握手流程主要提供一个机会，让客户端和服务器在连接建立后，进行一些初始化的数据交换。交换的数据分为系统和用
-户两部分。系统部分为pomelo框架所需信息，用户部分则是用户可以在具体应用中自定义的内容。
+户两部分。系统部分为Nano框架所需信息，用户部分则是用户可以在具体应用中自定义的内容。
 
 握手的内容为utf-8编码的json字符串（不压缩），通过body字段传输。
 
@@ -122,7 +122,7 @@ message id为空，对于客户端请求的响应，route为空，因此message�
 
 ![Message Head](images/message-header.png)
 
-从上图可以看出，pomelo消息头是可变的，会根据具体的消息类型和内容而改变。其中：
+从上图可以看出，Nano消息头是可变的，会根据具体的消息类型和内容而改变。其中：
 * flag位是必须的，占用一个byte，它决定了后面的消息类型和内容的格式; 
 * message id和route则是可选的。其中message id采用[varints 128变长编码](https://developers.google.com/protocol-buffers/docs/encoding#varints)方式，根据值的大小，长度在0～5byte之间。route则根据消息类型以及内容的大小，长度在0～255byte之间。
 
@@ -161,7 +161,7 @@ route字段的编码会依赖flag的这一位，其格式如下图:
 符串，其长度就是前面一位byte的uInt8的值，因此route的长度最大支持256B。
 ## Summary
 
-在本部分，介绍了pomelo提供的hybridconnector的线上协议，包括package层和message层。当用户使用nano作为网络层库
+在本部分，介绍了Nano提供的hybridconnector的线上协议，包括package层和message层。当用户使用nano作为网络层库
 的时候，可以根据这里提供的协议信息，在客户端可以依据此协议完成与服务端的通信。
 
-***Copyright***:Parts of above content and figures come from [Pomelo Protocol](https://github.com/NetEase/pomelo/wiki/Communication-Protocol)
+***Copyright***:以上的部分内容与图表来自于[Pomelo Protocol](https://github.com/NetEase/pomelo/wiki/Communication-Protocol)

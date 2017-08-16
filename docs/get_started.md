@@ -98,7 +98,7 @@ broadcasting message. A player can be contained by multiple group.
 
 ### Request, Response, Notify, Push
 
-There are four types of messages in pomelo: request, response, notify and push. Client initiates
+There are four types of messages in Nano: request, response, notify and push. Client initiates
 request to server, and then server returns a response after handling the request. Notify message
 is also sent to server by client, but it does not need a response. Pushing message is sent by
 server to client actively.
