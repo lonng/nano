@@ -13,7 +13,7 @@ is required, as shown below:
 
 ```javascript
 
-pomelo.request('Room.Join',
+nano.request('Room.Join',
   //...
 );
 

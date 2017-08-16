@@ -30,6 +30,7 @@ go get -u github.com/gorilla/websocket
     
 - 简体中文
     + [如何构建你的第一个nano应用](./docs/get_started_zh_CN.md)
+    + [路由压缩](./docs/route_compression_zh_CN.md)
     + [通信协议](./docs/communication_protocol_zh_CN.md)
     + [如何将`lua`脚本集成到`nano`组件中(未完成)](.)
 
