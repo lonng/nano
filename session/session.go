@@ -30,7 +30,7 @@ import (
 	"github.com/lonnng/nano/service"
 )
 
-//  NetworkEntity represent low-level network instance
+// NetworkEntity represent low-level network instance
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
 	Response(v interface{}) error
@@ -355,7 +355,7 @@ func (s *Session) String(key string) string {
 	return value
 }
 
-// String returns the value associated with the key as a interface{}.
+// Value returns the value associated with the key as a interface{}.
 func (s *Session) Value(key string) interface{} {
 	s.RLock()
 	defer s.RUnlock()
