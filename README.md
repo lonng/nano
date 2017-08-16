@@ -1,4 +1,13 @@
-# Nano [![Build Status](https://travis-ci.org/lonnng/nano.svg?branch=master)](https://travis-ci.org/lonnng/nano) [![GoDoc](https://godoc.org/github.com/lonnng/nano?status.svg)](https://godoc.org/github.com/lonnng/nano) [![Go Report Card](https://goreportcard.com/badge/github.com/lonnng/nano)](https://goreportcard.com/report/github.com/lonnng/nano)
+# Nano [![Build Status][1]][2] [![GoDoc][3]][4] [![Go Report Card][5]][6] [![MIT licensed][7]][8] 
+
+[1]: https://travis-ci.org/lonnng/nano.svg?branch=master
+[2]: https://travis-ci.org/lonnng/nano
+[3]: https://godoc.org/github.com/lonnng/nano?status.svg
+[4]: https://godoc.org/github.com/lonnng/nano
+[5]: https://goreportcard.com/badge/github.com/lonnng/nano
+[6]: https://goreportcard.com/report/github.com/lonnng/nano
+[7]: https://img.shields.io/badge/license-MIT-blue.svg
+[8]: LICENSE
 
 Nano is an easy to use, fast, lightweight game server networking library for Go.
 It provides a core network architecture and a series of tools and libraries that
@@ -50,7 +59,7 @@ go get -u github.com/gorilla/websocket
 ```shell
 # Case:   PingPong
 # OS:     Windows 10
-# Device: i5-6500 32.GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
+# Device: i5-6500 3.2GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
 # Other:  ...
 
 cd $GOPATH/src/github.com/lonnng/nano/benchmark/io
