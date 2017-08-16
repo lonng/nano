@@ -51,6 +51,21 @@ func NewDecoder() *Decoder {
 	}
 }
 
+func (c *Decoder) forward() error {
+	header := c.buf.Next(HeadLength)
+	c.typ = header[0]
+	if c.typ < packet.Handshake || c.typ > packet.Kick {
+		return packet.ErrWrongPacketType
+	}
+	c.size = bytesToInt(header[1:])
+
+	// packet length limitation
+	if c.size > MaxPacketSize {
+		return ErrPacketSizeExcced
+	}
+	return nil
+}
+
 // Decode decode the network data slice to packet.Packet(s)
 // TODO(Warning): shared slice
 func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
@@ -65,28 +80,11 @@ func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
 		return nil, err
 	}
 
-	f := func() error {
-		header := c.buf.Next(HeadLength)
-		c.typ = header[0]
-		if c.typ < packet.Handshake || c.typ > packet.Kick {
-			return packet.ErrWrongPacketType
-		}
-		c.size = bytesToInt(header[1:])
-
-		return nil
-
-	}
-
 	// first time
 	if c.size < 0 {
-		if err = f(); err != nil {
+		if err = c.forward(); err != nil {
 			return nil, err
 		}
-	}
-
-	// packet length limitation
-	if c.size > MaxPacketSize {
-		return packets, ErrPacketSizeExcced
 	}
 
 	for c.size <= c.buf.Len() {
@@ -99,14 +97,9 @@ func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
 			break
 		}
 
-		if err = f(); err != nil {
+		if err = c.forward(); err != nil {
 			return nil, err
 		}
-
-		if c.size > MaxPacketSize {
-			return packets, ErrPacketSizeExcced
-		}
-
 	}
 
 	return packets, nil
