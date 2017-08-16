@@ -47,4 +47,4 @@ nano.SetSerializer(protobuf.NewSerializer())
 ```
 让nano选择Protobuf作为二进制协议
 
-***Copyright***:Parts of above content and figures come from [Pomelo Route compression](https://github.com/NetEase/pomelo/wiki/Route-compression)
+***Copyright***:以上的部分内容与图表来自于[Pomelo Route compression](https://github.com/NetEase/pomelo/wiki/Route-compression)
