@@ -50,7 +50,7 @@ go get -u github.com/gorilla/websocket
 ```shell
 # Case:   PingPong
 # OS:     Windows 10
-# Device: i5-6500 32.GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
+# Device: i5-6500 3.2GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
 # Other:  ...
 
 cd $GOPATH/src/github.com/lonnng/nano/benchmark/io
