@@ -73,3 +73,23 @@ func TestPack(t *testing.T) {
 		t.Fatalf("expect: %v, got: %v", p2, upp5[0])
 	}
 }
+
+func BenchmarkDecoder_Decode(b *testing.B) {
+	data := []byte("hello world")
+	pp1, err := Encode(Handshake, data)
+	if err != nil {
+		b.Error(err.Error())
+	}
+
+	b.ReportAllocs()
+	d1 := NewDecoder()
+	for i := 0; i < b.N; i++ {
+		packets, err := d1.Decode(pp1)
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(packets) != 1 {
+			b.Fatal("decode error")
+		}
+	}
+}

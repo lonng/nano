@@ -61,7 +61,7 @@ func (c *Group) Member(uid int64) (*session.Session, error) {
 	defer c.mu.RUnlock()
 
 	for _, s := range c.sessions {
-		if s.Uid() == uid {
+		if s.UID() == uid {
 			return s, nil
 		}
 	}
@@ -76,7 +76,7 @@ func (c *Group) Members() []int64 {
 
 	members := []int64{}
 	for _, s := range c.sessions {
-		members = append(members, s.Uid())
+		members = append(members, s.UID())
 	}
 
 	return members
@@ -132,7 +132,7 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 
 	for _, s := range c.sessions {
 		if err = s.Push(route, data); err != nil {
-			logger.Println(fmt.Sprintf("Session push message error, ID=%d, Uid=%d, Error=%s", s.ID(), s.Uid(), err.Error()))
+			logger.Println(fmt.Sprintf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
 		}
 	}
 
@@ -152,7 +152,7 @@ func (c *Group) Add(session *session.Session) error {
 	}
 
 	if env.debug {
-		logger.Println(fmt.Sprintf("Add session to group %s, Uid=%d", c.name, session.Uid()))
+		logger.Println(fmt.Sprintf("Add session to group %s, UID=%d", c.name, session.UID()))
 	}
 
 	c.mu.Lock()
@@ -175,7 +175,7 @@ func (c *Group) Leave(s *session.Session) error {
 	}
 
 	if env.debug {
-		logger.Println(fmt.Sprintf("Remove session from group %s, Uid=%d", c.name, s.Uid()))
+		logger.Println(fmt.Sprintf("Remove session from group %s, UID=%d", c.name, s.UID()))
 	}
 
 	c.mu.Lock()

@@ -43,7 +43,7 @@ type Decoder struct {
 	typ  byte // last packet type
 }
 
-// NewDecoder returns a new decoder that used for decode network data slice.
+// NewDecoder returns a new decoder that used for decode network bytes slice.
 func NewDecoder() *Decoder {
 	return &Decoder{
 		buf:  bytes.NewBuffer(nil),
@@ -51,7 +51,22 @@ func NewDecoder() *Decoder {
 	}
 }
 
-// Decode decode the network data slice to packet.Packet(s)
+func (c *Decoder) forward() error {
+	header := c.buf.Next(HeadLength)
+	c.typ = header[0]
+	if c.typ < packet.Handshake || c.typ > packet.Kick {
+		return packet.ErrWrongPacketType
+	}
+	c.size = bytesToInt(header[1:])
+
+	// packet length limitation
+	if c.size > MaxPacketSize {
+		return ErrPacketSizeExcced
+	}
+	return nil
+}
+
+// Decode decode the network bytes slice to packet.Packet(s)
 // TODO(Warning): shared slice
 func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
 	c.buf.Write(data)
@@ -65,29 +80,11 @@ func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
 		return nil, err
 	}
 
-	f := func() error {
-		header := c.buf.Next(HeadLength)
-		c.typ = header[0]
-		if c.typ < packet.Handshake || c.typ > packet.Kick {
-			return packet.ErrWrongPacketType
-		}
-		c.size = bytesToInt(header[1:])
-
-		return nil
-
-	}
-
 	// first time
 	if c.size < 0 {
-		err = f()
-		if err != nil {
+		if err = c.forward(); err != nil {
 			return nil, err
 		}
-	}
-
-	// packet length limitation
-	if c.size > MaxPacketSize {
-		return packets, ErrPacketSizeExcced
 	}
 
 	for c.size <= c.buf.Len() {
@@ -100,13 +97,9 @@ func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
 			break
 		}
 
-		err = f()
-		if err != nil {
+		if err = c.forward(); err != nil {
 			return nil, err
-		}
 
-		if c.size > MaxPacketSize {
-			return packets, ErrPacketSizeExcced
 		}
 
 	}
@@ -114,7 +107,7 @@ func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
 	return packets, nil
 }
 
-// Encode create a packet.Packet from  the raw data and then encode to network data slice
+// Encode create a packet.Packet from  the raw bytes slice and then encode to network bytes slice
 // Protocol refs: https://github.com/NetEase/pomelo/wiki/Communication-Protocol
 //
 // -<type>-|--------<length>--------|-<data>-

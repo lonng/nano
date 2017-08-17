@@ -62,10 +62,10 @@ type (
 	}
 
 	pendingMessage struct {
-		typ     message.MessageType // message type
-		route   string              // message route(push)
-		mid     uint                // response message id(response)
-		payload interface{}         // payload
+		typ     message.Type // message type
+		route   string       // message route(push)
+		mid     uint         // response message id(response)
+		payload interface{}  // payload
 	}
 )
 
@@ -101,9 +101,9 @@ func (a *agent) Push(route string, v interface{}) error {
 	if env.debug {
 		switch d := v.(type) {
 		case []byte:
-			logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%dbytes", a.session.Uid(), route, len(d)))
+			logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%dbytes", a.session.UID(), route, len(d)))
 		default:
-			logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.Uid(), route, v))
+			logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.UID(), route, v))
 		}
 	}
 
@@ -130,9 +130,9 @@ func (a *agent) Response(v interface{}) error {
 	if env.debug {
 		switch d := v.(type) {
 		case []byte:
-			logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%dbytes", a.session.Uid(), mid, len(d)))
+			logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%dbytes", a.session.UID(), mid, len(d)))
 		default:
-			logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.Uid(), mid, v))
+			logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.UID(), mid, v))
 		}
 	}
 
@@ -189,7 +189,7 @@ func (a *agent) write() {
 		close(chWrite)
 		a.Close()
 		if env.debug {
-			logger.Println(fmt.Sprintf("Session write goroutine exit, SessionID=%d, UID=%d", a.session.ID(), a.session.Uid()))
+			logger.Println(fmt.Sprintf("Session write goroutine exit, SessionID=%d, UID=%d", a.session.ID(), a.session.UID()))
 		}
 	}()
 

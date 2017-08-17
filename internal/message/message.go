@@ -28,15 +28,15 @@ import (
 	"strings"
 )
 
-// MessageType represents the type of message, which could be Request/Notify/Response/Push
-type MessageType byte
+// Type represents the type of message, which could be Request/Notify/Response/Push
+type Type byte
 
 // Message types
 const (
-	Request  MessageType = 0x00
-	Notify               = 0x01
-	Response             = 0x02
-	Push                 = 0x03
+	Request  Type = 0x00
+	Notify        = 0x01
+	Response      = 0x02
+	Push          = 0x03
 )
 
 const (
@@ -46,7 +46,7 @@ const (
 	msgHeadLength        = 0x02
 )
 
-var types = map[MessageType]string{
+var types = map[Type]string{
 	Request:  "Request",
 	Notify:   "Notify",
 	Response: "Response",
@@ -65,13 +65,13 @@ var (
 	ErrRouteInfoNotFound = errors.New("route info not found in dictionary")
 )
 
-// Message represents a unmarshalled message or a message which to be marshaled
+// Message represents a unmarshaled message or a message which to be marshaled
 type Message struct {
-	Type       MessageType // message type
-	ID         uint        // unique id, zero while notify mode
-	Route      string      // route for locating service
-	Data       []byte      // payload
-	compressed bool        // is message compressed
+	Type       Type   // message type
+	ID         uint   // unique id, zero while notify mode
+	Route      string // route for locating service
+	Data       []byte // payload
+	compressed bool   // is message compressed
 }
 
 // New returns a new message instance
@@ -94,12 +94,13 @@ func (m *Message) Encode() ([]byte, error) {
 	return Encode(m)
 }
 
-func routable(t MessageType) bool {
+func routable(t Type) bool {
 	return t == Request || t == Notify || t == Push
 }
 
-func invalidType(t MessageType) bool {
+func invalidType(t Type) bool {
 	return t < Request || t > Push
+
 }
 
 // Encode marshals message to binary format. Different message types is corresponding to
@@ -167,7 +168,7 @@ func Decode(data []byte) (*Message, error) {
 	m := New()
 	flag := data[0]
 	offset := 1
-	m.Type = MessageType((flag >> 1) & msgTypeMask)
+	m.Type = Type((flag >> 1) & msgTypeMask)
 
 	if invalidType(m.Type) {
 		return nil, ErrWrongMessageType
@@ -202,7 +203,7 @@ func Decode(data []byte) (*Message, error) {
 		} else {
 			m.compressed = false
 			rl := data[offset]
-			offset += 1
+			offset++
 			m.Route = string(data[offset:(offset + int(rl))])
 			offset += int(rl)
 		}

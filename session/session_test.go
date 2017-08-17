@@ -14,7 +14,7 @@ func TestSession_Bind(t *testing.T) {
 	uids := []int64{100, 1000, 10000000}
 	for i, uid := range uids {
 		s.Bind(uid)
-		if s.Uid() != uids[i] {
+		if s.UID() != uids[i] {
 			t.Fail()
 		}
 	}

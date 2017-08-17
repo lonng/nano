@@ -30,7 +30,7 @@ import (
 	"github.com/lonnng/nano/service"
 )
 
-//  NetworkEntity represent low-level network instance
+// NetworkEntity represent low-level network instance
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
 	Response(v interface{}) error
@@ -58,7 +58,7 @@ type Session struct {
 }
 
 // New returns a new session instance
-// a NetworkEntity represent low-level network instance
+// a NetworkEntity is a low-level network instance
 func New(entity NetworkEntity) *Session {
 	return &Session{
 		id:       service.Connections.SessionID(),
@@ -83,8 +83,8 @@ func (s *Session) ID() int64 {
 	return s.id
 }
 
-// Uid returns UID that bind to current session
-func (s *Session) Uid() int64 {
+// UID returns uid that bind to current session
+func (s *Session) UID() int64 {
 	return atomic.LoadInt64(&s.uid)
 }
 
@@ -355,7 +355,7 @@ func (s *Session) String(key string) string {
 	return value
 }
 
-// String returns the value associated with the key as a interface{}.
+// Value returns the value associated with the key as a interface{}.
 func (s *Session) Value(key string) interface{} {
 	s.RLock()
 	defer s.RUnlock()
