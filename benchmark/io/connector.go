@@ -50,8 +50,12 @@ func init() {
 }
 
 type (
+
+	// Callback represents the callback type which will be called
+	// when the correspond events is occurred.
 	Callback func(data interface{})
 
+	// Connector is a tiny Nano client
 	Connector struct {
 		conn   net.Conn       // low-level connection
 		codec  *codec.Decoder // decoder
@@ -71,6 +75,7 @@ type (
 	}
 )
 
+// NewConnector create a new Connector
 func NewConnector() *Connector {
 	return &Connector{
 		die:       make(chan struct{}),
@@ -82,6 +87,7 @@ func NewConnector() *Connector {
 	}
 }
 
+// Start connect to the server and send/recv betwen the c/s
 func (c *Connector) Start(addr string) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
@@ -95,16 +101,18 @@ func (c *Connector) Start(addr string) error {
 	// send handshake packet
 	c.send(hsd)
 
-	// read and process goroutine
+	// read and process network message
 	go c.read()
 
 	return nil
 }
 
+// OnConnected set the callback which will be called when the client connected to the server
 func (c *Connector) OnConnected(callback func()) {
 	c.connectedCallback = callback
 }
 
+// Request send a request to server and register a callbck for the response
 func (c *Connector) Request(route string, v proto.Message, callback Callback) error {
 	data, err := serialize(v)
 	if err != nil {
@@ -127,6 +135,7 @@ func (c *Connector) Request(route string, v proto.Message, callback Callback) er
 	return nil
 }
 
+// Notify send a notification to server
 func (c *Connector) Notify(route string, v proto.Message) error {
 	data, err := serialize(v)
 	if err != nil {
@@ -141,6 +150,7 @@ func (c *Connector) Notify(route string, v proto.Message) error {
 	return c.sendMessage(msg)
 }
 
+// On add the callback for the event
 func (c *Connector) On(event string, callback Callback) {
 	c.muEvents.Lock()
 	defer c.muEvents.Unlock()
@@ -148,6 +158,7 @@ func (c *Connector) On(event string, callback Callback) {
 	c.events[event] = callback
 }
 
+// Close close the connection, and shutdown the benchmark
 func (c *Connector) Close() {
 	c.conn.Close()
 	close(c.die)
