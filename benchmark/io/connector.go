@@ -87,7 +87,7 @@ func NewConnector() *Connector {
 	}
 }
 
-// Start connect to the server and send/recv betwen the c/s
+// Start connect to the server and send/recv between the c/s
 func (c *Connector) Start(addr string) error {
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
