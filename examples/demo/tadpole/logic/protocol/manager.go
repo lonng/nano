@@ -1,13 +1,15 @@
 package protocol
 
+// JoyLoginRequest represent a login request
 type JoyLoginRequest struct {
 	Username  string `json:"username"`
 	Cipher    string `json:"cipher"`
 	Timestamp int    `json:"timestamp"`
 }
 
+// LoginResponse represent a login response
 type LoginResponse struct {
-	Status int    `json:"status"` //登录状态
-	ID     int64  `json:"id"`     //登录成功后ID
-	Error  string `json:"error"`  //登录失败的错误消息
+	Status int    `json:"status"`
+	ID     int64  `json:"id"`
+	Error  string `json:"error"`
 }

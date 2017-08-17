@@ -1,6 +1,6 @@
 package protocol
 
-//登录状态
+// Login status
 const (
 	LoginStatusSucc = 1
 	LoginStatusFail = 2
