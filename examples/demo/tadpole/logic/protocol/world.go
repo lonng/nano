@@ -10,12 +10,12 @@ type UpdateMessage struct {
 	Angle    float32 `json:"angle"`
 }
 
-// UpdateMessage indicates a new tadpole enter current scene
+// EnterWorldResponse indicates a new tadpole enter current scene
 type EnterWorldResponse struct {
 	ID int64 `json:"id"`
 }
 
-// UpdateMessage indicates tadpole leave current scene
+// LeaveWorldResponse indicates tadpole leave current scene
 type LeaveWorldResponse struct {
 	ID int64 `json:"id"`
 }
