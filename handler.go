@@ -198,7 +198,7 @@ func (h *handlerService) handle(conn net.Conn) {
 	defer func() {
 		agent.Close()
 		if env.debug {
-			logger.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.Uid()))
+			logger.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.UID()))
 		}
 	}()
 
@@ -297,7 +297,7 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 	}
 
 	if env.debug {
-		logger.Println(fmt.Sprintf("Uid=%d, Message={%s}, Data=%+v", agent.session.Uid(), msg.String(), data))
+		logger.Println(fmt.Sprintf("UID=%d, Message={%s}, Data=%+v", agent.session.UID(), msg.String(), data))
 	}
 
 	args := []reflect.Value{handler.Receiver, agent.srv, reflect.ValueOf(data)}
