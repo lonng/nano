@@ -39,7 +39,6 @@ func NewSerializer() *Serializer {
 
 // Marshal returns the protobuf encoding of v.
 func (s *Serializer) Marshal(v interface{}) ([]byte, error) {
-
 	pb, ok := v.(proto.Message)
 	if !ok {
 		return nil, ErrWrongValueType
