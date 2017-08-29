@@ -79,4 +79,5 @@ func init() {
 	env.heartbeat = 30 * time.Second
 	env.debug = false
 	env.muCallbacks = sync.RWMutex{}
+	env.checkOrigin = func(_ *http.Request) bool { return true }
 }
