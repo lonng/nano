@@ -153,9 +153,14 @@ func (a *agent) Close() error {
 		logger.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID(), a.conn.RemoteAddr()))
 	}
 
-	// close all channel
-	close(a.chDie)
-	handler.chCloseSession <- a.session
+	// prevent closing closed channel
+	select {
+	case <-a.chDie:
+		// expect
+	default:
+		close(a.chDie)
+		handler.chCloseSession <- a.session
+	}
 
 	return a.conn.Close()
 }
