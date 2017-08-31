@@ -45,7 +45,13 @@ go get -u github.com/gorilla/websocket
     + [API参考(服务器)](https://godoc.org/github.com/lonnng/nano)
     + [如何将`lua`脚本集成到`nano`组件中(未完成)](.)
 
+## Client SDK
+
+- Javascript
+  + [nano-websocket-client](https://github.com/lonnng/nano-websocket-client)
+
 ## Community
+
 - QQGroup: [289680347](https://jq.qq.com/?_wv=1027&k=4EMMaha)
 - Reddit: [nanolabs](https://www.reddit.com/r/nanolabs/)
 
