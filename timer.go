@@ -95,8 +95,10 @@ func cron() {
 	now := time.Now().UnixNano()
 	for id, t := range timerManager.timers {
 		// prevent chClosingTimer exceed
-		if t.counter == 0 && len(timerManager.chClosingTimer) < timerBacklog {
-			t.Stop()
+		if t.counter == 0 {
+			if len(timerManager.chClosingTimer) < timerBacklog {
+				t.Stop()
+			}
 			continue
 		}
 
