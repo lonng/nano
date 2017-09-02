@@ -3,6 +3,7 @@ package nano
 import (
 	"fmt"
 	"log"
+	"math"
 	"sync/atomic"
 	"time"
 )
@@ -36,15 +37,22 @@ type (
 	// logic gorontine.
 	TimerFunc func()
 
+	// TimerCondition represents a checker that returns true when cron job needs
+	// to execute
+	TimerCondition interface {
+		Check(now time.Time) bool
+	}
+
 	// Timer represents a cron job
 	Timer struct {
-		id       int64         // timer id
-		fn       TimerFunc     // function that execute
-		createAt int64         // timer create time
-		interval time.Duration // execution interval
-		elapse   int64         // total elapse time
-		closed   int32         // is timer closed
-		counter  int           // counter
+		id        int64          // timer id
+		fn        TimerFunc      // function that execute
+		createAt  int64          // timer create time
+		interval  time.Duration  // execution interval
+		condition TimerCondition // condition to cron job execution
+		elapse    int64          // total elapse time
+		closed    int32          // is timer closed
+		counter   int            // counter
 	}
 )
 
@@ -92,7 +100,8 @@ func cron() {
 		return
 	}
 
-	now := time.Now().UnixNano()
+	now := time.Now()
+	unn := now.UnixNano()
 	for id, t := range timerManager.timers {
 		// prevent chClosingTimer exceed
 		if t.counter == 0 {
@@ -102,8 +111,16 @@ func cron() {
 			continue
 		}
 
+		// condition timer
+		if t.condition != nil {
+			if t.condition.Check(now) {
+				pexec(id, t.fn)
+			}
+			continue
+		}
+
 		// execute job
-		if t.createAt+t.elapse <= now {
+		if t.createAt+t.elapse <= unn {
 			pexec(id, t.fn)
 			t.elapse += int64(t.interval)
 
@@ -158,6 +175,21 @@ func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 // Stop the timer to release associated resources.
 func NewAfterTimer(duration time.Duration, fn TimerFunc) *Timer {
 	return NewCountTimer(duration, 1, fn)
+}
+
+// NewCondTimer returns a new Timer containing a function that will be called
+// when condition satisfied that specified by the condition argument.
+// The duration d must be greater than zero; if not, NewCondTimer will panic.
+// Stop the timer to release associated resources.
+func NewCondTimer(condition TimerCondition, fn TimerFunc) *Timer {
+	if condition == nil {
+		panic("nano/timer: nil condition")
+	}
+
+	t := NewCountTimer(time.Duration(math.MaxInt64), loopForever, fn)
+	t.condition = condition
+
+	return t
 }
 
 // SetTimerPrecision set the ticker precision, and time precision can not less
