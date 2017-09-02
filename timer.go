@@ -127,7 +127,7 @@ func NewTimer(interval time.Duration, fn TimerFunc) *Timer {
 // NewCountTimer returns a new Timer containing a function that will be called
 // with a period specified by the duration argument. After count times, timer
 // will be stopped automatically, It adjusts the intervals for slow receivers.
-// The duration d must be greater than zero; if not, NewTimer will panic.
+// The duration d must be greater than zero; if not, NewCountTimer will panic.
 // Stop the timer to release associated resources.
 func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 	if fn == nil {
@@ -150,6 +150,14 @@ func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 	// add to manager
 	timerManager.chCreatedTimer <- t
 	return t
+}
+
+// NewAfterTimer returns a new Timer containing a function that will be called
+// after duration that specified by the duration argument.
+// The duration d must be greater than zero; if not, NewAfterTimer will panic.
+// Stop the timer to release associated resources.
+func NewAfterTimer(duration time.Duration, fn TimerFunc) *Timer {
+	return NewCountTimer(duration, 1, fn)
 }
 
 // SetTimerPrecision set the ticker precision, and time precision can not less
