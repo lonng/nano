@@ -101,9 +101,11 @@ func (a *agent) Push(route string, v interface{}) error {
 	if env.debug {
 		switch d := v.(type) {
 		case []byte:
-			logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%dbytes", a.session.UID(), route, len(d)))
+			logger.Println(fmt.Sprintf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
+				a.session.ID(), a.session.UID(), route, len(d)))
 		default:
-			logger.Println(fmt.Sprintf("Type=Push, UID=%d, Route=%s, Data=%+v", a.session.UID(), route, v))
+			logger.Println(fmt.Sprintf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
+				a.session.ID(), a.session.UID(), route, v))
 		}
 	}
 
@@ -130,9 +132,11 @@ func (a *agent) Response(v interface{}) error {
 	if env.debug {
 		switch d := v.(type) {
 		case []byte:
-			logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%dbytes", a.session.UID(), mid, len(d)))
+			logger.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%dbytes",
+				a.session.ID(), a.session.UID(), mid, len(d)))
 		default:
-			logger.Println(fmt.Sprintf("Type=Response, UID=%d, MID=%d, Data=%+v", a.session.UID(), mid, v))
+			logger.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%+v",
+				a.session.ID(), a.session.UID(), mid, v))
 		}
 	}
 
@@ -150,7 +154,8 @@ func (a *agent) Close() error {
 	a.setStatus(statusClosed)
 
 	if env.debug {
-		logger.Println(fmt.Sprintf("Session closed, Id=%d, IP=%s", a.session.ID(), a.conn.RemoteAddr()))
+		logger.Println(fmt.Sprintf("Session closed, ID=%d, UID=%d, IP=%s",
+			a.session.ID(), a.session.UID(), a.conn.RemoteAddr()))
 	}
 
 	// prevent closing closed channel
