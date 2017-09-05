@@ -152,7 +152,7 @@ func (c *Group) Add(session *session.Session) error {
 	}
 
 	if env.debug {
-		logger.Println(fmt.Sprintf("Add session to group %s, UID=%d", c.name, session.UID()))
+		logger.Println(fmt.Sprintf("Add session to group %s, ID=%d, UID=%d", c.name, session.ID(), session.UID()))
 	}
 
 	c.mu.Lock()
