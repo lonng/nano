@@ -46,7 +46,7 @@ var (
 	hbd []byte // heartbeat packet data
 )
 
-func init() {
+func hbdEncode() {
 	data, err := json.Marshal(map[string]interface{}{
 		"code": 200,
 		"sys":  map[string]float64{"heartbeat": env.heartbeat.Seconds()},

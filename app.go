@@ -33,6 +33,7 @@ import (
 )
 
 func listen(addr string, isWs bool) {
+	hbdEncode()
 	startupComponents()
 
 	// create global ticker instance, timer precision could be customized
