@@ -49,6 +49,7 @@ go get -u github.com/gorilla/websocket
 
 - Javascript
   + [nano-websocket-client](https://github.com/lonnng/nano-websocket-client)
+  + [nano-egret-client](https://github.com/lonnng/nano-egret-client)
 
 ## Community
 
