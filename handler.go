@@ -273,9 +273,9 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 	switch msg.Type {
 	case message.Request:
-		agent.session.LastRID = msg.ID
+		agent.session.LastMID = msg.ID
 	case message.Notify:
-		agent.session.LastRID = 0
+		agent.session.LastMID = 0
 	}
 
 	handler, ok := h.handlers[msg.Route]

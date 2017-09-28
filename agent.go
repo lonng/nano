@@ -116,11 +116,16 @@ func (a *agent) Push(route string, v interface{}) error {
 // Response, implementation for session.NetworkEntity interface
 // Response message to session
 func (a *agent) Response(v interface{}) error {
+	return a.ResponseMID(a.session.MID(), v)
+}
+
+// Response, implementation for session.NetworkEntity interface
+// Response message to session
+func (a *agent) ResponseMID(mid uint, v interface{}) error {
 	if a.status() == statusClosed {
 		return ErrBrokenPipe
 	}
 
-	mid := a.session.LastRID
 	if mid <= 0 {
 		return ErrSessionOnNotify
 	}

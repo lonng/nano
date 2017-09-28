@@ -34,6 +34,7 @@ import (
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
 	Response(v interface{}) error
+	ResponseMID(mid uint, v interface{}) error
 	Close() error
 	RemoteAddr() net.Addr
 }
@@ -51,7 +52,7 @@ type Session struct {
 	sync.RWMutex                        // protect data
 	id           int64                  // session global unique id
 	uid          int64                  // binding user id
-	LastRID      uint                   // last request id
+	LastMID      uint                   // last request id
 	lastTime     int64                  // last heartbeat time
 	entity       NetworkEntity          // low-level network entity
 	data         map[string]interface{} // session data store
@@ -78,6 +79,12 @@ func (s *Session) Response(v interface{}) error {
 	return s.entity.Response(v)
 }
 
+// ResponseMID responses message to client, mid is
+// request message ID
+func (s *Session) ResponseMID(mid uint, v interface{}) error {
+	return s.entity.ResponseMID(mid, v)
+}
+
 // ID returns the session id
 func (s *Session) ID() int64 {
 	return s.id
@@ -86,6 +93,11 @@ func (s *Session) ID() int64 {
 // UID returns uid that bind to current session
 func (s *Session) UID() int64 {
 	return atomic.LoadInt64(&s.uid)
+}
+
+// MID returns the last message id
+func (s *Session) MID() uint {
+	return s.LastMID
 }
 
 // Bind bind UID to current session
