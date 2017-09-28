@@ -22,7 +22,7 @@ mobile games, etc of all sizes.
 
 #### What does a `Nano` application look like?
 
-A `nano` application can be simply demostrated as below figure.
+The simplest "nano" application as shown in the following figure, you can make powerful applications by combining different components.
 
 ![Application](./application.png)
 
@@ -41,7 +41,7 @@ type RemoteComponent struct {
 }
 ```
 
-- Second, fetch all grpc servers infomation from services like `etcd` or `consul`  in `nano` lifetime callback
+- Second, fetch all grpc servers infomation from services like `etcd` or `consul`  in `nano` lifetime hooks
 ```go
 type ServerInfo struct {
 	Host string `json:"host"`
@@ -51,7 +51,7 @@ type ServerInfo struct {
 // lifetime callback
 func (r *RemoteComponent) Init() {
 	// fetch server list from etcd
-	resp, err := http.Get("http://your_etcd_server")
+	resp, err := http.Get("http://your_etcd_server/backend/server_list/area/10023")
 	if err != nil {
 		panic(err)
 	}
