@@ -22,7 +22,7 @@ mobile games, etc of all sizes.
 
 #### What does a `Nano` application look like?
 
-A `nano` application can be simply demostrated as below figure.
+The simplest "nano" application as shown in the following figure, you can make powerful applications by combining different components.
 
 ![Application](./application.png)
 
