@@ -252,7 +252,7 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 
 	case packet.Data:
 		if agent.status() < statusWorking {
-			return fmt.Errorf("Receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
+			return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
 				agent.conn.RemoteAddr().String())
 		}
 
@@ -273,9 +273,9 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 	switch msg.Type {
 	case message.Request:
-		agent.session.LastMID = msg.ID
+		agent.lastMid = msg.ID
 	case message.Notify:
-		agent.session.LastMID = 0
+		agent.lastMid = 0
 	}
 
 	handler, ok := h.handlers[msg.Route]

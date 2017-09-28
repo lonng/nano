@@ -33,6 +33,7 @@ import (
 // NetworkEntity represent low-level network instance
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
+	MID() uint
 	Response(v interface{}) error
 	ResponseMID(mid uint, v interface{}) error
 	Close() error
@@ -52,7 +53,6 @@ type Session struct {
 	sync.RWMutex                        // protect data
 	id           int64                  // session global unique id
 	uid          int64                  // binding user id
-	LastMID      uint                   // last request id
 	lastTime     int64                  // last heartbeat time
 	entity       NetworkEntity          // low-level network entity
 	data         map[string]interface{} // session data store
@@ -97,7 +97,7 @@ func (s *Session) UID() int64 {
 
 // MID returns the last message id
 func (s *Session) MID() uint {
-	return s.LastMID
+	return s.entity.MID()
 }
 
 // Bind bind UID to current session

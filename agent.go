@@ -52,6 +52,7 @@ type (
 		// regular agent member
 		session *session.Session    // session
 		conn    net.Conn            // low-level conn fd
+		lastMid uint                // last message id
 		state   int32               // current agent state
 		chDie   chan struct{}       // wait for close
 		chSend  chan pendingMessage // push message queue
@@ -86,6 +87,10 @@ func newAgent(conn net.Conn) *agent {
 	a.srv = reflect.ValueOf(s)
 
 	return a
+}
+
+func (a *agent) MID() uint {
+	return a.lastMid
 }
 
 // Push, implementation for session.NetworkEntity interface
