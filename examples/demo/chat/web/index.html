@@ -30,7 +30,7 @@
         methods: {
             sendMessage: function () {
                 console.log(this.inputMessage);
-                starx.notify('Room.Message', {name: this.nickname, content: this.inputMessage});
+                starx.notify('room.message', {name: this.nickname, content: this.inputMessage});
                 this.inputMessage = '';
             }
         }
@@ -62,7 +62,7 @@
         console.log("initialized");
         starx.on("onNewUser", onNewUser);
         starx.on("onMembers", onMembers);
-        starx.request("Room.Join", {}, join);
+        starx.request("room.join", {}, join);
     })
 </script>
 </body>

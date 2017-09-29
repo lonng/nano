@@ -10,6 +10,7 @@ import (
 	"github.com/lonnng/nano/component"
 	"github.com/lonnng/nano/serialize/json"
 	"github.com/lonnng/nano/session"
+	"strings"
 )
 
 type (
@@ -79,8 +80,15 @@ func (r *Room) Message(s *session.Session, msg *UserMessage) error {
 }
 
 func main() {
-	nano.Register(NewRoom())
+	// override default serializer
 	nano.SetSerializer(json.NewSerializer())
+
+	// rewrite component and handler name
+	nano.Register(NewRoom(),
+		component.WithName("room"),
+		component.WithNameFunc(strings.ToLower),
+	)
+
 	nano.EnableDebug()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 

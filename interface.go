@@ -42,9 +42,9 @@ func ListenWS(addr string) {
 	listen(addr, true)
 }
 
-// Register register a component
-func Register(c component.Component) {
-	comps = append(comps, c)
+// Register register a component with options
+func Register(c component.Component, options ...component.Option) {
+	comps = append(comps, regComp{c, options})
 }
 
 // SetHeartbeatInterval set heartbeat time interval

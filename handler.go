@@ -160,12 +160,8 @@ func (h *handlerService) dispatch() {
 	}
 }
 
-func (h *handlerService) register(c component.Component) error {
-	s := &component.Service{
-		Type:     reflect.TypeOf(c),
-		Receiver: reflect.ValueOf(c),
-	}
-	s.Name = reflect.Indirect(s.Receiver).Type().Name()
+func (h *handlerService) register(comp component.Component, opts []component.Option) error {
+	s := component.NewService(comp, opts)
 
 	if _, ok := h.services[s.Name]; ok {
 		return fmt.Errorf("handler: service already defined: %s", s.Name)
@@ -177,8 +173,8 @@ func (h *handlerService) register(c component.Component) error {
 
 	// register all handlers
 	h.services[s.Name] = s
-	for name, method := range s.Methods {
-		h.handlers[fmt.Sprintf("%s.%s", s.Name, name)] = method
+	for name, handler := range s.Handlers {
+		h.handlers[fmt.Sprintf("%s.%s", s.Name, name)] = handler
 	}
 	return nil
 }

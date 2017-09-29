@@ -75,21 +75,3 @@ func isHandlerMethod(method reflect.Method) bool {
 	}
 	return true
 }
-
-// suitableMethods returns suitable methods of typ
-func suitableHandlerMethods(typ reflect.Type) map[string]*Handler {
-	methods := make(map[string]*Handler)
-	for m := 0; m < typ.NumMethod(); m++ {
-		method := typ.Method(m)
-		mt := method.Type
-		mn := method.Name
-		if isHandlerMethod(method) {
-			raw := false
-			if mt.In(2) == typeOfBytes {
-				raw = true
-			}
-			methods[mn] = &Handler{Method: method, Type: mt.In(2), IsRawArg: raw}
-		}
-	}
-	return methods
-}
