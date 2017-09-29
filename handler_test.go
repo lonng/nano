@@ -109,7 +109,7 @@ func (t *TestComp) RawData(s *session.Session, _ []byte) error {
 
 func TestHandlerCallJSON(t *testing.T) {
 	SetSerializer(json.NewSerializer())
-	handler.register(&TestComp{})
+	handler.register(&TestComp{}, nil)
 
 	m := JSONMessage{Code: 1, Data: "hello world"}
 	data, err := serializeOrRaw(m)
@@ -128,7 +128,7 @@ func TestHandlerCallJSON(t *testing.T) {
 
 func TestHandlerCallProtobuf(t *testing.T) {
 	SetSerializer(protobuf.NewSerializer())
-	handler.register(&TestComp{})
+	handler.register(&TestComp{}, nil)
 
 	m := &ProtoMessage{Data: proto.String("hello world")}
 	data, err := serializeOrRaw(m)
@@ -147,7 +147,7 @@ func TestHandlerCallProtobuf(t *testing.T) {
 
 func BenchmarkHandlerCallJSON(b *testing.B) {
 	SetSerializer(json.NewSerializer())
-	handler.register(&TestComp{})
+	handler.register(&TestComp{}, nil)
 
 	m := JSONMessage{Code: 1, Data: "hello world"}
 	data, err := serializeOrRaw(m)
@@ -172,7 +172,7 @@ func BenchmarkHandlerCallJSON(b *testing.B) {
 
 func BenchmarkHandlerCallProtobuf(b *testing.B) {
 	SetSerializer(protobuf.NewSerializer())
-	handler.register(&TestComp{})
+	handler.register(&TestComp{}, nil)
 
 	m := &ProtoMessage{Data: proto.String("hello world")}
 	data, err := serializeOrRaw(m)
@@ -196,7 +196,7 @@ func BenchmarkHandlerCallProtobuf(b *testing.B) {
 
 func BenchmarkHandlerCallRawData(b *testing.B) {
 	SetSerializer(protobuf.NewSerializer())
-	handler.register(&TestComp{})
+	handler.register(&TestComp{}, nil)
 
 	m := &ProtoMessage{Data: proto.String("hello world")}
 	data, err := serializeOrRaw(m)
