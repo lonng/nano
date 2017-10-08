@@ -106,21 +106,24 @@ The Nano will remain simple, but you can perform any operations in the component
     + [API参考(服务器)](https://godoc.org/github.com/lonnng/nano)
     + [如何将`lua`脚本集成到`nano`组件中(未完成)](.)
 
-## Client SDK
+## Resources
 
 - Javascript
   + [nano-websocket-client](https://github.com/lonnng/nano-websocket-client)
   + [nano-egret-client](https://github.com/lonnng/nano-egret-client)
+
+- Demo
+  + [Implement a chat room in 100 lines with nano and WebSocket](./examples/demo/chat)
+  + [Tadpole demo](./examples/demo/tadpole)
 
 ## Community
 
 - QQGroup: [289680347](https://jq.qq.com/?_wv=1027&k=4EMMaha)
 - Reddit: [nanolabs](https://www.reddit.com/r/nanolabs/)
 
-## Demo
+## Successful cases
 
-- [Implement a chat room in 100 lines with nano and WebSocket](./examples/demo/chat)
-- [Tadpole demo](./examples/demo/tadpole)
+- [空来血战](https://fir.im/tios)
 
 ## Installation
 
