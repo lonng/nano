@@ -91,6 +91,7 @@ func main() {
 
 	nano.EnableDebug()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
+	nano.SetWSPath("/nano")
 
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 

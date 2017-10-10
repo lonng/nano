@@ -58,7 +58,7 @@
         v.messages.push({name:'system', content: "members: "+data.members});
     };
 
-    starx.init({host: '127.0.0.1', port: 3250}, function () {
+    starx.init({host: '127.0.0.1', port: 3250, path: '/nano'}, function () {
         console.log("initialized");
         starx.on("onNewUser", onNewUser);
         starx.on("onMembers", onMembers);

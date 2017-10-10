@@ -80,3 +80,7 @@ func OnSessionClosed(cb SessionClosedHandler) {
 func SetDictionary(dict map[string]uint16) {
 	message.SetDictionary(dict)
 }
+
+func SetWSPath(path string) {
+	env.wsPath = path
+}

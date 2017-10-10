@@ -49,6 +49,7 @@ var (
 		heartbeat   time.Duration            // heartbeat internal
 		checkOrigin func(*http.Request) bool // check origin when websocket enabled
 		debug       bool                     // enable debug
+		wsPath      string                   // WebSocket path(eg: ws://127.0.0.1/wsPath)
 
 		// session closed handlers
 		muCallbacks sync.RWMutex           // protect callbacks

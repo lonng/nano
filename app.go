@@ -30,6 +30,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"time"
+	"strings"
 )
 
 func listen(addr string, isWs bool) {
@@ -96,7 +97,7 @@ func listenAndServeWS(addr string) {
 		CheckOrigin:     env.checkOrigin,
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/"+strings.TrimPrefix(env.wsPath,"/"), func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			logger.Println(fmt.Sprintf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error()))
