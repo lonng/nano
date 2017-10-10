@@ -26,7 +26,9 @@ The simplest "nano" application as shown in the following figure, you can make p
 
 ![Application](./application.png)
 
-In fact, the `nano` application is a collection of  [Component ](./docs/get_started.md#component) , and a component is a bundle of  [Handler](./docs/get_started.md#handler), once you register a component to nano, nano will register all methods that can be converted to `Handler` to nano service container. Service was accessed by `Component.Handler`, and the handler will be called while client request. While handling a message, the handler will receive two arguments, session corresponding a client and a message is the payload of this request that unmarshals by nano automatically.
+In fact, the `nano` application is a collection of  [Component ](./docs/get_started.md#component) , and a component is a bundle of  [Handler](./docs/get_started.md#handler), once you register a component to nano, nano will register all methods that can be converted to `Handler` to nano service container. Service was accessed by `Component.Handler`, and the handler will be called while client request. The handler will receive two parameters while handling a message:
+  - `*session.Session`: corresponding a client that apply this request or notify.
+  - `*protocol.FooBar`: the payload of the request.
 
 While you had processed your logic, you can response or push message to the client by `session.Response(payload)` and `session.Push('eventName', payload)`, or returns error when some unexpected data received.
 
