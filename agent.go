@@ -237,6 +237,12 @@ func (a *agent) write() {
 				break
 			}
 
+			if len(Pipeline.Outbound.handlers) > 0 {
+				for _, h := range Pipeline.Outbound.handlers {
+					payload = h(a.session, payload)
+				}
+			}
+
 			// construct message and encode
 			m := &message.Message{
 				Type:  data.typ,

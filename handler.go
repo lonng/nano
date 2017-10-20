@@ -280,12 +280,19 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 		return
 	}
 
+	var payload = msg.Data
+	if len(Pipeline.Inbound.handlers) > 0 {
+		for _, h := range Pipeline.Inbound.handlers {
+			payload = h(agent.session, payload)
+		}
+	}
+
 	var data interface{}
 	if handler.IsRawArg {
-		data = msg.Data
+		data = payload
 	} else {
 		data = reflect.New(handler.Type.Elem()).Interface()
-		err := serializer.Unmarshal(msg.Data, data)
+		err := serializer.Unmarshal(payload, data)
 		if err != nil {
 			logger.Println("deserialize error", err.Error())
 			return

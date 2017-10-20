@@ -20,6 +20,7 @@ type (
 		component.Base
 		group *nano.Group
 		timer *nano.Timer
+		stats *stats
 	}
 
 	// UserMessage represents a message that user sent
@@ -43,12 +44,28 @@ type (
 		Code   int    `json:"code"`
 		Result string `json:"result"`
 	}
+
+	stats struct {
+		outboundBytes int
+		inboundBytes  int
+	}
 )
+
+func (stats *stats) outbound(s *session.Session, in []byte) []byte {
+	stats.outboundBytes += len(in)
+	return in
+}
+
+func (stats *stats) inbound(s *session.Session, in []byte) []byte {
+	stats.inboundBytes += len(in)
+	return in
+}
 
 // NewRoom returns a new room
 func NewRoom() *Room {
 	return &Room{
 		group: nano.NewGroup("room"),
+		stats: &stats{},
 	}
 }
 
@@ -59,6 +76,8 @@ func (r *Room) AfterInit() {
 	})
 	r.timer = nano.NewTimer(time.Minute, func() {
 		println("UserCount: Time=>", time.Now().String(), "Count=>", r.group.Count())
+		println("OutboundBytes", r.stats.outboundBytes)
+		println("InboundBytes", r.stats.outboundBytes)
 	})
 }
 
@@ -84,10 +103,15 @@ func main() {
 	nano.SetSerializer(json.NewSerializer())
 
 	// rewrite component and handler name
-	nano.Register(NewRoom(),
+	room := NewRoom()
+	nano.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
 	)
+
+	// traffic stats
+	nano.Pipeline.Outbound.PushBack(room.stats.outbound)
+	nano.Pipeline.Inbound.PushBack(room.stats.inbound)
 
 	nano.EnableDebug()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
