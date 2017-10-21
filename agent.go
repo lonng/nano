@@ -239,7 +239,11 @@ func (a *agent) write() {
 
 			if len(Pipeline.Outbound.handlers) > 0 {
 				for _, h := range Pipeline.Outbound.handlers {
-					payload = h(a.session, payload)
+					payload, err = h(a.session, payload)
+					if err != nil {
+						logger.Println("broken pipeline", err.Error())
+						break
+					}
 				}
 			}
 

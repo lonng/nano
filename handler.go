@@ -285,9 +285,14 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 	}
 
 	var payload = msg.Data
+	var err error
 	if len(Pipeline.Inbound.handlers) > 0 {
 		for _, h := range Pipeline.Inbound.handlers {
-			payload = h(agent.session, payload)
+			payload, err = h(agent.session, payload)
+			if err != nil {
+				logger.Println(fmt.Sprintf("nano/handler: broken pipeline: %s", err.Error()))
+				return
+			}
 		}
 	}
 
