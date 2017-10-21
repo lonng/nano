@@ -75,6 +75,8 @@ type (
 	}
 
 	unhandledMessage struct {
+		agent   *agent
+		lastMid uint
 		handler reflect.Method
 		args    []reflect.Value
 	}
@@ -140,6 +142,7 @@ func (h *handlerService) dispatch() {
 	for {
 		select {
 		case m := <-h.chLocalProcess: // logic dispatch
+			m.agent.lastMid = m.lastMid
 			pcall(m.handler, m.args)
 
 		case s := <-h.chCloseSession: // session closed callback
@@ -267,11 +270,12 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 }
 
 func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
+	var lastMid uint
 	switch msg.Type {
 	case message.Request:
-		agent.lastMid = msg.ID
+		lastMid = msg.ID
 	case message.Notify:
-		agent.lastMid = 0
+		lastMid = 0
 	}
 
 	handler, ok := h.handlers[msg.Route]
@@ -304,7 +308,7 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 	}
 
 	args := []reflect.Value{handler.Receiver, agent.srv, reflect.ValueOf(data)}
-	h.chLocalProcess <- unhandledMessage{handler.Method, args}
+	h.chLocalProcess <- unhandledMessage{agent, lastMid, handler.Method, args}
 }
 
 // DumpServices outputs all registered services

@@ -121,7 +121,7 @@ func (a *agent) Push(route string, v interface{}) error {
 // Response, implementation for session.NetworkEntity interface
 // Response message to session
 func (a *agent) Response(v interface{}) error {
-	return a.ResponseMID(a.session.MID(), v)
+	return a.ResponseMID(a.lastMid, v)
 }
 
 // Response, implementation for session.NetworkEntity interface
