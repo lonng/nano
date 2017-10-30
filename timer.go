@@ -14,7 +14,7 @@ const (
 
 var (
 	// default timer backlog
-	timerBacklog = 128
+	timerBacklog = 1 << 8
 
 	// timerManager manager for all timers
 	timerManager = &struct {

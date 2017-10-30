@@ -36,6 +36,7 @@ import (
 
 // Unhandled message buffer size
 const packetBacklog = 1024
+const funcBacklog = 1 << 8
 
 var (
 	// handler service singleton
@@ -72,6 +73,7 @@ type (
 		handlers       map[string]*component.Handler // all handler method
 		chLocalProcess chan unhandledMessage         // packets that process locally
 		chCloseSession chan *session.Session         // closed session
+		chFunction     chan func()                   // function that called in logic gorontine
 	}
 
 	unhandledMessage struct {
@@ -88,6 +90,7 @@ func newHandlerService() *handlerService {
 		handlers:       make(map[string]*component.Handler),
 		chLocalProcess: make(chan unhandledMessage, packetBacklog),
 		chCloseSession: make(chan *session.Session, packetBacklog),
+		chFunction:     make(chan func(), funcBacklog),
 	}
 
 	return h
@@ -107,6 +110,18 @@ func pcall(method reflect.Method, args []reflect.Value) {
 			logger.Println(err.(error).Error())
 		}
 	}
+}
+
+// call handler with protected
+func pinvoke(fn func()) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Println(fmt.Sprintf("nano/invoke: %v", err))
+			println(stack())
+		}
+	}()
+
+	fn()
 }
 
 func onSessionClosed(s *session.Session) {
@@ -147,6 +162,9 @@ func (h *handlerService) dispatch() {
 
 		case s := <-h.chCloseSession: // session closed callback
 			onSessionClosed(s)
+
+		case fn := <-h.chFunction:
+			pinvoke(fn)
 
 		case <-globalTicker.C: // execute cron task
 			cron()
