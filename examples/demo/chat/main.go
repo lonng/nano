@@ -51,14 +51,14 @@ type (
 	}
 )
 
-func (stats *stats) outbound(s *session.Session, in []byte) []byte {
+func (stats *stats) outbound(s *session.Session, in []byte) ([]byte, error) {
 	stats.outboundBytes += len(in)
-	return in
+	return in, nil
 }
 
-func (stats *stats) inbound(s *session.Session, in []byte) []byte {
+func (stats *stats) inbound(s *session.Session, in []byte) ([]byte, error) {
 	stats.inboundBytes += len(in)
-	return in
+	return in, nil
 }
 
 // NewRoom returns a new room
