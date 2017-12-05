@@ -306,7 +306,7 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 	var err error
 	if len(Pipeline.Inbound.handlers) > 0 {
 		for _, h := range Pipeline.Inbound.handlers {
-			payload, err = h(agent.session, payload)
+			payload, err = h(agent.session, payload,msg.Route)
 			if err != nil {
 				logger.Println(fmt.Sprintf("nano/handler: broken pipeline: %s", err.Error()))
 				return

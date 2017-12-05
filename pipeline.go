@@ -7,7 +7,7 @@ var Pipeline = struct {
 }{&pipelineChannel{}, &pipelineChannel{}}
 
 type (
-	pipelineHandler func(s *session.Session, in []byte) (out []byte, err error)
+	pipelineHandler func(s *session.Session, in []byte, compName string) (out []byte, err error)
 
 	pipelineChannel struct {
 		handlers []pipelineHandler
