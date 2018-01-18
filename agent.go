@@ -89,6 +89,16 @@ func newAgent(conn net.Conn) *agent {
 	return a
 }
 
+func (a *agent) send(m pendingMessage) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = ErrBrokenPipe
+		}
+	}()
+	a.chSend <- m
+	return
+}
+
 func (a *agent) MID() uint {
 	return a.lastMid
 }
@@ -114,8 +124,7 @@ func (a *agent) Push(route string, v interface{}) error {
 		}
 	}
 
-	a.chSend <- pendingMessage{typ: message.Push, route: route, payload: v}
-	return nil
+	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
 }
 
 // Response, implementation for session.NetworkEntity interface
@@ -150,8 +159,7 @@ func (a *agent) ResponseMID(mid uint, v interface{}) error {
 		}
 	}
 
-	a.chSend <- pendingMessage{typ: message.Response, mid: mid, payload: v}
-	return nil
+	return a.send(pendingMessage{typ: message.Response, mid: mid, payload: v})
 }
 
 // Close, implementation for session.NetworkEntity interface
