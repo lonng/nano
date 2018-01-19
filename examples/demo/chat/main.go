@@ -51,12 +51,12 @@ type (
 	}
 )
 
-func (stats *stats) outbound(s *session.Session, in []byte) ([]byte, error) {
+func (stats *stats) outbound(s *session.Session, in []byte,routerName string) ([]byte, error) {
 	stats.outboundBytes += len(in)
 	return in, nil
 }
 
-func (stats *stats) inbound(s *session.Session, in []byte) ([]byte, error) {
+func (stats *stats) inbound(s *session.Session, in []byte,routerName string) ([]byte, error) {
 	stats.inboundBytes += len(in)
 	return in, nil
 }
