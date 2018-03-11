@@ -122,7 +122,7 @@ func TestHandlerCallJSON(t *testing.T) {
 	msg.Type = message.Request
 	msg.Data = data
 
-	agent := newAgent(nil)
+	agent := newAgent(nil, &options{})
 	handler.processMessage(agent, msg)
 }
 
@@ -141,7 +141,7 @@ func TestHandlerCallProtobuf(t *testing.T) {
 	msg.Type = message.Request
 	msg.Data = data
 
-	agent := newAgent(nil)
+	agent := newAgent(nil, &options{})
 	handler.processMessage(agent, msg)
 }
 
@@ -160,7 +160,7 @@ func BenchmarkHandlerCallJSON(b *testing.B) {
 	msg.Type = message.Request
 	msg.Data = data
 
-	agent := newAgent(nil)
+	agent := newAgent(nil, &options{})
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -185,7 +185,7 @@ func BenchmarkHandlerCallProtobuf(b *testing.B) {
 	msg.Type = message.Request
 	msg.Data = data
 
-	agent := newAgent(nil)
+	agent := newAgent(nil, &options{})
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -209,7 +209,7 @@ func BenchmarkHandlerCallRawData(b *testing.B) {
 	msg.Type = message.Request
 	msg.Data = data
 
-	agent := newAgent(nil)
+	agent := newAgent(nil, &options{})
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

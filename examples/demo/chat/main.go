@@ -51,14 +51,14 @@ type (
 	}
 )
 
-func (stats *stats) outbound(s *session.Session, in []byte) ([]byte, error) {
-	stats.outboundBytes += len(in)
-	return in, nil
+func (stats *stats) outbound(s *session.Session, msg nano.Message) error {
+	stats.outboundBytes += len(msg.Data)
+	return nil
 }
 
-func (stats *stats) inbound(s *session.Session, in []byte) ([]byte, error) {
-	stats.inboundBytes += len(in)
-	return in, nil
+func (stats *stats) inbound(s *session.Session, msg nano.Message) error {
+	stats.inboundBytes += len(msg.Data)
+	return nil
 }
 
 // NewRoom returns a new room
@@ -110,8 +110,9 @@ func main() {
 	)
 
 	// traffic stats
-	nano.Pipeline.Outbound.PushBack(room.stats.outbound)
-	nano.Pipeline.Inbound.PushBack(room.stats.inbound)
+	pipeline := nano.NewPipeline()
+	pipeline.Outbound().PushBack(room.stats.outbound)
+	pipeline.Inbound().PushBack(room.stats.inbound)
 
 	nano.EnableDebug()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
@@ -120,5 +121,5 @@ func main() {
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
 	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
-	nano.ListenWS(":3250")
+	nano.ListenWS(":3250", nano.WithPipeline(pipeline))
 }

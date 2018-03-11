@@ -74,6 +74,7 @@ type (
 		chLocalProcess chan unhandledMessage         // packets that process locally
 		chCloseSession chan *session.Session         // closed session
 		chFunction     chan func()                   // function that called in logic gorontine
+		options        *options
 	}
 
 	unhandledMessage struct {
@@ -91,6 +92,7 @@ func newHandlerService() *handlerService {
 		chLocalProcess: make(chan unhandledMessage, packetBacklog),
 		chCloseSession: make(chan *session.Session, packetBacklog),
 		chFunction:     make(chan func(), funcBacklog),
+		options:        &options{},
 	}
 
 	return h
@@ -202,7 +204,7 @@ func (h *handlerService) register(comp component.Component, opts []component.Opt
 
 func (h *handlerService) handle(conn net.Conn) {
 	// create a client agent and startup write gorontine
-	agent := newAgent(conn)
+	agent := newAgent(conn, h.options)
 
 	// startup write goroutine
 	go agent.write()
@@ -302,18 +304,11 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 		return
 	}
 
-	var payload = msg.Data
-	var err error
-	if len(Pipeline.Inbound.handlers) > 0 {
-		for _, h := range Pipeline.Inbound.handlers {
-			payload, err = h(agent.session, payload)
-			if err != nil {
-				logger.Println(fmt.Sprintf("nano/handler: broken pipeline: %s", err.Error()))
-				return
-			}
-		}
+	if pipe := h.options.pipeline; pipe != nil {
+		pipe.Inbound().Process(agent.session, Message{msg})
 	}
 
+	var payload = msg.Data
 	var data interface{}
 	if handler.IsRawArg {
 		data = payload

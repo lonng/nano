@@ -1,28 +1,70 @@
 package nano
 
-import "github.com/lonnng/nano/session"
-
-var Pipeline = struct {
-	Outbound, Inbound *pipelineChannel
-}{&pipelineChannel{}, &pipelineChannel{}}
+import (
+	"fmt"
+	"github.com/lonnng/nano/internal/message"
+	"github.com/lonnng/nano/session"
+)
 
 type (
-	pipelineHandler func(s *session.Session, in []byte) (out []byte, err error)
+	Message struct {
+		*message.Message
+	}
+
+	PipelineFunc func(s *session.Session, msg Message) error
+
+	Pipeline interface {
+		Outbound() PipelineChannel
+		Inbound() PipelineChannel
+	}
+
+	pipeline struct {
+		outbound, inbound *pipelineChannel
+	}
+
+	PipelineChannel interface {
+		PushFront(h PipelineFunc)
+		PushBack(h PipelineFunc)
+		Process(s *session.Session, msg Message) error
+	}
 
 	pipelineChannel struct {
-		handlers []pipelineHandler
+		handlers []PipelineFunc
 	}
 )
 
+func NewPipeline() Pipeline {
+	return &pipeline{
+		outbound: &pipelineChannel{},
+		inbound:  &pipelineChannel{},
+	}
+}
+
+func (p *pipeline) Outbound() PipelineChannel { return p.outbound }
+func (p *pipeline) Inbound() PipelineChannel  { return p.inbound }
+
 // PushFront should not be used after nano running
-func (p *pipelineChannel) PushFront(h pipelineHandler) {
-	handlers := make([]pipelineHandler, len(p.handlers)+1)
+func (p *pipelineChannel) PushFront(h PipelineFunc) {
+	handlers := make([]PipelineFunc, len(p.handlers)+1)
 	handlers[0] = h
 	copy(handlers[1:], p.handlers)
 	p.handlers = handlers
 }
 
 // PushBack should not be used after nano running
-func (p *pipelineChannel) PushBack(h pipelineHandler) {
+func (p *pipelineChannel) PushBack(h PipelineFunc) {
 	p.handlers = append(p.handlers, h)
+}
+
+func (p *pipelineChannel) Process(s *session.Session, msg Message) error {
+	if len(p.handlers) < 1 {
+		return nil
+	}
+	for _, h := range p.handlers {
+		if err := h(s, msg); err != nil {
+			logger.Println(fmt.Sprintf("nano/handler: broken pipeline: %s", err.Error()))
+			return err
+		}
+	}
+	return nil
 }

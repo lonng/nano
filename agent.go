@@ -58,6 +58,7 @@ type (
 		chSend  chan pendingMessage // push message queue
 		lastAt  int64               // last heartbeat unix time stamp
 		decoder *codec.Decoder      // binary decoder
+		options *options
 
 		srv reflect.Value // cached session reflect.Value
 	}
@@ -71,7 +72,7 @@ type (
 )
 
 // Create new agent instance
-func newAgent(conn net.Conn) *agent {
+func newAgent(conn net.Conn, options *options) *agent {
 	a := &agent{
 		conn:    conn,
 		state:   statusStart,
@@ -79,6 +80,7 @@ func newAgent(conn net.Conn) *agent {
 		lastAt:  time.Now().Unix(),
 		chSend:  make(chan pendingMessage, agentWriteBacklog),
 		decoder: codec.NewDecoder(),
+		options: options,
 	}
 
 	// binding session
@@ -245,16 +247,6 @@ func (a *agent) write() {
 				break
 			}
 
-			if len(Pipeline.Outbound.handlers) > 0 {
-				for _, h := range Pipeline.Outbound.handlers {
-					payload, err = h(a.session, payload)
-					if err != nil {
-						logger.Println("broken pipeline", err.Error())
-						break
-					}
-				}
-			}
-
 			// construct message and encode
 			m := &message.Message{
 				Type:  data.typ,
@@ -262,6 +254,14 @@ func (a *agent) write() {
 				Route: data.route,
 				ID:    data.mid,
 			}
+			if pipe := a.options.pipeline; pipe != nil {
+				err := pipe.Outbound().Process(a.session, Message{m})
+				if err != nil {
+					logger.Println("broken pipeline", err.Error())
+					break
+				}
+			}
+
 			em, err := m.Encode()
 			if err != nil {
 				logger.Println(err.Error())

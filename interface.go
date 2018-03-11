@@ -31,15 +31,15 @@ import (
 // Listen listens on the TCP network address addr
 // and then calls Serve with handler to handle requests
 // on incoming connections.
-func Listen(addr string) {
-	listen(addr, false)
+func Listen(addr string, opts ...Option) {
+	listen(addr, false, opts...)
 }
 
 // ListenWS listens on the TCP network address addr
 // and then upgrades the HTTP server connection to the WebSocket protocol
 // to handle requests on incoming connections.
-func ListenWS(addr string) {
-	listen(addr, true)
+func ListenWS(addr string, opts ...Option) {
+	listen(addr, true, opts...)
 }
 
 // Register register a component with options
