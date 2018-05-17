@@ -56,14 +56,14 @@ func server() {
 func client() {
 	c := NewConnector()
 
-	if err := c.Start(addr); err != nil {
-		panic(err)
-	}
-
 	chReady := make(chan struct{})
 	c.OnConnected(func() {
 		chReady <- struct{}{}
 	})
+
+	if err := c.Start(addr); err != nil {
+		panic(err)
+	}
 
 	c.On("pong", func(data interface{}) {})
 
