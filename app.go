@@ -31,14 +31,26 @@ import (
 	"github.com/gorilla/websocket"
 	"strings"
 	"time"
+	"sync/atomic"
 )
 
+var running int32
+
 func listen(addr string, isWs bool, opts ...Option) {
+	// mark application running
+	if atomic.AddInt32(&running, 1) != 1 {
+		logger.Println("Nano has running")
+		return
+	}
+
 	for _, opt := range opts {
 		opt(handler.options)
 	}
 
+	// cache heartbeat data
 	hbdEncode()
+
+	// initial all components
 	startupComponents()
 
 	// create global ticker instance, timer precision could be customized
@@ -73,6 +85,7 @@ func listen(addr string, isWs bool, opts ...Option) {
 	// shutdown all components registered by application, that
 	// call by reverse order against register
 	shutdownComponents()
+	atomic.StoreInt32(&running, 0)
 }
 
 // Enable current server accept connection

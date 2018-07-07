@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/lonnng/nano/internal/message"
 	"github.com/lonnng/nano/session"
+	"sync/atomic"
 )
 
 type (
@@ -45,6 +46,10 @@ func (p *pipeline) Inbound() PipelineChannel  { return p.inbound }
 
 // PushFront should not be used after nano running
 func (p *pipelineChannel) PushFront(h PipelineFunc) {
+	if atomic.LoadInt32(&running) > 0 {
+		logger.Println("PushFront should not be used after Nano running")
+		return
+	}
 	handlers := make([]PipelineFunc, len(p.handlers)+1)
 	handlers[0] = h
 	copy(handlers[1:], p.handlers)
@@ -53,6 +58,10 @@ func (p *pipelineChannel) PushFront(h PipelineFunc) {
 
 // PushBack should not be used after nano running
 func (p *pipelineChannel) PushBack(h PipelineFunc) {
+	if atomic.LoadInt32(&running) > 0 {
+		logger.Println("PushFront should not be used after Nano running")
+		return
+	}
 	p.handlers = append(p.handlers, h)
 }
 

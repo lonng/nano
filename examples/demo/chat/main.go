@@ -14,13 +14,15 @@ import (
 )
 
 type (
-	// Room represents a component that contains a bundle of room related handler
-	// like Join/Message
 	Room struct {
-		component.Base
 		group *nano.Group
+	}
+
+	// RoomManager represents a component that contains a bundle of room
+	RoomManager struct {
+		component.Base
 		timer *nano.Timer
-		stats *stats
+		rooms map[int]*Room
 	}
 
 	// UserMessage represents a message that user sent
@@ -46,6 +48,8 @@ type (
 	}
 
 	stats struct {
+		component.Base
+		timer         *nano.Timer
 		outboundBytes int
 		inboundBytes  int
 	}
@@ -61,41 +65,70 @@ func (stats *stats) inbound(s *session.Session, msg nano.Message) error {
 	return nil
 }
 
-// NewRoom returns a new room
-func NewRoom() *Room {
-	return &Room{
-		group: nano.NewGroup("room"),
-		stats: &stats{},
+func (stats *stats) AfterInit() {
+	stats.timer = nano.NewTimer(time.Minute, func() {
+		println("OutboundBytes", stats.outboundBytes)
+		println("InboundBytes", stats.outboundBytes)
+	})
+}
+
+const (
+	testRoomID = 1
+	roomIDKey  = "ROOM_ID"
+)
+
+func NewRoomManager() *RoomManager {
+	return &RoomManager{
+		rooms: map[int]*Room{},
 	}
 }
 
 // AfterInit component lifetime callback
-func (r *Room) AfterInit() {
+func (mgr *RoomManager) AfterInit() {
 	nano.OnSessionClosed(func(s *session.Session) {
-		r.group.Leave(s)
+		if !s.HasKey(roomIDKey) {
+			return
+		}
+		room := s.Value(roomIDKey).(*Room)
+		room.group.Leave(s)
 	})
-	r.timer = nano.NewTimer(time.Minute, func() {
-		println("UserCount: Time=>", time.Now().String(), "Count=>", r.group.Count())
-		println("OutboundBytes", r.stats.outboundBytes)
-		println("InboundBytes", r.stats.outboundBytes)
+	mgr.timer = nano.NewTimer(time.Minute, func() {
+		for roomId, room := range mgr.rooms {
+			println(fmt.Sprintf("UserCount: RoomID=%d, Time=%s, Count=%d",
+				roomId, time.Now().String(), room.group.Count()))
+		}
 	})
 }
 
 // Join room
-func (r *Room) Join(s *session.Session, msg []byte) error {
+func (mgr *RoomManager) Join(s *session.Session, msg []byte) error {
+	// NOTE: join test room only in demo
+	room, found := mgr.rooms[testRoomID]
+	if !found {
+		room = &Room{
+			group: nano.NewGroup(fmt.Sprintf("room-%d", testRoomID)),
+		}
+		mgr.rooms[testRoomID] = room
+	}
+
 	fakeUID := s.ID() //just use s.ID as uid !!!
-	s.Bind(fakeUID)   // binding session uid
-	s.Push("onMembers", &AllMembers{Members: r.group.Members()})
+	s.Bind(fakeUID)   // binding session uids.Set(roomIDKey, room)
+	s.Set(roomIDKey, room)
+	s.Push("onMembers", &AllMembers{Members: room.group.Members()})
 	// notify others
-	r.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
+	room.group.Broadcast("onNewUser", &NewUser{Content: fmt.Sprintf("New user: %d", s.ID())})
 	// new user join group
-	r.group.Add(s) // add session to group
+	room.group.Add(s) // add session to group
 	return s.Response(&JoinResponse{Result: "success"})
 }
 
 // Message sync last message to all members
-func (r *Room) Message(s *session.Session, msg *UserMessage) error {
-	return r.group.Broadcast("onMessage", msg)
+func (mgr *RoomManager) Message(s *session.Session, msg *UserMessage) error {
+	if !s.HasKey(roomIDKey) {
+		return fmt.Errorf("not join room yet")
+	}
+	room := s.Value(roomIDKey).(*Room)
+	return room.group.Broadcast("onMessage", msg)
 }
 
 func main() {
@@ -103,7 +136,7 @@ func main() {
 	nano.SetSerializer(json.NewSerializer())
 
 	// rewrite component and handler name
-	room := NewRoom()
+	room := NewRoomManager()
 	nano.Register(room,
 		component.WithName("room"),
 		component.WithNameFunc(strings.ToLower),
@@ -111,8 +144,9 @@ func main() {
 
 	// traffic stats
 	pipeline := nano.NewPipeline()
-	pipeline.Outbound().PushBack(room.stats.outbound)
-	pipeline.Inbound().PushBack(room.stats.inbound)
+	var stats = &stats{}
+	pipeline.Outbound().PushBack(stats.outbound)
+	pipeline.Inbound().PushBack(stats.inbound)
 
 	nano.EnableDebug()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
