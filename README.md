@@ -117,6 +117,7 @@ The Nano will remain simple, but you can perform any operations in the component
 - Demo
   + [Implement a chat room in 100 lines with nano and WebSocket](./examples/demo/chat)
   + [Tadpole demo](./examples/demo/tadpole)
+  + [四川麻将, 血战到底(三人模式/四人模式)完整项目实例](https://github.com/lonnng/nanoserver)
 
 ## Community
 
