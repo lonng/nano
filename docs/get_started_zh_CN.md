@@ -15,7 +15,7 @@
 
 - 由于`nano`是基于Go开发的，因此希望你在阅读本教程前对Go语言有一些了解。
 
-- 本教程的示例源码放在github上[完整代码](https://github.com/lonnng/nano/tree/master/examples/demo/chat)
+- 本教程的示例源码放在github上[完整代码](https://github.com/jmesyan/nano/tree/master/examples/demo/chat)
 
 - 本教程将以一个实时聊天应用为例子，通过对这个应用进行不同的修改来展示`nano`框架的一些功能特性，让用
 户能大致了解`nano`，熟悉并能够使用`nano`进行应用程序的开发。
@@ -103,10 +103,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/lonnng/nano"
-	"github.com/lonnng/nano/component"
-	"github.com/lonnng/nano/serialize/json"
-	"github.com/lonnng/nano/session"
+	"github.com/jmesyan/nano"
+	"github.com/jmesyan/nano/component"
+	"github.com/jmesyan/nano/serialize/json"
+	"github.com/jmesyan/nano/session"
 )
 
 type (

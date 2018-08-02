@@ -2,10 +2,10 @@
 
 [1]: https://travis-ci.org/lonnng/nano.svg?branch=master
 [2]: https://travis-ci.org/lonnng/nano
-[3]: https://godoc.org/github.com/lonnng/nano?status.svg
-[4]: https://godoc.org/github.com/lonnng/nano
-[5]: https://goreportcard.com/badge/github.com/lonnng/nano
-[6]: https://goreportcard.com/report/github.com/lonnng/nano
+[3]: https://godoc.org/github.com/jmesyan/nano?status.svg
+[4]: https://godoc.org/github.com/jmesyan/nano
+[5]: https://goreportcard.com/badge/github.com/jmesyan/nano
+[6]: https://goreportcard.com/report/github.com/jmesyan/nano
 [7]: https://img.shields.io/badge/license-MIT-blue.svg
 [8]: LICENSE
 
@@ -98,26 +98,26 @@ The Nano will remain simple, but you can perform any operations in the component
     + [Route compression](./docs/route_compression.md)
     + [Communication protocol](./docs/communication_protocol.md)
     + [Design patterns](./docs/design_patterns.md)
-    + [API Reference(Server)](https://godoc.org/github.com/lonnng/nano)
+    + [API Reference(Server)](https://godoc.org/github.com/jmesyan/nano)
     + [How to integrate `Lua` into `Nano` component(incomplete)](.)
 
 - 简体中文
     + [如何构建你的第一个nano应用](./docs/get_started_zh_CN.md)
     + [路由压缩](./docs/route_compression_zh_CN.md)
     + [通信协议](./docs/communication_protocol_zh_CN.md)
-    + [API参考(服务器)](https://godoc.org/github.com/lonnng/nano)
+    + [API参考(服务器)](https://godoc.org/github.com/jmesyan/nano)
     + [如何将`lua`脚本集成到`nano`组件中(未完成)](.)
 
 ## Resources
 
 - Javascript
-  + [nano-websocket-client](https://github.com/lonnng/nano-websocket-client)
-  + [nano-egret-client](https://github.com/lonnng/nano-egret-client)
+  + [nano-websocket-client](https://github.com/jmesyan/nano-websocket-client)
+  + [nano-egret-client](https://github.com/jmesyan/nano-egret-client)
 
 - Demo
   + [Implement a chat room in 100 lines with nano and WebSocket](./examples/demo/chat)
   + [Tadpole demo](./examples/demo/tadpole)
-  + [四川麻将, 血战到底(三人模式/四人模式)完整项目实例](https://github.com/lonnng/nanoserver)
+  + [四川麻将, 血战到底(三人模式/四人模式)完整项目实例](https://github.com/jmesyan/nanoserver)
 
 ## Community
 
@@ -131,7 +131,7 @@ The Nano will remain simple, but you can perform any operations in the component
 ## Installation
 
 ```shell
-go get github.com/lonnng/nano
+go get github.com/jmesyan/nano
 
 # dependencies
 go get -u github.com/golang/protobuf
@@ -146,7 +146,7 @@ go get -u github.com/gorilla/websocket
 # Device: i5-6500 3.2GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
 # Other:  ...
 
-cd $GOPATH/src/github.com/lonnng/nano/benchmark/io
+cd $GOPATH/src/github.com/jmesyan/nano/benchmark/io
 go test -v -tags "benchmark"
 ```
 

@@ -27,7 +27,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lonnng/nano/service"
+	"github.com/jmesyan/nano/service"
 )
 
 // NetworkEntity represent low-level network instance

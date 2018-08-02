@@ -115,7 +115,7 @@ func invalidType(t Type) bool {
 // | push     |----011-|<route>             |
 // ------------------------------------------
 // The figure above indicates that the bit does not affect the type of message.
-// See ref: https://github.com/lonnng/nano/blob/master/docs/communication_protocol.md
+// See ref: https://github.com/jmesyan/nano/blob/master/docs/communication_protocol.md
 func Encode(m *Message) ([]byte, error) {
 	if invalidType(m.Type) {
 		return nil, ErrWrongMessageType
@@ -160,7 +160,7 @@ func Encode(m *Message) ([]byte, error) {
 }
 
 // Decode unmarshal the bytes slice to a message
-// See ref: https://github.com/lonnng/nano/blob/master/docs/communication_protocol.md
+// See ref: https://github.com/jmesyan/nano/blob/master/docs/communication_protocol.md
 func Decode(data []byte) (*Message, error) {
 	if len(data) < msgHeadLength {
 		return nil, ErrInvalidMessage

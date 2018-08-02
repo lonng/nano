@@ -28,10 +28,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lonnng/nano/internal/codec"
-	"github.com/lonnng/nano/internal/message"
-	"github.com/lonnng/nano/internal/packet"
-	"github.com/lonnng/nano/session"
+	"github.com/jmesyan/nano/internal/codec"
+	"github.com/jmesyan/nano/internal/message"
+	"github.com/jmesyan/nano/internal/packet"
+	"github.com/jmesyan/nano/session"
 )
 
 const (

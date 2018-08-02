@@ -24,8 +24,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/lonnng/nano/component"
-	"github.com/lonnng/nano/internal/message"
+	"github.com/jmesyan/nano/component"
+	"github.com/jmesyan/nano/internal/message"
 )
 
 // Listen listens on the TCP network address addr
