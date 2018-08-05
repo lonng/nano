@@ -28,6 +28,10 @@ import (
 	"github.com/jmesyan/nano/internal/message"
 )
 
+func Connect(addr string, opts ...Option) {
+	connect(addr, opts...)
+}
+
 // Listen listens on the TCP network address addr
 // and then calls Serve with handler to handle requests
 // on incoming connections.

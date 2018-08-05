@@ -30,11 +30,70 @@ import (
 
 	"github.com/gorilla/websocket"
 	"strings"
-	"time"
 	"sync/atomic"
+	"time"
 )
 
 var running int32
+
+func connect(addr string, opts ...Option) {
+	// mark application running
+	if atomic.AddInt32(&running, 1) != 1 {
+		logger.Println("Nano has running")
+		return
+	}
+
+	for _, opt := range opts {
+		opt(handler.options)
+	}
+
+	// cache heartbeat data
+	hbdEncode()
+
+	// initial all components
+	startupComponents()
+
+	// create global ticker instance, timer precision could be customized
+	// by SetTimerPrecision
+	globalTicker = time.NewTicker(timerPrecision)
+	// startup logic dispatcher
+	go handler.dispatch()
+
+	go func() {
+		connectAndServe(addr)
+	}()
+
+	logger.Println(fmt.Sprintf("starting application %s, connect to %s", app.name, addr))
+	sg := make(chan os.Signal)
+	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
+
+	// stop server
+	select {
+	case <-env.die:
+		logger.Println("The app will shutdown in a few seconds")
+	case s := <-sg:
+		logger.Println("got signal", s)
+	}
+
+	logger.Println("server is stopping...")
+
+	// shutdown all components registered by application, that
+	// call by reverse order against register
+	shutdownComponents()
+	atomic.StoreInt32(&running, 0)
+}
+
+func connectAndServe(addr string) {
+	caddr, err := net.ResolveTCPAddr("tcp", addr)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	conn, err := net.DialTCP("tcp", nil, caddr)
+	if err != nil {
+		logger.Fatal(err.Error())
+	}
+	go handler.handle(conn)
+}
 
 func listen(addr string, isWs bool, opts ...Option) {
 	// mark application running

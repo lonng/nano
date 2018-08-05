@@ -480,6 +480,7 @@
   handlers[Package.TYPE_KICK] = onKick;
 
   var processPackage = function(msgs) {
+    console.log("processPackage:", msgs);
     if(Array.isArray(msgs)) {
       for(var i=0; i<msgs.length; i++) {
         var msg = msgs[i];

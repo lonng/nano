@@ -209,6 +209,8 @@ func (h *handlerService) handle(conn net.Conn) {
 	// startup write goroutine
 	go agent.write()
 
+	// agent.send(pendingMessage{typ: message.Notify, route: "game.gameHandler.welcome", mid: 0, payload: nil})
+
 	if env.debug {
 		logger.Println(fmt.Sprintf("New session established: %s", agent.String()))
 	}
