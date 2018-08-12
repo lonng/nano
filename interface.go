@@ -56,6 +56,11 @@ func SetHeartbeatInterval(d time.Duration) {
 	env.heartbeat = d
 }
 
+// SetHeartbeatIntervalTimeout set heartbeat time intervaltimeout
+func SetHeartbeatIntervalTimeout(d time.Duration) {
+	env.heartbeatTimeout = d
+}
+
 // SetCheckOriginFunc set the function that check `Origin` in http headers
 func SetCheckOriginFunc(fn func(*http.Request) bool) {
 	env.checkOrigin = fn

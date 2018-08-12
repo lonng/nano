@@ -186,7 +186,7 @@ func (a *agent) Close() error {
 		close(a.chDie)
 		handler.chCloseSession <- a.session
 	}
-
+	logger.Println("the agent will close")
 	return a.conn.Close()
 }
 
@@ -210,11 +210,11 @@ func (a *agent) setStatus(state int32) {
 }
 
 func (a *agent) write() {
-	ticker := time.NewTicker(env.heartbeat)
+	// ticker := time.NewTicker(env.heartbeat)
 	chWrite := make(chan []byte, agentWriteBacklog)
 	// clean func
 	defer func() {
-		ticker.Stop()
+		// ticker.Stop()
 		close(a.chSend)
 		close(chWrite)
 		a.Close()
@@ -225,13 +225,13 @@ func (a *agent) write() {
 
 	for {
 		select {
-		case <-ticker.C:
-			deadline := time.Now().Add(-2 * env.heartbeat).Unix()
-			if a.lastAt < deadline {
-				logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
-				return
-			}
-			chWrite <- hbd
+		// case <-ticker.C:
+		// 	deadline := time.Now().Add(-2 * env.heartbeat).Unix()
+		// 	if a.lastAt < deadline {
+		// 		logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
+		// 		return
+		// 	}
+		// 	chWrite <- hbd
 
 		case data := <-chWrite:
 			// close agent while low-level conn broken

@@ -44,16 +44,27 @@ var (
 	// env represents the environment of the current process, includes
 	// work path and config path etc.
 	env = &struct {
-		wd          string                   // working path
-		die         chan bool                // wait for end application
-		heartbeat   time.Duration            // heartbeat internal
-		checkOrigin func(*http.Request) bool // check origin when websocket enabled
-		debug       bool                     // enable debug
-		wsPath      string                   // WebSocket path(eg: ws://127.0.0.1/wsPath)
+		wd                   string                   // working path
+		die                  chan bool                // wait for end application
+		heartbeat            time.Duration            // heartbeat internal
+		heartbeatTimeout     time.Duration            // heartbeat timeout
+		nextHeartbeatTimeout time.Time                // nextHeartbeat timeout time
+		checkOrigin          func(*http.Request) bool // check origin when websocket enabled
+		debug                bool                     // enable debug
+		wsPath               string                   // WebSocket path(eg: ws://127.0.0.1/wsPath)
 
 		// session closed handlers
 		muCallbacks sync.RWMutex           // protect callbacks
 		callbacks   []SessionClosedHandler // callbacks that emitted on session closed
+	}{}
+
+	reconnect = &struct {
+		isreconnect          bool
+		addr                 string
+		opts                 []Option
+		reconnectAttempts    int64
+		reconnectMaxAttempts int64
+		reconnectionDelay    time.Duration
 	}{}
 )
 
@@ -81,4 +92,9 @@ func init() {
 	env.debug = false
 	env.muCallbacks = sync.RWMutex{}
 	env.checkOrigin = func(_ *http.Request) bool { return true }
+
+	reconnect.isreconnect = true
+	reconnect.reconnectAttempts = 0
+	reconnect.reconnectMaxAttempts = 10
+	reconnect.reconnectionDelay = time.Duration(5) * time.Second
 }

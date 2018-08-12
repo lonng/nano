@@ -22,11 +22,13 @@ package nano
 
 import (
 	"github.com/jmesyan/nano/serialize"
+	"github.com/jmesyan/nano/serialize/json"
 	"github.com/jmesyan/nano/serialize/protobuf"
 )
 
 // Default serializer
 var serializer serialize.Serializer = protobuf.NewSerializer()
+var serializerJson serialize.Serializer = json.NewSerializer()
 
 // SetSerializer customize application serializer, which automatically Marshal
 // and UnMarshal handler payload

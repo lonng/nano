@@ -37,6 +37,9 @@ import (
 var running int32
 
 func connect(addr string, opts ...Option) {
+	reconnect.addr = addr
+	reconnect.opts = opts
+
 	// mark application running
 	if atomic.AddInt32(&running, 1) != 1 {
 		logger.Println("Nano has running")
@@ -63,7 +66,7 @@ func connect(addr string, opts ...Option) {
 		connectAndServe(addr)
 	}()
 
-	logger.Println(fmt.Sprintf("starting application %s, connect to %s", app.name, addr))
+	logger.Println(fmt.Sprintf("starting application %s, connect to %s", app.name, reconnect.addr))
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
 
@@ -92,7 +95,7 @@ func connectAndServe(addr string) {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	go handler.handle(conn)
+	go handler.handleC(conn)
 }
 
 func listen(addr string, isWs bool, opts ...Option) {
