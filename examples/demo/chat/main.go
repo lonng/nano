@@ -85,7 +85,7 @@ func NewRoomManager() *RoomManager {
 
 // AfterInit component lifetime callback
 func (mgr *RoomManager) AfterInit() {
-	nano.OnSessionClosed(func(s *session.Session) {
+	session.Lifetime.OnClosed(func(s *session.Session) {
 		if !s.HasKey(roomIDKey) {
 			return
 		}

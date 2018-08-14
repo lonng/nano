@@ -25,10 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
-
-	"github.com/lonnng/nano/session"
 )
 
 // VERSION returns current nano version
@@ -50,17 +47,7 @@ var (
 		checkOrigin func(*http.Request) bool // check origin when websocket enabled
 		debug       bool                     // enable debug
 		wsPath      string                   // WebSocket path(eg: ws://127.0.0.1/wsPath)
-
-		// session closed handlers
-		muCallbacks sync.RWMutex           // protect callbacks
-		callbacks   []SessionClosedHandler // callbacks that emitted on session closed
 	}{}
-)
-
-type (
-	// SessionClosedHandler represents a callback that will be called when a session
-	// close or session low-level connection broken.
-	SessionClosedHandler func(session *session.Session)
 )
 
 // init default configs
@@ -79,6 +66,5 @@ func init() {
 	env.die = make(chan bool)
 	env.heartbeat = 30 * time.Second
 	env.debug = false
-	env.muCallbacks = sync.RWMutex{}
 	env.checkOrigin = func(_ *http.Request) bool { return true }
 }

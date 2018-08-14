@@ -134,16 +134,7 @@ func onSessionClosed(s *session.Session) {
 		}
 	}()
 
-	env.muCallbacks.RLock()
-	defer env.muCallbacks.RUnlock()
-
-	if len(env.callbacks) < 1 {
-		return
-	}
-
-	for _, fn := range env.callbacks {
-		fn(s)
-	}
+	session.Lifetime.Close(s)
 }
 
 // dispatch message to corresponding logic handler

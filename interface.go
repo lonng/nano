@@ -67,15 +67,6 @@ func EnableDebug() {
 	env.debug = true
 }
 
-// OnSessionClosed set the Callback which will be called when session is closed
-// Waring: session has closed,
-func OnSessionClosed(cb SessionClosedHandler) {
-	env.muCallbacks.Lock()
-	defer env.muCallbacks.Unlock()
-
-	env.callbacks = append(env.callbacks, cb)
-}
-
 // SetDictionary set routes map, TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!
 func SetDictionary(dict map[string]uint16) {
 	message.SetDictionary(dict)
