@@ -29,6 +29,11 @@ import (
 	"syscall"
 
 	"github.com/gorilla/websocket"
+	pb "github.com/jmesyan/nano/protos"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	"io"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -87,15 +92,57 @@ func connect(addr string, opts ...Option) {
 }
 
 func connectAndServe(addr string) {
-	caddr, err := net.ResolveTCPAddr("tcp", addr)
+	var opts []grpc.DialOption
+	opts = append(opts, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, opts...)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal("fail to dial: %v", err)
 	}
-	conn, err := net.DialTCP("tcp", nil, caddr)
+	defer conn.Close()
+	client := pb.NewGrpcServiceClient(conn)
+	rpcService(client)
+}
+
+func rpcService(client pb.GrpcServiceClient) {
+	md := metadata.Pairs("gid", "1001")
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+
+	stream, err := client.MService(ctx)
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatal("%v.MService(_) = _, %v", client, err)
 	}
-	go handler.handleC(conn)
+	go func() {
+		for {
+			in, err := stream.Recv()
+			if err == io.EOF {
+				close(env.die)
+				logger.Println("Read message error: %v, application will be closed immediately", err)
+				return
+			}
+			if err != nil {
+				close(env.die)
+				logger.Println("Failed to receive a rpcmessage : %v", err)
+				return
+			}
+			go handler.handleC(stream, in)
+			// userMessage := &pb.UserMessage{}
+			// err = proto.Unmarshal(in.Data, userMessage)
+			// if err != nil {
+			// 	logger.Fatal("unmarshaling error: ", err)
+			// }
+			// logger.Println(in, userMessage)
+		}
+	}()
+
+	sg := make(chan os.Signal)
+	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
+	select {
+	case <-env.die:
+		logger.Println("The app will shutdown in a few seconds2")
+	case s := <-sg:
+		logger.Println("got signal2", s)
+	}
+	stream.CloseSend()
 }
 
 func listen(addr string, isWs bool, opts ...Option) {

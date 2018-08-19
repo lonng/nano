@@ -32,6 +32,7 @@ import (
 	"github.com/jmesyan/nano/internal/codec"
 	"github.com/jmesyan/nano/internal/message"
 	"github.com/jmesyan/nano/internal/packet"
+	pb "github.com/jmesyan/nano/protos"
 	"github.com/jmesyan/nano/session"
 )
 
@@ -225,59 +226,8 @@ func (h *handlerService) register(comp component.Component, opts []component.Opt
 	return nil
 }
 
-func (h *handlerService) handleC(conn net.Conn) {
-	// create a client agent and startup write gorontine
-	agent := newAgent(conn, h.options)
-
-	// startup write goroutine
-	go agent.write()
-
-	if env.debug {
-		logger.Println(fmt.Sprintf("New session established: %s", agent.String()))
-	}
-	//handle
-	if _, err := agent.conn.Write(hrdC); err != nil {
-		logger.Println(err.Error())
-		return
-	}
-	agent.setStatus(statusHandshake)
-
-	// guarantee agent related resource be destroyed
-	defer func() {
-		agent.Close()
-		if env.debug {
-			logger.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.UID()))
-		}
-	}()
-
-	// read loop
-	buf := make([]byte, 2048)
-	for {
-		n, err := conn.Read(buf)
-		if err != nil {
-			logger.Println(fmt.Sprintf("Read message error: %s, session will be closed immediately", err.Error()))
-			return
-		}
-
-		// TODO(warning): decoder use slice for performance, packet data should be copy before next Decode
-		packets, err := agent.decoder.Decode(buf[:n])
-		if err != nil {
-			logger.Println(err.Error())
-			return
-		}
-
-		if len(packets) < 1 {
-			continue
-		}
-
-		// process all packet
-		for i := range packets {
-			if err := h.processPacketC(agent, packets[i]); err != nil {
-				logger.Println(err.Error())
-				return
-			}
-		}
-	}
+func (h *handlerService) handleC(stream pb.GrpcService_MServiceClient, message *pb.GrpcMessage) {
+	logger.Println("handle the message", message)
 }
 
 func (h *handlerService) heartbeatInit(interval int64) {
