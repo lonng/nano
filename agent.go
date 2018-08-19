@@ -183,8 +183,10 @@ func (a *agent) Close() error {
 	case <-a.chDie:
 		// expect
 	default:
-		close(a.chDie)
-		handler.chCloseSession <- a.session
+		if !isReconnecting() {
+			close(a.chDie)
+			// handler.chCloseSession <- a.session
+		}
 	}
 	logger.Println("the agent will close")
 	return a.conn.Close()
@@ -210,11 +212,11 @@ func (a *agent) setStatus(state int32) {
 }
 
 func (a *agent) write() {
-	// ticker := time.NewTicker(env.heartbeat)
+	ticker := time.NewTicker(env.heartbeat)
 	chWrite := make(chan []byte, agentWriteBacklog)
 	// clean func
 	defer func() {
-		// ticker.Stop()
+		ticker.Stop()
 		close(a.chSend)
 		close(chWrite)
 		a.Close()
@@ -225,14 +227,37 @@ func (a *agent) write() {
 
 	for {
 		select {
-		// case <-ticker.C:
-		// 	deadline := time.Now().Add(-2 * env.heartbeat).Unix()
-		// 	if a.lastAt < deadline {
-		// 		logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
-		// 		return
-		// 	}
-		// 	chWrite <- hbd
+		case <-ticker.C:
+			// deadline := time.Now().Add(-2 * env.heartbeat).Unix()
+			// if a.lastAt < deadline {
+			// 	logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
+			// 	return
+			// }
+			handler.heartbeatTimeoutCb()
+			// chWrite <- hbd
+		case attempts := <-reconnect.attempts:
+			logger.Println("come the reconnect attempts", attempts)
+			if attempts > 0 && attempts <= reconnect.reconnectMaxAttempts {
+				logger.Println(fmt.Printf("第%d次尝试重连：", attempts))
+				reconnect.reconnectAttempts = attempts
+				reconnect.trying = true
+				caddr, err := net.ResolveTCPAddr("tcp", reconnect.addr)
+				if err != nil {
+					logger.Println(err.Error())
+				} else {
+					conn, err := net.DialTCP("tcp", nil, caddr)
+					if err != nil {
+						logger.Println(err.Error())
+					} else {
+						logger.Println(fmt.Printf("第%d次尝试重连成功", attempts))
+						a.conn = conn
+						conn.SetNoDelay(true)
+						go handler.handleC(a, conn)
 
+					}
+				}
+				reconnect.trying = false
+			}
 		case data := <-chWrite:
 			// close agent while low-level conn broken
 			if _, err := a.conn.Write(data); err != nil {

@@ -225,9 +225,8 @@ func (h *handlerService) register(comp component.Component, opts []component.Opt
 	return nil
 }
 
-func (h *handlerService) handleC(conn net.Conn) {
+func (h *handlerService) handleC(agent *agent, conn net.Conn) {
 	// create a client agent and startup write gorontine
-	agent := newAgent(conn, h.options)
 
 	// startup write goroutine
 	go agent.write()
@@ -335,22 +334,27 @@ func (h *handlerService) processPacketC(agent *agent, p *packet.Packet) error {
 		h.processMessage(agent, msg)
 
 	case packet.Heartbeat:
-		logger.Println("the heartbeat come")
+		logger.Println("the heartbeat come:", env.heartbeat, env.heartbeatTimeout)
+		if _, err := agent.conn.Write(hbd); err != nil {
+			logger.Println(err.Error())
+			return err
+		}
+		env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
 		// expected
-		time.AfterFunc(env.heartbeat, func() {
-			if _, err := agent.conn.Write(hbd); err != nil {
-				logger.Println(err.Error())
-				return
-			}
-			env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
-			time.AfterFunc(env.heartbeatTimeout, h.heartbeatTimeoutCb)
-		})
+		// time.AfterFunc(env.heartbeat, func() {
+		// 	if _, err := agent.conn.Write(hbd); err != nil {
+		// 		logger.Println(err.Error())
+		// 		return
+		// 	}
+		// 	env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
+		// 	time.AfterFunc(env.heartbeatTimeout, h.heartbeatTimeoutCb)
+		// })
 	}
 
 	// agent.lastAt = time.Now().Unix()
-	if env.heartbeatTimeout > 0 {
-		env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
-	}
+	// if env.heartbeatTimeout > 0 {
+	// 	env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
+	// }
 	return nil
 }
 
@@ -360,12 +364,14 @@ func (h *handlerService) heartbeatTimeoutCb() {
 	logger.Println("heartbeatTimeoutCb:", time.Now(), env.nextHeartbeatTimeout, gap, gapThreshold, gap > gapThreshold)
 	if gap > gapThreshold {
 		time.AfterFunc(env.heartbeatTimeout, h.heartbeatTimeoutCb)
+	} else if isReconnecting() {
+		if !reconnect.trying {
+			logger.Println("begin reconnect to server")
+			reconnect.attempts <- reconnect.reconnectAttempts + 1
+		}
 	} else {
 		logger.Println("server heartbeat timeout,disconnect the connection")
-		_, ok := <-env.die
-		if ok {
-			close(env.die)
-		}
+		close(env.die)
 	}
 }
 

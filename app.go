@@ -95,7 +95,10 @@ func connectAndServe(addr string) {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	go handler.handleC(conn)
+	conn.SetNoDelay(true)
+	agent := newAgent(conn, handler.options)
+	reconnect.agent = agent
+	go handler.handleC(agent, conn)
 }
 
 func listen(addr string, isWs bool, opts ...Option) {
