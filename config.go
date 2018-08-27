@@ -66,6 +66,10 @@ var (
 		reconnectMaxAttempts int64
 		reconnectionDelay    time.Duration
 	}{}
+
+	Gid   string
+	Rtype string
+	Ridx  string
 )
 
 type (
@@ -97,4 +101,10 @@ func init() {
 	reconnect.reconnectAttempts = 0
 	reconnect.reconnectMaxAttempts = 10
 	reconnect.reconnectionDelay = time.Duration(5) * time.Second
+}
+
+func SetGameType(gid, rtype, ridx string) {
+	Gid = gid
+	Rtype = rtype
+	Ridx = ridx
 }

@@ -22,7 +22,6 @@ package nano
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -54,7 +53,12 @@ var (
 	hrdcACK []byte // heartbeatC packet data
 
 	gapThreshold time.Duration = 100 * time.Millisecond
+	typeOfAgency               = reflect.TypeOf(new(Agency))
 )
+
+func init() {
+	component.SetAgencyType(reflect.TypeOf(new(Agency)))
+}
 
 func hbdEncode() {
 	data, err := json.Marshal(map[string]interface{}{
@@ -97,8 +101,8 @@ type (
 	}
 
 	unhandledMessage struct {
-		agent   *agent
-		lastMid uint
+		// agent   *agent
+		// lastMid uint
 		handler reflect.Method
 		args    []reflect.Value
 	}
@@ -136,6 +140,10 @@ func pcall(method reflect.Method, args []reflect.Value) {
 			logger.Println(err.(error).Error())
 		}
 	}
+	//回收
+	agency := args[1].Interface().(*Agency)
+	AgentManager.agentPut(agency)
+
 }
 
 // call handler with protected
@@ -183,7 +191,7 @@ func (h *handlerService) dispatch() {
 	for {
 		select {
 		case m := <-h.chLocalProcess: // logic dispatch
-			m.agent.lastMid = m.lastMid
+			// m.agent.lastMid = m.lastMid
 			pcall(m.handler, m.args)
 
 		case s := <-h.chCloseSession: // session closed callback
@@ -227,7 +235,42 @@ func (h *handlerService) register(comp component.Component, opts []component.Opt
 }
 
 func (h *handlerService) handleC(stream pb.GrpcService_MServiceClient, message *pb.GrpcMessage) {
-	logger.Println("handle the message", message)
+	agent := AgentManager.agentGet(stream, message)
+	logger.Println("the agent is:", agent, message.Route)
+	route := agent.Route
+	if len(route) > 0 {
+		handler, ok := h.handlers[route]
+		if !ok {
+			logger.Println(fmt.Sprintf("nano/handler: %s not found(forgot registered?)", route))
+			return
+		}
+
+		// if pipe := h.options.pipeline; pipe != nil {
+		// 	pipe.Inbound().Process(agent.session, Message{msg})
+		// }
+
+		var payload = message.Data
+		var data interface{}
+		if handler.IsRawArg {
+			data = payload
+		} else {
+			data = reflect.New(handler.Type.Elem()).Interface()
+			err := serializer.Unmarshal(payload, data)
+			if err != nil {
+				logger.Println("deserialize error", err.Error())
+				return
+			}
+		}
+
+		// if env.debug {
+		// 	logger.Println(fmt.Sprintf("UID=%d, Message={%s}, Data=%+v", agent.session.UID(), msg.String(), data))
+		// }
+
+		args := []reflect.Value{handler.Receiver, reflect.ValueOf(agent), reflect.ValueOf(data)}
+		h.chLocalProcess <- unhandledMessage{handler.Method, args}
+	} else {
+		logger.Println("can't analyse the message", message)
+	}
 }
 
 func (h *handlerService) heartbeatInit(interval int64) {
@@ -236,71 +279,71 @@ func (h *handlerService) heartbeatInit(interval int64) {
 }
 
 func (h *handlerService) processPacketC(agent *agent, p *packet.Packet) error {
-	logger.Println("processPacketC:", p)
-	switch p.Type {
-	case packet.Handshake:
-		var payload = p.Data
-		var hrm heartbeatMessage
-		err := serializerJson.Unmarshal(payload, &hrm)
-		if err != nil {
-			logger.Println("Handshake deserialize error", err.Error())
-			return err
-		}
-
-		if hrm.Code == RES_OLD_CLIENT {
-			return errors.New("client version not fullfill")
-		}
-
-		if hrm.Code != RES_OK {
-			return errors.New("handshake fail")
-		}
-
-		h.heartbeatInit(hrm.Heartbeat)
-
-		if _, err := agent.conn.Write(hrdcACK); err != nil {
-			return err
-		}
-
-		if env.debug {
-			logger.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
-		}
-		agent.setStatus(statusWorking)
-
-	// case packet.HandshakeAck:
-	// 	agent.setStatus(statusWorking)
-	// 	if env.debug {
-	// 		logger.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
+	// logger.Println("processPacketC:", p)
+	// switch p.Type {
+	// case packet.Handshake:
+	// 	var payload = p.Data
+	// 	var hrm heartbeatMessage
+	// 	err := serializerJson.Unmarshal(payload, &hrm)
+	// 	if err != nil {
+	// 		logger.Println("Handshake deserialize error", err.Error())
+	// 		return err
 	// 	}
 
-	case packet.Data:
-		if agent.status() < statusWorking {
-			return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
-				agent.conn.RemoteAddr().String())
-		}
+	// 	if hrm.Code == RES_OLD_CLIENT {
+	// 		return errors.New("client version not fullfill")
+	// 	}
 
-		msg, err := message.Decode(p.Data)
-		if err != nil {
-			return err
-		}
-		h.processMessage(agent, msg)
+	// 	if hrm.Code != RES_OK {
+	// 		return errors.New("handshake fail")
+	// 	}
 
-	case packet.Heartbeat:
-		logger.Println("the heartbeat come")
-		// expected
-		time.AfterFunc(env.heartbeat, func() {
-			if _, err := agent.conn.Write(hbd); err != nil {
-				logger.Println(err.Error())
-				return
-			}
-			env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
-			time.AfterFunc(env.heartbeatTimeout, h.heartbeatTimeoutCb)
-		})
-	}
+	// 	h.heartbeatInit(hrm.Heartbeat)
 
-	// agent.lastAt = time.Now().Unix()
-	if env.heartbeatTimeout > 0 {
-		env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
-	}
+	// 	if _, err := agent.conn.Write(hrdcACK); err != nil {
+	// 		return err
+	// 	}
+
+	// 	if env.debug {
+	// 		logger.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
+	// 	}
+	// 	agent.setStatus(statusWorking)
+
+	// // case packet.HandshakeAck:
+	// // 	agent.setStatus(statusWorking)
+	// // 	if env.debug {
+	// // 		logger.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
+	// // 	}
+
+	// case packet.Data:
+	// 	if agent.status() < statusWorking {
+	// 		return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
+	// 			agent.conn.RemoteAddr().String())
+	// 	}
+
+	// 	msg, err := message.Decode(p.Data)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	h.processMessage(agent, msg)
+
+	// case packet.Heartbeat:
+	// 	logger.Println("the heartbeat come")
+	// 	// expected
+	// 	time.AfterFunc(env.heartbeat, func() {
+	// 		if _, err := agent.conn.Write(hbd); err != nil {
+	// 			logger.Println(err.Error())
+	// 			return
+	// 		}
+	// 		env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
+	// 		time.AfterFunc(env.heartbeatTimeout, h.heartbeatTimeoutCb)
+	// 	})
+	// }
+
+	// // agent.lastAt = time.Now().Unix()
+	// if env.heartbeatTimeout > 0 {
+	// 	env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
+	// }
 	return nil
 }
 
@@ -408,43 +451,43 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 }
 
 func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
-	var lastMid uint
-	switch msg.Type {
-	case message.Request:
-		lastMid = msg.ID
-	case message.Notify:
-		lastMid = 0
-	}
+	// var lastMid uint
+	// switch msg.Type {
+	// case message.Request:
+	// 	lastMid = msg.ID
+	// case message.Notify:
+	// 	lastMid = 0
+	// }
 
-	handler, ok := h.handlers[msg.Route]
-	if !ok {
-		logger.Println(fmt.Sprintf("nano/handler: %s not found(forgot registered?)", msg.Route))
-		return
-	}
+	// handler, ok := h.handlers[msg.Route]
+	// if !ok {
+	// 	logger.Println(fmt.Sprintf("nano/handler: %s not found(forgot registered?)", msg.Route))
+	// 	return
+	// }
 
-	if pipe := h.options.pipeline; pipe != nil {
-		pipe.Inbound().Process(agent.session, Message{msg})
-	}
+	// if pipe := h.options.pipeline; pipe != nil {
+	// 	pipe.Inbound().Process(agent.session, Message{msg})
+	// }
 
-	var payload = msg.Data
-	var data interface{}
-	if handler.IsRawArg {
-		data = payload
-	} else {
-		data = reflect.New(handler.Type.Elem()).Interface()
-		err := serializer.Unmarshal(payload, data)
-		if err != nil {
-			logger.Println("deserialize error", err.Error())
-			return
-		}
-	}
+	// var payload = msg.Data
+	// var data interface{}
+	// if handler.IsRawArg {
+	// 	data = payload
+	// } else {
+	// 	data = reflect.New(handler.Type.Elem()).Interface()
+	// 	err := serializer.Unmarshal(payload, data)
+	// 	if err != nil {
+	// 		logger.Println("deserialize error", err.Error())
+	// 		return
+	// 	}
+	// }
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("UID=%d, Message={%s}, Data=%+v", agent.session.UID(), msg.String(), data))
-	}
+	// if env.debug {
+	// 	logger.Println(fmt.Sprintf("UID=%d, Message={%s}, Data=%+v", agent.session.UID(), msg.String(), data))
+	// }
 
-	args := []reflect.Value{handler.Receiver, agent.srv, reflect.ValueOf(data)}
-	h.chLocalProcess <- unhandledMessage{agent, lastMid, handler.Method, args}
+	// args := []reflect.Value{handler.Receiver, agent.srv, reflect.ValueOf(data)}
+	// h.chLocalProcess <- unhandledMessage{agent, lastMid, handler.Method, args}
 }
 
 // DumpServices outputs all registered services

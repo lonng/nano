@@ -6,7 +6,8 @@ message GrpcMessage {
     int32 cmd = 2;
     int32 n = 3;
     int32 t = 4;
-    bytes data = 5;
+    string route =5;
+    bytes data = 6;
 }
 
 service GrpcService {

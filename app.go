@@ -104,7 +104,7 @@ func connectAndServe(addr string) {
 }
 
 func rpcService(client pb.GrpcServiceClient) {
-	md := metadata.Pairs("gid", "1001")
+	md := metadata.Pairs("gsid", Gid, "gsid", Rtype, "gsid", Ridx)
 	ctx := metadata.NewOutgoingContext(context.Background(), md)
 
 	stream, err := client.MService(ctx)
