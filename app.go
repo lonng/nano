@@ -32,6 +32,7 @@ import (
 	pb "github.com/jmesyan/nano/protos"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	// "google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"io"
 	"strings"
@@ -94,6 +95,11 @@ func connect(addr string, opts ...Option) {
 func connectAndServe(addr string) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
+	// opts = append(opts, grpc.WithKeepaliveParams(keepalive.ClientParameters{
+	// 	Time:                10 * time.Second,
+	// 	Timeout:             100 * time.Second,
+	// 	PermitWithoutStream: true,
+	// }))
 	conn, err := grpc.Dial(addr, opts...)
 	if err != nil {
 		logger.Fatal("fail to dial: %v", err)
