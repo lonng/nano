@@ -4,8 +4,8 @@ package protos;
 message GrpcMessage {
     int32 cid = 1;
     int32 cmd = 2;
-    int32 n = 3;
-    int32 t = 4;
+    int32 type = 3;
+    int32 mid = 4;
     string route =5;
     bytes data = 6;
 }

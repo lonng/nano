@@ -21,22 +21,18 @@
 package component
 
 import (
-	"github.com/jmesyan/nano/session"
 	"reflect"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/jmesyan/nano/session"
 )
 
 var (
 	typeOfError   = reflect.TypeOf((*error)(nil)).Elem()
 	typeOfBytes   = reflect.TypeOf(([]byte)(nil))
 	typeOfSession = reflect.TypeOf(session.New(nil))
-	typeOfAgency  reflect.Type
 )
-
-func SetAgencyType(typ reflect.Type) {
-	typeOfAgency = typ
-}
 
 func isExported(name string) bool {
 	w, _ := utf8.DecodeRuneInString(name)
@@ -70,7 +66,7 @@ func isHandlerMethod(method reflect.Method) bool {
 		return false
 	}
 
-	if t1 := mt.In(1); t1 != typeOfAgency {
+	if t1 := mt.In(1); t1.Kind() != reflect.Ptr || t1 != typeOfSession {
 		return false
 	}
 

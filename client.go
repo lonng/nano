@@ -45,7 +45,6 @@ func (this *NanoClient) Connect() error {
 	}
 
 	if len(handler.handlers) == 0 {
-		fmt.Println(123232)
 		for _, opt := range this.opts {
 			opt(handler.options)
 		}

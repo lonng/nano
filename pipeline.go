@@ -2,17 +2,14 @@ package nano
 
 import (
 	"fmt"
-	"github.com/jmesyan/nano/internal/message"
+	// "github.com/jmesyan/nano/internal/message"
+	pb "github.com/jmesyan/nano/protos"
 	"github.com/jmesyan/nano/session"
 	"sync/atomic"
 )
 
 type (
-	Message struct {
-		*message.Message
-	}
-
-	PipelineFunc func(s *session.Session, msg Message) error
+	PipelineFunc func(s *session.Session, msg pb.GrpcMessage) error
 
 	Pipeline interface {
 		Outbound() PipelineChannel
@@ -26,7 +23,7 @@ type (
 	PipelineChannel interface {
 		PushFront(h PipelineFunc)
 		PushBack(h PipelineFunc)
-		Process(s *session.Session, msg Message) error
+		Process(s *session.Session, msg pb.GrpcMessage) error
 	}
 
 	pipelineChannel struct {
@@ -65,7 +62,7 @@ func (p *pipelineChannel) PushBack(h PipelineFunc) {
 	p.handlers = append(p.handlers, h)
 }
 
-func (p *pipelineChannel) Process(s *session.Session, msg Message) error {
+func (p *pipelineChannel) Process(s *session.Session, msg pb.GrpcMessage) error {
 	if len(p.handlers) < 1 {
 		return nil
 	}

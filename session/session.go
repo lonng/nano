@@ -22,7 +22,7 @@ package session
 
 import (
 	"errors"
-	"net"
+	// "net"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -32,12 +32,14 @@ import (
 
 // NetworkEntity represent low-level network instance
 type NetworkEntity interface {
-	Push(route string, v interface{}) error
-	MID() uint
-	Response(v interface{}) error
-	ResponseMID(mid uint, v interface{}) error
+	Push(route string, cmd int32, v interface{}) error
+	PushChannel(cid int32, route string, cmd int32, v interface{}) error
+	MID() int32
+	CID() int32
+	Response(cmd int32, v interface{}) error
+	ResponseMID(mid int32, cmd int32, v interface{}) error
 	Close() error
-	RemoteAddr() net.Addr
+	// RemoteAddr() net.Addr
 }
 
 var (
@@ -52,6 +54,7 @@ var (
 type Session struct {
 	sync.RWMutex                        // protect data
 	id           int64                  // session global unique id
+	cid          int32                  // channel id
 	uid          int64                  // binding user id
 	lastTime     int64                  // last heartbeat time
 	entity       NetworkEntity          // low-level network entity
@@ -61,8 +64,14 @@ type Session struct {
 // New returns a new session instance
 // a NetworkEntity is a low-level network instance
 func New(entity NetworkEntity) *Session {
+	var cid int32
+	cid = -1
+	if entity != nil {
+		cid = entity.CID()
+	}
 	return &Session{
 		id:       service.Connections.SessionID(),
+		cid:      cid,
 		entity:   entity,
 		data:     make(map[string]interface{}),
 		lastTime: time.Now().Unix(),
@@ -70,24 +79,34 @@ func New(entity NetworkEntity) *Session {
 }
 
 // Push message to client
-func (s *Session) Push(route string, v interface{}) error {
-	return s.entity.Push(route, v)
+func (s *Session) Push(route string, cmd int32, v interface{}) error {
+	return s.entity.Push(route, cmd, v)
+}
+
+// Push message to client
+func (s *Session) PushChannel(cid int32, route string, cmd int32, v interface{}) error {
+	return s.entity.PushChannel(cid, route, cmd, v)
 }
 
 // Response message to client
-func (s *Session) Response(v interface{}) error {
-	return s.entity.Response(v)
+func (s *Session) Response(cmd int32, v interface{}) error {
+	return s.entity.Response(cmd, v)
 }
 
 // ResponseMID responses message to client, mid is
 // request message ID
-func (s *Session) ResponseMID(mid uint, v interface{}) error {
-	return s.entity.ResponseMID(mid, v)
+func (s *Session) ResponseMID(mid int32, cmd int32, v interface{}) error {
+	return s.entity.ResponseMID(mid, cmd, v)
 }
 
 // ID returns the session id
 func (s *Session) ID() int64 {
 	return s.id
+}
+
+// ID returns the session id
+func (s *Session) CID() int32 {
+	return s.cid
 }
 
 // UID returns uid that bind to current session
@@ -96,7 +115,7 @@ func (s *Session) UID() int64 {
 }
 
 // MID returns the last message id
-func (s *Session) MID() uint {
+func (s *Session) MID() int32 {
 	return s.entity.MID()
 }
 
@@ -117,9 +136,9 @@ func (s *Session) Close() {
 }
 
 // RemoteAddr returns the remote network address.
-func (s *Session) RemoteAddr() net.Addr {
-	return s.entity.RemoteAddr()
-}
+// func (s *Session) RemoteAddr() net.Addr {
+// 	return s.entity.RemoteAddr()
+// }
 
 // Remove delete data associated with the key from session storage
 func (s *Session) Remove(key string) {
@@ -231,8 +250,8 @@ func (s *Session) Int64(key string) int64 {
 	return value
 }
 
-// Uint returns the value associated with the key as a uint.
-func (s *Session) Uint(key string) uint {
+// Uint returns the value associated with the key as a int32.
+func (s *Session) Uint(key string) int32 {
 	s.RLock()
 	defer s.RUnlock()
 
@@ -241,7 +260,7 @@ func (s *Session) Uint(key string) uint {
 		return 0
 	}
 
-	value, ok := v.(uint)
+	value, ok := v.(int32)
 	if !ok {
 		return 0
 	}
