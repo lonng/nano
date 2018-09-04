@@ -70,7 +70,7 @@ func listen(addr string, isWs bool, opts ...Option) {
 
 	logger.Println(fmt.Sprintf("starting application %s, listen at %s", app.name, addr))
 	sg := make(chan os.Signal)
-	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL)
+	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
 
 	// stop server
 	select {
