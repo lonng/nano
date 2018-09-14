@@ -243,7 +243,14 @@ func (a *agent) write() {
 		case data := <-a.chSend:
 			payload, err := serializeOrRaw(data.payload)
 			if err != nil {
-				logger.Println(err.Error())
+				switch data.typ {
+				case message.Push:
+					logger.Println(fmt.Sprintf("Push: %s error: %s", data.route, err.Error()))
+				case message.Response:
+					logger.Println(fmt.Sprintf("Response message(id: %d) error: %s", data.mid, err.Error()))
+				default:
+					// expect
+				}
 				break
 			}
 
