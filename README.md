@@ -89,6 +89,25 @@ func (r *RemoteComponent) DemoHandler(s *session.Session, msg *pb.DemoMsg) error
 }
 ```
 
+#### How to execute the asynchronous task
+
+```
+func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) error {
+    var onDBResult = func(player *Player) {
+        manager.players = append(manager.players, player)
+        s.Push("PlayerSystem.LoginSuccess", &ResPlayerLogin)
+    }
+    
+    // run slow task in new gorontine
+    go func() {
+        player, err := db.QueryPlayer(msg.PlayerId) // ignore error in demo
+        // handle result in main logical gorontine
+        nano.Invoke(func(){ onDBResult(player) })
+    }
+    return nil
+}
+```
+
 The Nano will remain simple, but you can perform any operations in the component and get the desired goals. You can startup a group of `Nano` application as agent to dispatch message to backend servers.
 
 ## Documents
