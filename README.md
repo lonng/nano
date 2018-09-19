@@ -91,7 +91,7 @@ func (r *RemoteComponent) DemoHandler(s *session.Session, msg *pb.DemoMsg) error
 
 #### How to execute the asynchronous task
 
-```
+```go
 func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) error {
     var onDBResult = func(player *Player) {
         manager.players = append(manager.players, player)
