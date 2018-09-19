@@ -89,6 +89,8 @@ func (r *RemoteComponent) DemoHandler(s *session.Session, msg *pb.DemoMsg) error
 }
 ```
 
+The Nano will remain simple, but you can perform any operations in the component and get the desired goals. You can startup a group of `Nano` application as agent to dispatch message to backend servers.
+
 #### How to execute the asynchronous task
 
 ```go
@@ -107,8 +109,6 @@ func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) err
     return nil
 }
 ```
-
-The Nano will remain simple, but you can perform any operations in the component and get the desired goals. You can startup a group of `Nano` application as agent to dispatch message to backend servers.
 
 ## Documents
 
