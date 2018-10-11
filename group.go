@@ -83,7 +83,7 @@ func (c *Group) Members() []int64 {
 }
 
 // Multicast  push  the message to the filtered clients
-func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) error {
+func (c *Group) Multicast(route string, cmd int32, v interface{}, filter SessionFilter) error {
 	if c.isClosed() {
 		return ErrClosedGroup
 	}
@@ -104,7 +104,7 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 		if !filter(s) {
 			continue
 		}
-		if err = s.Push(route, data); err != nil {
+		if err = s.Push(route, cmd, data); err != nil {
 			logger.Println(err.Error())
 		}
 	}
@@ -113,7 +113,7 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 }
 
 // Broadcast push  the message(s) to  all members
-func (c *Group) Broadcast(route string, v interface{}) error {
+func (c *Group) Broadcast(route string, cmd int32, v interface{}) error {
 	if c.isClosed() {
 		return ErrClosedGroup
 	}
@@ -131,7 +131,7 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 	defer c.mu.RUnlock()
 
 	for _, s := range c.sessions {
-		if err = s.Push(route, data); err != nil {
+		if err = s.Push(route, cmd, data); err != nil {
 			logger.Println(fmt.Sprintf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
 		}
 	}

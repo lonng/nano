@@ -70,6 +70,10 @@ var (
 		agent                *agent
 		attempts             chan int
 	}{}
+
+	Gid   string
+	Rtype string
+	Ridx  string
 )
 
 type (
@@ -104,4 +108,10 @@ func init() {
 	reconnect.reconnectMaxAttempts = 2
 	reconnect.reconnectionDelay = time.Duration(5) * time.Second
 	reconnect.attempts = make(chan int, 1)
+}
+
+func SetGameType(gid, rtype, ridx string) {
+	Gid = gid
+	Rtype = rtype
+	Ridx = ridx
 }

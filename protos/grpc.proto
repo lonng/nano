@@ -1,0 +1,15 @@
+syntax = "proto3";
+package protos;
+
+message GrpcMessage {
+    int32 cid = 1;
+    int32 cmd = 2;
+    int32 type = 3;
+    int32 mid = 4;
+    string route =5;
+    bytes data = 6;
+}
+
+service GrpcService {
+    rpc MService(stream GrpcMessage) returns (stream GrpcMessage){}
+}
