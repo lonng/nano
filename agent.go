@@ -23,7 +23,7 @@ package nano
 import (
 	"errors"
 	"fmt"
-	// "net"
+	"net"
 	"reflect"
 	"sync/atomic"
 	"time"
@@ -268,7 +268,7 @@ func (a *agent) setStatus(state int32) {
 }
 
 func (a *agent) write() {
-	// ticker := time.NewTicker(env.heartbeat)
+	ticker := time.NewTicker(env.heartbeat)
 	chWrite := make(chan *pb.GrpcMessage, agentWriteBacklog)
 	// clean func
 	defer func() {
