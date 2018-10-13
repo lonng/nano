@@ -23,7 +23,7 @@ package nano
 import (
 	"errors"
 	"fmt"
-	"net"
+	// "net"
 	"reflect"
 	"sync/atomic"
 	"time"
@@ -239,10 +239,8 @@ func (a *agent) Close() error {
 	case <-a.chDie:
 		// expect
 	default:
-		if !isReconnecting() {
-			close(a.chDie)
-			// handler.chCloseSession <- a.session
-		}
+		close(a.chDie)
+		handler.chCloseSession <- a.session
 	}
 	logger.Println("the agent will close")
 	return a.conn.CloseSend()
@@ -251,7 +249,7 @@ func (a *agent) Close() error {
 // RemoteAddr, implementation for session.NetworkEntity interface
 // returns the remote network address.
 // func (a *agent) RemoteAddr() net.Addr {
-// 	return a.conn.RemoteAddr()
+//  return a.conn.RemoteAddr()
 // }
 
 // String, implementation for Stringer interface
@@ -268,11 +266,11 @@ func (a *agent) setStatus(state int32) {
 }
 
 func (a *agent) write() {
-	ticker := time.NewTicker(env.heartbeat)
+	// ticker := time.NewTicker(env.heartbeat)
 	chWrite := make(chan *pb.GrpcMessage, agentWriteBacklog)
 	// clean func
 	defer func() {
-		ticker.Stop()
+		// ticker.Stop()
 		close(a.chSend)
 		close(chWrite)
 		a.Close()
@@ -283,37 +281,14 @@ func (a *agent) write() {
 
 	for {
 		select {
-		case <-ticker.C:
-			// deadline := time.Now().Add(-2 * env.heartbeat).Unix()
-			// if a.lastAt < deadline {
-			// 	logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
-			// 	return
-			// }
-			handler.heartbeatTimeoutCb()
-			// chWrite <- hbd
-		case attempts := <-reconnect.attempts:
-			logger.Println("come the reconnect attempts", attempts)
-			if attempts > 0 && attempts <= reconnect.reconnectMaxAttempts {
-				logger.Println(fmt.Printf("第%d次尝试重连：", attempts))
-				reconnect.reconnectAttempts = attempts
-				reconnect.trying = true
-				caddr, err := net.ResolveTCPAddr("tcp", reconnect.addr)
-				if err != nil {
-					logger.Println(err.Error())
-				} else {
-					conn, err := net.DialTCP("tcp", nil, caddr)
-					if err != nil {
-						logger.Println(err.Error())
-					} else {
-						logger.Println(fmt.Printf("第%d次尝试重连成功", attempts))
-						a.conn = conn
-						conn.SetNoDelay(true)
-						go handler.handleC(a, conn)
+		// case <-ticker.C:
+		//  deadline := time.Now().Add(-2 * env.heartbeat).Unix()
+		//  if a.lastAt < deadline {
+		//      logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
+		//      return
+		//  }
+		//  chWrite <- hbd
 
-					}
-				}
-				reconnect.trying = false
-			}
 		case data := <-chWrite:
 			// close agent while low-level conn broken
 			if err := a.conn.SendMsg(data); err != nil {
@@ -347,15 +322,15 @@ func (a *agent) write() {
 
 			// em, err := m.Encode()
 			// if err != nil {
-			// 	logger.Println(err.Error())
-			// 	break
+			//  logger.Println(err.Error())
+			//  break
 			// }
 
 			// packet encode
 			// p, err := codec.Encode(packet.Data, m)
 			// if err != nil {
-			// 	logger.Println(err)
-			// 	break
+			//  logger.Println(err)
+			//  break
 			// }
 			chWrite <- m
 

@@ -75,7 +75,3 @@ func stack() string {
 	})
 	return s[index+1:]
 }
-
-func isReconnecting() bool {
-	return reconnect.isreconnect && reconnect.reconnectAttempts < reconnect.reconnectMaxAttempts
-}

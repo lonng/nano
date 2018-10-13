@@ -266,66 +266,67 @@ func (h *handlerService) processPacketC(agent *agent, p *packet.Packet) error {
 	// logger.Println("processPacketC:", p)
 	// switch p.Type {
 	// case packet.Handshake:
-	// 	var payload = p.Data
-	// 	var hrm heartbeatMessage
-	// 	err := serializerJson.Unmarshal(payload, &hrm)
-	// 	if err != nil {
-	// 		logger.Println("Handshake deserialize error", err.Error())
-	// 		return err
-	// 	}
+	//  var payload = p.Data
+	//  var hrm heartbeatMessage
+	//  err := serializerJson.Unmarshal(payload, &hrm)
+	//  if err != nil {
+	//      logger.Println("Handshake deserialize error", err.Error())
+	//      return err
+	//  }
 
-	// 	if hrm.Code == RES_OLD_CLIENT {
-	// 		return errors.New("client version not fullfill")
-	// 	}
+	//  if hrm.Code == RES_OLD_CLIENT {
+	//      return errors.New("client version not fullfill")
+	//  }
 
-	// 	if hrm.Code != RES_OK {
-	// 		return errors.New("handshake fail")
-	// 	}
+	//  if hrm.Code != RES_OK {
+	//      return errors.New("handshake fail")
+	//  }
 
-	// 	h.heartbeatInit(hrm.Heartbeat)
+	//  h.heartbeatInit(hrm.Heartbeat)
 
-	// 	if _, err := agent.conn.Write(hrdcACK); err != nil {
-	// 		return err
-	// 	}
+	//  if _, err := agent.conn.Write(hrdcACK); err != nil {
+	//      return err
+	//  }
 
-	// 	if env.debug {
-	// 		logger.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
-	// 	}
-	// 	agent.setStatus(statusWorking)
+	//  if env.debug {
+	//      logger.Println(fmt.Sprintf("Session handshake Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
+	//  }
+	//  agent.setStatus(statusWorking)
 
 	// // case packet.HandshakeAck:
-	// // 	agent.setStatus(statusWorking)
-	// // 	if env.debug {
-	// // 		logger.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
-	// // 	}
-	// case packet.Data:
-	// 	if agent.status() < statusWorking {
-	// 		return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
-	// 			agent.conn.RemoteAddr().String())
-	// 	}
+	// //   agent.setStatus(statusWorking)
+	// //   if env.debug {
+	// //       logger.Println(fmt.Sprintf("Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr()))
+	// //   }
 
-	// 	msg, err := message.Decode(p.Data)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	h.processMessage(agent, msg)
+	// case packet.Data:
+	//  if agent.status() < statusWorking {
+	//      return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
+	//          agent.conn.RemoteAddr().String())
+	//  }
+
+	//  msg, err := message.Decode(p.Data)
+	//  if err != nil {
+	//      return err
+	//  }
+	//  h.processMessage(agent, msg)
 
 	// case packet.Heartbeat:
-	// 	logger.Println("the heartbeat come")
-	// 	// expected
-	// 	time.AfterFunc(env.heartbeat, func() {
-	// 		if _, err := agent.conn.Write(hbd); err != nil {
-	// 			logger.Println(err.Error())
-	// 			return
-	// 		}
-	// 		env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
-	// 		time.AfterFunc(env.heartbeatTimeout, h.heartbeatTimeoutCb)
-	// 	})
+	//  logger.Println("the heartbeat come")
+	//  // expected
+	//  time.AfterFunc(env.heartbeat, func() {
+	//      if _, err := agent.conn.Write(hbd); err != nil {
+	//          logger.Println(err.Error())
+	//          return
+	//      }
+	//      env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
+	//      time.AfterFunc(env.heartbeatTimeout, h.heartbeatTimeoutCb)
+	//  })
 	// }
 
 	// // agent.lastAt = time.Now().Unix()
 	// if env.heartbeatTimeout > 0 {
-	// 	env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
+	//  env.nextHeartbeatTimeout = time.Now().Add(env.heartbeatTimeout)
 	// }
 	return nil
 }
@@ -336,14 +337,12 @@ func (h *handlerService) heartbeatTimeoutCb() {
 	logger.Println("heartbeatTimeoutCb:", time.Now(), env.nextHeartbeatTimeout, gap, gapThreshold, gap > gapThreshold)
 	if gap > gapThreshold {
 		time.AfterFunc(env.heartbeatTimeout, h.heartbeatTimeoutCb)
-	} else if isReconnecting() {
-		if !reconnect.trying {
-			logger.Println("begin reconnect to server")
-			reconnect.attempts <- reconnect.reconnectAttempts + 1
-		}
 	} else {
 		logger.Println("server heartbeat timeout,disconnect the connection")
-		close(env.die)
+		_, ok := <-env.die
+		if ok {
+			close(env.die)
+		}
 	}
 }
 
@@ -355,44 +354,44 @@ func (h *handlerService) handle(conn net.Conn) {
 	// go agent.write()
 
 	// if env.debug {
-	// 	logger.Println(fmt.Sprintf("New session established: %s", agent.String()))
+	//  logger.Println(fmt.Sprintf("New session established: %s", agent.String()))
 	// }
 
 	// // guarantee agent related resource be destroyed
 	// defer func() {
-	// 	agent.Close()
-	// 	if env.debug {
-	// 		logger.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.UID()))
-	// 	}
+	//  agent.Close()
+	//  if env.debug {
+	//      logger.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.UID()))
+	//  }
 	// }()
 
 	// // read loop
 	// buf := make([]byte, 2048)
 	// for {
-	// 	n, err := conn.Read(buf)
-	// 	if err != nil {
-	// 		logger.Println(fmt.Sprintf("Read message error: %s, session will be closed immediately", err.Error()))
-	// 		return
-	// 	}
+	//  n, err := conn.Read(buf)
+	//  if err != nil {
+	//      logger.Println(fmt.Sprintf("Read message error: %s, session will be closed immediately", err.Error()))
+	//      return
+	//  }
 
-	// 	// TODO(warning): decoder use slice for performance, packet data should be copy before next Decode
-	// 	packets, err := agent.decoder.Decode(buf[:n])
-	// 	if err != nil {
-	// 		logger.Println(err.Error())
-	// 		return
-	// 	}
+	//  // TODO(warning): decoder use slice for performance, packet data should be copy before next Decode
+	//  packets, err := agent.decoder.Decode(buf[:n])
+	//  if err != nil {
+	//      logger.Println(err.Error())
+	//      return
+	//  }
 
-	// 	if len(packets) < 1 {
-	// 		continue
-	// 	}
+	//  if len(packets) < 1 {
+	//      continue
+	//  }
 
-	// 	// process all packet
-	// 	for i := range packets {
-	// 		if err := h.processPacket(agent, packets[i]); err != nil {
-	// 			logger.Println(err.Error())
-	// 			return
-	// 		}
-	// 	}
+	//  // process all packet
+	//  for i := range packets {
+	//      if err := h.processPacket(agent, packets[i]); err != nil {
+	//          logger.Println(err.Error())
+	//          return
+	//      }
+	//  }
 	// }
 }
 
@@ -416,15 +415,15 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 		}
 
 	// case packet.Data:
-	// 	if agent.status() < statusWorking {
-	// 		return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately")
-	// 	}
+	//  if agent.status() < statusWorking {
+	//      return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately")
+	//  }
 
-	// 	msg, err := message.Decode(p.Data)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	h.processMessage(agent, msg)
+	//  msg, err := message.Decode(p.Data)
+	//  if err != nil {
+	//      return err
+	//  }
+	//  h.processMessage(agent, msg)
 
 	case packet.Heartbeat:
 		// expected

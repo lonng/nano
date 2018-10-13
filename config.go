@@ -44,9 +44,8 @@ var (
 	// env represents the environment of the current process, includes
 	// work path and config path etc.
 	env = &struct {
-		wd                   string    // working path
-		die                  chan bool // wait for end application
-		heartClosed          bool
+		wd                   string                   // working path
+		die                  chan bool                // wait for end application
 		heartbeat            time.Duration            // heartbeat internal
 		heartbeatTimeout     time.Duration            // heartbeat timeout
 		nextHeartbeatTimeout time.Time                // nextHeartbeat timeout time
@@ -63,12 +62,9 @@ var (
 		isreconnect          bool
 		addr                 string
 		opts                 []Option
-		trying               bool
-		reconnectAttempts    int
-		reconnectMaxAttempts int
+		reconnectAttempts    int64
+		reconnectMaxAttempts int64
 		reconnectionDelay    time.Duration
-		agent                *agent
-		attempts             chan int
 	}{}
 
 	Gid   string
@@ -97,17 +93,14 @@ func init() {
 
 	env.die = make(chan bool)
 	env.heartbeat = 30 * time.Second
-	env.heartbeatTimeout = 60 * time.Second
-	env.heartClosed = false
 	env.debug = false
 	env.muCallbacks = sync.RWMutex{}
 	env.checkOrigin = func(_ *http.Request) bool { return true }
 
 	reconnect.isreconnect = true
 	reconnect.reconnectAttempts = 0
-	reconnect.reconnectMaxAttempts = 2
+	reconnect.reconnectMaxAttempts = 10
 	reconnect.reconnectionDelay = time.Duration(5) * time.Second
-	reconnect.attempts = make(chan int, 1)
 }
 
 func SetGameType(gid, rtype, ridx string) {
