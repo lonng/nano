@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"github.com/jmesyan/nano/internal/message"
 	"sync"
 	"time"
 )
@@ -73,7 +74,7 @@ func (this *NanoClient) Connect() error {
 	return nil
 }
 
-func (this *NanoClient) GetStream() pb.GrpcService_MServiceClient {
+func (this *NanoClient) GetStream(ReconSingle chan int) pb.GrpcService_MServiceClient {
 	this.Lock()
 	defer this.Unlock()
 	if this.stream != nil {
@@ -89,13 +90,15 @@ func (this *NanoClient) GetStream() pb.GrpcService_MServiceClient {
 			time.Sleep(1 * time.Second)
 		} else {
 			this.stream = stream
+			//重连成功，发送桌子注册信息
+			ReconSingle <- 1
 			return this.stream
 		}
 	}
 	return nil
 }
 
-func (this *NanoClient) Start() {
+func (this *NanoClient) Start(ReconSingle chan int) {
 	this.Connect()
 	go func() {
 		var (
@@ -103,7 +106,7 @@ func (this *NanoClient) Start() {
 			err   error
 		)
 		for {
-			reply, err = this.GetStream().Recv()
+			reply, err = this.GetStream(ReconSingle).Recv()
 			if err != nil && grpc.Code(err) == codes.Unavailable {
 				logger.Println("与服务器的连接被断开, 进行重试")
 				err = this.Connect()
@@ -119,9 +122,37 @@ func (this *NanoClient) Start() {
 				logger.Println("Failed to receive a rpcmessage : %v", err)
 				return
 			}
-			go handler.handleC(this.GetStream(), reply)
+			go handler.handleC(this.GetStream(ReconSingle), reply)
 		}
 	}()
 
 	<-this.Done()
+}
+
+func (this *NanoClient) SendMsg(route string, cmd int32, v interface{}){
+	if this.stream == nil {
+		logger.Println("the client has lose ,the client identity is: %s , route is %s, cmd is %d, the msg is:%v", this.gsid, route, cmd, v)
+		return
+	}
+	payload, err := serializeOrRaw(v)
+	if err != nil {
+		logger.Println(err.Error())
+		return
+	}
+
+	if cmd > 0 {
+		cmd = cmd | cmdAck
+	}
+	msg := &pb.GrpcMessage{
+		Cid:   0,
+		Cmd:   cmd,
+		Type:  message.Push,
+		Mid:   0,
+		Route: route,
+		Data:  payload,
+	}
+
+	if err := this.stream.SendMsg(msg); err != nil {
+		logger.Println(err.Error())
+	}
 }
