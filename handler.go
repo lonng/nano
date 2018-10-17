@@ -296,7 +296,11 @@ func (h *handlerService) processMessage(agent *agent, msg *message.Message) {
 	}
 
 	if pipe := h.options.pipeline; pipe != nil {
-		pipe.Inbound().Process(agent.session, Message{msg})
+		err := pipe.Inbound().Process(agent.session, Message{msg})
+		if err != nil {
+			logger.Println("broken pipeline", err.Error())
+			return
+		}
 	}
 
 	var payload = msg.Data
