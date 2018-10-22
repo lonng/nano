@@ -141,9 +141,14 @@ func onSessionClosed(s *session.Session) {
 func (h *handlerService) dispatch() {
 	// close chLocalProcess & chCloseSession when application quit
 	defer func() {
+		if err := recover(); err != nil {
+			logger.Println(fmt.Sprintf("Dispatcher exit unexpected: %v", err))
+			println(stack())
+		}
 		close(h.chLocalProcess)
 		close(h.chCloseSession)
 		globalTicker.Stop()
+		logger.Println("Main logic loop exit")
 	}()
 
 	// handle packet that sent to chLocalProcess
@@ -169,6 +174,7 @@ func (h *handlerService) dispatch() {
 			delete(timerManager.timers, id)
 
 		case <-env.die: // application quit signal
+			logger.Println("Got exit instruction, break logic loop")
 			return
 		}
 	}
