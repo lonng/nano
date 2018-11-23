@@ -167,12 +167,6 @@ func (h *handlerService) dispatch() {
 		case <-globalTicker.C: // execute cron task
 			cron()
 
-		case t := <-timerManager.chCreatedTimer: // new timers
-			timerManager.timers[t.id] = t
-
-		case id := <-timerManager.chClosingTimer: // closing timers
-			delete(timerManager.timers, id)
-
 		case <-env.die: // application quit signal
 			logger.Println("Got exit instruction, break logic loop")
 			return

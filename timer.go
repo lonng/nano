@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -13,15 +14,15 @@ const (
 )
 
 var (
-	// default timer backlog
-	timerBacklog = 1 << 8
-
 	// timerManager manager for all timers
 	timerManager = &struct {
-		incrementID    int64            // auto increment id
-		timers         map[int64]*Timer // all timers
-		chClosingTimer chan int64       // timer for closing
-		chCreatedTimer chan *Timer
+		incrementID int64            // auto increment id
+		timers      map[int64]*Timer // all timers
+
+		muClosingTimer sync.RWMutex
+		closingTimer   []int64
+		muCreatedTimer sync.RWMutex
+		createdTimer   []*Timer
 	}{}
 
 	// timerPrecision indicates the precision of timer, default is time.Second
@@ -58,8 +59,6 @@ type (
 
 func init() {
 	timerManager.timers = map[int64]*Timer{}
-	timerManager.chClosingTimer = make(chan int64, timerBacklog)
-	timerManager.chCreatedTimer = make(chan *Timer, timerBacklog)
 }
 
 // ID returns id of current timer
@@ -69,21 +68,15 @@ func (t *Timer) ID() int64 {
 
 // Stop turns off a timer. After Stop, fn will not be called forever
 func (t *Timer) Stop() {
-	if atomic.LoadInt32(&t.closed) > 0 {
+	if atomic.AddInt32(&t.closed, 1) != 1 {
 		return
 	}
 
-	// guarantee that logic is not blocked
-	if len(timerManager.chClosingTimer) < timerBacklog {
-		timerManager.chClosingTimer <- t.id
-		atomic.StoreInt32(&t.closed, 1)
-	} else {
-		t.counter = 0 // automatically closed in next Cron
-	}
+	t.counter = 0
 }
 
 // execute job function with protection
-func pexec(id int64, fn TimerFunc) {
+func safecall(id int64, fn TimerFunc) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Println(fmt.Sprintf("Call timer function error, TimerID=%d, Error=%v", id, err))
@@ -94,8 +87,16 @@ func pexec(id int64, fn TimerFunc) {
 	fn()
 }
 
-// TODO: if closing timers'count in single cron call more than timerBacklog will case problem.
 func cron() {
+	if len(timerManager.createdTimer) > 0 {
+		timerManager.muCreatedTimer.Lock()
+		for _, t := range timerManager.createdTimer {
+			timerManager.timers[t.id] = t
+		}
+		timerManager.createdTimer = timerManager.createdTimer[:0]
+		timerManager.muCreatedTimer.Unlock()
+	}
+
 	if len(timerManager.timers) < 1 {
 		return
 	}
@@ -103,32 +104,43 @@ func cron() {
 	now := time.Now()
 	unn := now.UnixNano()
 	for id, t := range timerManager.timers {
-		// prevent chClosingTimer exceed
+		if t.counter == loopForever || t.counter > 0 {
+			// condition timer
+			if t.condition != nil {
+				if t.condition.Check(now) {
+					safecall(id, t.fn)
+				}
+				continue
+			}
+
+			// execute job
+			if t.createAt+t.elapse <= unn {
+				safecall(id, t.fn)
+				t.elapse += int64(t.interval)
+
+				// update timer counter
+				if t.counter != loopForever && t.counter > 0 {
+					t.counter--
+				}
+			}
+		}
+
 		if t.counter == 0 {
-			if len(timerManager.chClosingTimer) < timerBacklog {
-				t.Stop()
-			}
+			timerManager.muClosingTimer.Lock()
+			timerManager.closingTimer = append(timerManager.closingTimer, t.id)
+			timerManager.muClosingTimer.Unlock()
 			continue
 		}
 
-		// condition timer
-		if t.condition != nil {
-			if t.condition.Check(now) {
-				pexec(id, t.fn)
-			}
-			continue
-		}
+	}
 
-		// execute job
-		if t.createAt+t.elapse <= unn {
-			pexec(id, t.fn)
-			t.elapse += int64(t.interval)
-
-			// update timer counter
-			if t.counter != loopForever && t.counter > 0 {
-				t.counter--
-			}
+	if len(timerManager.closingTimer) > 0 {
+		timerManager.muClosingTimer.Lock()
+		for _, id := range timerManager.closingTimer {
+			delete(timerManager.timers, id)
 		}
+		timerManager.closingTimer = timerManager.closingTimer[:0]
+		timerManager.muClosingTimer.Unlock()
 	}
 }
 
@@ -154,9 +166,8 @@ func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 		panic("non-positive interval for NewTimer")
 	}
 
-	id := atomic.AddInt64(&timerManager.incrementID, 1)
 	t := &Timer{
-		id:       id,
+		id:       atomic.AddInt64(&timerManager.incrementID, 1),
 		fn:       fn,
 		createAt: time.Now().UnixNano(),
 		interval: interval,
@@ -164,8 +175,9 @@ func NewCountTimer(interval time.Duration, count int, fn TimerFunc) *Timer {
 		counter:  count,
 	}
 
-	// add to manager
-	timerManager.chCreatedTimer <- t
+	timerManager.muCreatedTimer.Lock()
+	timerManager.createdTimer = append(timerManager.createdTimer, t)
+	timerManager.muCreatedTimer.Unlock()
 	return t
 }
 
@@ -200,14 +212,4 @@ func SetTimerPrecision(precision time.Duration) {
 		panic("time precision can not less than a Millisecond")
 	}
 	timerPrecision = precision
-}
-
-// SetTimerBacklog set the timer created/closing channel backlog, A small backlog
-// may cause the logic to be blocked when call NewTimer/NewCountTimer/timer.Stop
-// in main logic gorontine.
-func SetTimerBacklog(c int) {
-	if c < 16 {
-		c = 16
-	}
-	timerBacklog = c
 }
