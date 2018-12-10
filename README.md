@@ -1,11 +1,11 @@
 # Nano [![Build Status][1]][2] [![GoDoc][3]][4] [![Go Report Card][5]][6] [![MIT licensed][7]][8] 
 
-[1]: https://travis-ci.org/lonnng/nano.svg?branch=master
-[2]: https://travis-ci.org/lonnng/nano
-[3]: https://godoc.org/github.com/lonnng/nano?status.svg
-[4]: https://godoc.org/github.com/lonnng/nano
-[5]: https://goreportcard.com/badge/github.com/lonnng/nano
-[6]: https://goreportcard.com/report/github.com/lonnng/nano
+[1]: https://travis-ci.org/lonng/nano.svg?branch=master
+[2]: https://travis-ci.org/lonng/nano
+[3]: https://godoc.org/github.com/lonng/nano?status.svg
+[4]: https://godoc.org/github.com/lonng/nano
+[5]: https://goreportcard.com/badge/github.com/lonng/nano
+[6]: https://goreportcard.com/report/github.com/lonng/nano
 [7]: https://img.shields.io/badge/license-MIT-blue.svg
 [8]: LICENSE
 
