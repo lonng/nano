@@ -147,6 +147,10 @@ func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) err
 
 - [空来血战](https://fir.im/tios)
 
+## Go version
+
+`> go1.8`
+
 ## Installation
 
 ```shell
