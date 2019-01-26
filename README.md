@@ -154,7 +154,7 @@ func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) err
 ## Installation
 
 ```shell
-go get github.com/lonnng/nano
+go get github.com/lonng/nano
 
 # dependencies
 go get -u github.com/golang/protobuf
@@ -169,7 +169,7 @@ go get -u github.com/gorilla/websocket
 # Device: i5-6500 3.2GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
 # Other:  ...
 
-cd $GOPATH/src/github.com/lonnng/nano/benchmark/io
+cd $GOPATH/src/github.com/lonng/nano/benchmark/io
 go test -v -tags "benchmark"
 ```
 
