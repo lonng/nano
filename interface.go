@@ -46,7 +46,7 @@ func ListenWS(addr string, opts ...Option) {
 // and then upgrades the HTTP server connection to the WebSocket protocol
 // to handle requests on incoming connections.
 func ListenWSTLS(addr string, certificate string, key string, opts ...Option) {
-	listen(addr, true, opts...)
+	listenTLS(addr, true, certificate, key, opts...)
 }
 
 // Register register a component with options
