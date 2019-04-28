@@ -37,6 +37,10 @@ import (
 var running int32
 
 func listen(addr string, isWs bool, opts ...Option) {
+	listenTLS(addr, isWs, "", "", opts...);
+}
+
+func listenTLS(addr string, isWs bool, certificate string, key string, opts ...Option) {
 	// mark application running
 	if atomic.AddInt32(&running, 1) != 1 {
 		logger.Println("Nano has running")
@@ -62,7 +66,11 @@ func listen(addr string, isWs bool, opts ...Option) {
 
 	go func() {
 		if isWs {
-			listenAndServeWS(addr)
+			if len(certificate) != 0 {
+				listenAndServeWSTLS(addr, certificate, key)
+			} else {
+				listenAndServeWS(addr)
+			}
 		} else {
 			listenAndServe(addr)
 		}
@@ -125,6 +133,28 @@ func listenAndServeWS(addr string) {
 	})
 
 	if err := http.ListenAndServe(addr, nil); err != nil {
+		logger.Fatal(err.Error())
+	}
+}
+
+func listenAndServeWSTLS(addr string, certificate string, key string) {
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin:     env.checkOrigin,
+	}
+
+	http.HandleFunc("/"+strings.TrimPrefix(env.wsPath, "/"), func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			logger.Println(fmt.Sprintf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error()))
+			return
+		}
+
+		handler.handleWS(conn)
+	})
+
+	if err := http.ListenAndServeTLS(addr, certificate, key, nil); err != nil {
 		logger.Fatal(err.Error())
 	}
 }
