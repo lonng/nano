@@ -139,35 +139,6 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 	return err
 }
 
-// Broadcast push  the message(s) to  all members
-func (c *Group) BroadcastExcludeId(route string, v interface{}, sID int64) error {
-	if c.isClosed() {
-		return ErrClosedGroup
-	}
-
-	data, err := serializeOrRaw(v)
-	if err != nil {
-		return err
-	}
-
-	if env.debug {
-		logger.Println(fmt.Sprintf("Type=Broadcast Route=%s, Data=%+v", route, v))
-	}
-
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	for _, s := range c.sessions {
-		if s.ID() != sID {
-			if err = s.Push(route, data); err != nil {
-				logger.Println(fmt.Sprintf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
-			}			
-		}
-	}
-
-	return err
-}
-
 // Contains check whether a UID is contained in current group or not
 func (c *Group) Contains(uid int64) bool {
 	_, err := c.Member(uid)
