@@ -1,0 +1,47 @@
+syntax = "proto3";
+package clusterpb;
+
+message RegisterNodeRequest {
+    string nodeType = 1;
+    string serviceAddress = 2;
+}
+
+message NodeService {
+    string nodeType = 1;
+    repeated string services = 2;
+}
+
+message RegisterNodeResponse {
+    repeated NodeService nodeServices = 1;
+}
+
+service Cluster {
+    rpc RegisterNode (RegisterNodeRequest) returns (RegisterNodeResponse) {}
+}
+
+message RequestMessage {
+
+}
+
+message NotifyMessage {
+
+}
+
+message ResponseMessage {
+
+}
+
+message OnMessage {
+
+}
+
+message NodeHandleResponse {
+
+}
+
+service Node {
+    rpc HandleRequest (RequestMessage) returns (NodeHandleResponse) {}
+    rpc HandleNotify (NotifyMessage) returns (NodeHandleResponse) {}
+    rpc HandleOn (OnMessage) returns (NodeHandleResponse) {}
+    rpc HandleResponse (ResponseMessage) returns (NodeHandleResponse) {}
+}
