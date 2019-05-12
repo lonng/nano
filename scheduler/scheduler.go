@@ -18,18 +18,78 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package scheduler
 
 import (
-	"github.com/lonng/nano/serialize"
-	"github.com/lonng/nano/serialize/protobuf"
+	"fmt"
+	"runtime/debug"
+	"sync/atomic"
+	"time"
+
+	"github.com/lonng/nano/internal/env"
+	"github.com/lonng/nano/internal/log"
 )
 
-// Default serializer
-var serializer serialize.Serializer = protobuf.NewSerializer()
+const (
+	messageQueueBacklog = 1 << 10
+	sessionCloseBacklog = 1 << 8
+)
 
-// SetSerializer customize application serializer, which automatically Marshal
-// and UnMarshal handler payload
-func SetSerializer(seri serialize.Serializer) {
-	serializer = seri
+type Task func()
+
+type Hook func()
+
+var (
+	chDie   = make(chan struct{})
+	chExit  = make(chan struct{})
+	chTasks = make(chan Task, 1<<8)
+	started int32
+	closed  int32
+)
+
+func try(f func()) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println(fmt.Sprintf("%v\n%s", err, debug.Stack()))
+		}
+	}()
+	f()
+}
+
+func Sched() {
+	if atomic.AddInt32(&started, 1) != 1 {
+		return
+	}
+
+	ticker := time.NewTicker(env.TimerPrecision)
+	defer func() {
+		ticker.Stop()
+		close(chExit)
+	}()
+
+	for {
+		select {
+		case <-ticker.C:
+			cron()
+
+		case f := <-chTasks:
+			try(f)
+
+		case <-chDie:
+			return
+		}
+	}
+}
+
+func Close() {
+	if atomic.AddInt32(&closed, 1) != 1 {
+		return
+	}
+	close(chDie)
+	<-chExit
+	log.Println("Scheduler stopped")
+}
+
+func PushTask(task Task) {
+	chTasks <- task
 }

@@ -18,60 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package cluster
 
-import (
-	"bytes"
-	"encoding/gob"
-	"os"
-	"runtime"
-	"strings"
+const (
+	_ int32 = iota
+	statusStart
+	statusHandshake
+	statusWorking
+	statusClosed
 )
-
-func serializeOrRaw(v interface{}) ([]byte, error) {
-	if data, ok := v.([]byte); ok {
-		return data, nil
-	}
-	data, err := serializer.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func gobEncode(args ...interface{}) ([]byte, error) {
-	buf := bytes.NewBuffer([]byte(nil))
-	if err := gob.NewEncoder(buf).Encode(args); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func gobDecode(reply interface{}, data []byte) error {
-	return gob.NewDecoder(bytes.NewReader(data)).Decode(reply)
-}
-
-func fileExists(filename string) bool {
-	_, err := os.Stat(filename)
-	return err == nil || os.IsExist(err)
-}
-
-func stack() string {
-	buf := make([]byte, 10000)
-	n := runtime.Stack(buf, false)
-	buf = buf[:n]
-
-	s := string(buf)
-
-	// skip nano frames lines
-	const skip = 7
-	count := 0
-	index := strings.IndexFunc(s, func(c rune) bool {
-		if c != '\n' {
-			return false
-		}
-		count++
-		return count == skip
-	})
-	return s[index+1:]
-}

@@ -24,8 +24,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/lonng/nano/internal/log"
 )
 
 // Type represents the type of message, which could be Request/Notify/Response/Push
@@ -221,11 +222,11 @@ func SetDictionary(dict map[string]uint16) {
 
 		// duplication check
 		if _, ok := routes[r]; ok {
-			log.Printf("duplicated route(route: %s, code: %d)\n", r, code)
+			log.Println(fmt.Sprintf("duplicated route(route: %s, code: %d)", r, code))
 		}
 
 		if _, ok := codes[code]; ok {
-			log.Printf("duplicated route(route: %s, code: %d)\n", r, code)
+			log.Println(fmt.Sprintf("duplicated route(route: %s, code: %d)", r, code))
 		}
 
 		// update map, using last value when key duplicated

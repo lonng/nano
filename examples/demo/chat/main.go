@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/lonng/nano"
 	"github.com/lonng/nano/component"
+	"github.com/lonng/nano/pipeline"
+	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/serialize/json"
 	"github.com/lonng/nano/session"
-	"strings"
 )
 
 type (
@@ -21,7 +23,7 @@ type (
 	// RoomManager represents a component that contains a bundle of room
 	RoomManager struct {
 		component.Base
-		timer *nano.Timer
+		timer *scheduler.Timer
 		rooms map[int]*Room
 	}
 
@@ -49,24 +51,24 @@ type (
 
 	stats struct {
 		component.Base
-		timer         *nano.Timer
+		timer         *scheduler.Timer
 		outboundBytes int
 		inboundBytes  int
 	}
 )
 
-func (stats *stats) outbound(s *session.Session, msg nano.Message) error {
+func (stats *stats) outbound(s *session.Session, msg pipeline.Message) error {
 	stats.outboundBytes += len(msg.Data)
 	return nil
 }
 
-func (stats *stats) inbound(s *session.Session, msg nano.Message) error {
+func (stats *stats) inbound(s *session.Session, msg pipeline.Message) error {
 	stats.inboundBytes += len(msg.Data)
 	return nil
 }
 
 func (stats *stats) AfterInit() {
-	stats.timer = nano.NewTimer(time.Minute, func() {
+	stats.timer = scheduler.NewTimer(time.Minute, func() {
 		println("OutboundBytes", stats.outboundBytes)
 		println("InboundBytes", stats.outboundBytes)
 	})
@@ -92,7 +94,7 @@ func (mgr *RoomManager) AfterInit() {
 		room := s.Value(roomIDKey).(*Room)
 		room.group.Leave(s)
 	})
-	mgr.timer = nano.NewTimer(time.Minute, func() {
+	mgr.timer = scheduler.NewTimer(time.Minute, func() {
 		for roomId, room := range mgr.rooms {
 			println(fmt.Sprintf("UserCount: RoomID=%d, Time=%s, Count=%d",
 				roomId, time.Now().String(), room.group.Count()))
@@ -143,7 +145,7 @@ func main() {
 	)
 
 	// traffic stats
-	pipeline := nano.NewPipeline()
+	pipeline := pipeline.New()
 	var stats = &stats{}
 	pipeline.Outbound().PushBack(stats.outbound)
 	pipeline.Inbound().PushBack(stats.inbound)

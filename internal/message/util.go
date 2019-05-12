@@ -18,14 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package message
 
-import "errors"
+import "github.com/lonng/nano/internal/env"
 
-// Errors that could be occurred during message handling.
-var (
-	ErrCloseClosedGroup   = errors.New("close closed group")
-	ErrClosedGroup        = errors.New("group closed")
-	ErrMemberNotFound     = errors.New("member not found in the group")
-	ErrSessionDuplication = errors.New("session has existed in the current group")
-)
+func Serialize(v interface{}) ([]byte, error) {
+	if data, ok := v.([]byte); ok {
+		return data, nil
+	}
+	data, err := env.Serializer.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}

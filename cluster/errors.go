@@ -18,14 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package cluster
 
 import "errors"
 
 // Errors that could be occurred during message handling.
 var (
-	ErrCloseClosedGroup   = errors.New("close closed group")
-	ErrClosedGroup        = errors.New("group closed")
-	ErrMemberNotFound     = errors.New("member not found in the group")
-	ErrSessionDuplication = errors.New("session has existed in the current group")
+	ErrSessionOnNotify    = errors.New("current session working on notify mode")
+	ErrCloseClosedSession = errors.New("close closed session")
 )

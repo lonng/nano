@@ -18,14 +18,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package component
 
-import "errors"
+type CompWithOptions struct {
+	Comp Component
+	Opts []Option
+}
 
-// Errors that could be occurred during message handling.
-var (
-	ErrCloseClosedGroup   = errors.New("close closed group")
-	ErrClosedGroup        = errors.New("group closed")
-	ErrMemberNotFound     = errors.New("member not found in the group")
-	ErrSessionDuplication = errors.New("session has existed in the current group")
-)
+type Components struct {
+	comps []CompWithOptions
+}
+
+// Register registers a component to hub with options
+func (cs *Components) Register(c Component, options ...Option) {
+	cs.comps = append(cs.comps, CompWithOptions{c, options})
+}
+
+// List returns all components with it's options
+func (cs *Components) List() []CompWithOptions {
+	return cs.comps
+}

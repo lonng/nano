@@ -22,139 +22,64 @@ package nano
 
 import (
 	"fmt"
-	"net"
-	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 
-	"github.com/gorilla/websocket"
-	"strings"
-	"time"
-	"sync/atomic"
+	"github.com/lonng/nano/cluster"
+	"github.com/lonng/nano/component"
+	"github.com/lonng/nano/internal/env"
+	"github.com/lonng/nano/internal/log"
+	"github.com/lonng/nano/scheduler"
 )
 
 var running int32
 
-func listen(addr string, isWs bool, opts ...Option) {
-	listenTLS(addr, isWs, "", "", opts...);
-}
-
-func listenTLS(addr string, isWs bool, certificate string, key string, opts ...Option) {
-	// mark application running
+func run(addr string, isWs bool, certificate string, key string, opts ...Option) {
 	if atomic.AddInt32(&running, 1) != 1 {
-		logger.Println("Nano has running")
+		log.Println("Nano has running")
 		return
 	}
 
-	for _, opt := range opts {
-		opt(handler.options)
+	opt := &options{
+		components: &component.Components{},
+	}
+	for _, option := range opts {
+		option(opt)
 	}
 
-	// cache heartbeat data
-	hbdEncode()
+	node := &cluster.Node{
+		IsMaster:       opt.isMaster,
+		AdvertiseAddr:  opt.advertiseAddr,
+		MemberAddr:     opt.memberAddr,
+		ServerAddr:     addr,
+		Components:     opt.components,
+		IsWebsocket:    isWs,
+		TSLCertificate: certificate,
+		TSLKey:         key,
+		Pipeline:       opt.pipeline,
+	}
+	err := node.Startup()
+	if err != nil {
+		log.Fatalf("Node startup failed: %v", err)
+	}
 
-	// initial all components
-	startupComponents()
-
-	// create global ticker instance, timer precision could be customized
-	// by SetTimerPrecision
-	globalTicker = time.NewTicker(timerPrecision)
-
-	// startup logic dispatcher
-	go handler.dispatch()
-
-	go func() {
-		if isWs {
-			if len(certificate) != 0 {
-				listenAndServeWSTLS(addr, certificate, key)
-			} else {
-				listenAndServeWS(addr)
-			}
-		} else {
-			listenAndServe(addr)
-		}
-	}()
-
-	logger.Println(fmt.Sprintf("starting application %s, listen at %s", app.name, addr))
+	log.Println(fmt.Sprintf("Nano server %s started, listen at %s", app.name, addr))
+	scheduler.Sched()
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
 
-	// stop server
 	select {
-	case <-env.die:
-		logger.Println("The app will shutdown in a few seconds")
+	case <-env.Die:
+		log.Println("The app will shutdown in a few seconds")
 	case s := <-sg:
-		logger.Println("got signal", s)
+		log.Println("Nano server got signal", s)
 	}
 
-	logger.Println("server is stopping...")
+	log.Println("Nano server is stopping...")
 
-	// shutdown all components registered by application, that
-	// call by reverse order against register
-	shutdownComponents()
+	node.Shutdown()
+	scheduler.Close()
 	atomic.StoreInt32(&running, 0)
-}
-
-// Enable current server accept connection
-func listenAndServe(addr string) {
-	listener, err := net.Listen("tcp", addr)
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-
-	defer listener.Close()
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			logger.Println(err.Error())
-			continue
-		}
-
-		go handler.handle(conn)
-	}
-}
-
-func listenAndServeWS(addr string) {
-	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin:     env.checkOrigin,
-	}
-
-	http.HandleFunc("/"+strings.TrimPrefix(env.wsPath, "/"), func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			logger.Println(fmt.Sprintf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error()))
-			return
-		}
-
-		handler.handleWS(conn)
-	})
-
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		logger.Fatal(err.Error())
-	}
-}
-
-func listenAndServeWSTLS(addr string, certificate string, key string) {
-	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin:     env.checkOrigin,
-	}
-
-	http.HandleFunc("/"+strings.TrimPrefix(env.wsPath, "/"), func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			logger.Println(fmt.Sprintf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error()))
-			return
-		}
-
-		handler.handleWS(conn)
-	})
-
-	if err := http.ListenAndServeTLS(addr, certificate, key, nil); err != nil {
-		logger.Fatal(err.Error())
-	}
 }

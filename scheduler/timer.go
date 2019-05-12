@@ -1,16 +1,37 @@
-package nano
+// Copyright (c) nano Author. All Rights Reserved.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+package scheduler
 
 import (
 	"fmt"
 	"log"
 	"math"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
 )
 
 const (
-	loopForever = -1
+	infinite = -1
 )
 
 var (
@@ -24,13 +45,6 @@ var (
 		muCreatedTimer sync.RWMutex
 		createdTimer   []*Timer
 	}{}
-
-	// timerPrecision indicates the precision of timer, default is time.Second
-	timerPrecision = time.Second
-
-	// globalTicker represents global ticker that all cron job will be executed
-	// in globalTicker.
-	globalTicker *time.Ticker
 )
 
 type (
@@ -79,8 +93,7 @@ func (t *Timer) Stop() {
 func safecall(id int64, fn TimerFunc) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(fmt.Sprintf("Call timer function error, TimerID=%d, Error=%v", id, err))
-			println(stack())
+			log.Println(fmt.Sprintf("Call timer function error, TimerID=%d, Error=%v\n%s", id, err, debug.Stack()))
 		}
 	}()
 
@@ -104,7 +117,7 @@ func cron() {
 	now := time.Now()
 	unn := now.UnixNano()
 	for id, t := range timerManager.timers {
-		if t.counter == loopForever || t.counter > 0 {
+		if t.counter == infinite || t.counter > 0 {
 			// condition timer
 			if t.condition != nil {
 				if t.condition.Check(now) {
@@ -119,7 +132,7 @@ func cron() {
 				t.elapse += int64(t.interval)
 
 				// update timer counter
-				if t.counter != loopForever && t.counter > 0 {
+				if t.counter != infinite && t.counter > 0 {
 					t.counter--
 				}
 			}
@@ -131,7 +144,6 @@ func cron() {
 			timerManager.muClosingTimer.Unlock()
 			continue
 		}
-
 	}
 
 	if len(timerManager.closingTimer) > 0 {
@@ -150,7 +162,7 @@ func cron() {
 // The duration d must be greater than zero; if not, NewTimer will panic.
 // Stop the timer to release associated resources.
 func NewTimer(interval time.Duration, fn TimerFunc) *Timer {
-	return NewCountTimer(interval, loopForever, fn)
+	return NewCountTimer(interval, infinite, fn)
 }
 
 // NewCountTimer returns a new Timer containing a function that will be called
@@ -198,18 +210,8 @@ func NewCondTimer(condition TimerCondition, fn TimerFunc) *Timer {
 		panic("nano/timer: nil condition")
 	}
 
-	t := NewCountTimer(time.Duration(math.MaxInt64), loopForever, fn)
+	t := NewCountTimer(time.Duration(math.MaxInt64), infinite, fn)
 	t.condition = condition
 
 	return t
-}
-
-// SetTimerPrecision set the ticker precision, and time precision can not less
-// than a Millisecond, and can not change after application running. The default
-// precision is time.Second
-func SetTimerPrecision(precision time.Duration) {
-	if precision < time.Millisecond {
-		panic("time precision can not less than a Millisecond")
-	}
-	timerPrecision = precision
 }

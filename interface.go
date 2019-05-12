@@ -21,64 +21,37 @@
 package nano
 
 import (
-	"net/http"
-	"time"
-
-	"github.com/lonng/nano/component"
-	"github.com/lonng/nano/internal/message"
+	"github.com/lonng/nano/internal/env"
+	"github.com/lonng/nano/internal/log"
 )
 
 // Listen listens on the TCP network address addr
 // and then calls Serve with handler to handle requests
 // on incoming connections.
 func Listen(addr string, opts ...Option) {
-	listen(addr, false, opts...)
+	run(addr, false, "", "", opts...)
 }
 
 // ListenWS listens on the TCP network address addr
 // and then upgrades the HTTP server connection to the WebSocket protocol
 // to handle requests on incoming connections.
 func ListenWS(addr string, opts ...Option) {
-	listen(addr, true, opts...)
+	run(addr, true, "", "", opts...)
 }
 
 // ListenWS listens on the TCP network address addr
 // and then upgrades the HTTP server connection to the WebSocket protocol
 // to handle requests on incoming connections.
 func ListenWSTLS(addr string, certificate string, key string, opts ...Option) {
-	listenTLS(addr, true, certificate, key, opts...)
-}
-
-// Register register a component with options
-func Register(c component.Component, options ...component.Option) {
-	comps = append(comps, regComp{c, options})
-}
-
-// SetHeartbeatInterval set heartbeat time interval
-func SetHeartbeatInterval(d time.Duration) {
-	env.heartbeat = d
-}
-
-// SetCheckOriginFunc set the function that check `Origin` in http headers
-func SetCheckOriginFunc(fn func(*http.Request) bool) {
-	env.checkOrigin = fn
+	run(addr, true, certificate, key, opts...)
 }
 
 // Shutdown send a signal to let 'nano' shutdown itself.
 func Shutdown() {
-	close(env.die)
+	close(env.Die)
 }
 
-// EnableDebug let 'nano' to run under debug mode.
-func EnableDebug() {
-	env.debug = true
-}
-
-// SetDictionary set routes map, TODO(warning): set dictionary in runtime would be a dangerous operation!!!!!!
-func SetDictionary(dict map[string]uint16) {
-	message.SetDictionary(dict)
-}
-
-func SetWSPath(path string) {
-	env.wsPath = path
+// SetLogger rewrites the default logger
+func SetLogger(l log.Logger) {
+	log.SetLogger(l)
 }
