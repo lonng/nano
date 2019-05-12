@@ -21,13 +21,16 @@
 package cluster
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/lonng/nano/cluster/clusterpb"
 	"github.com/lonng/nano/component"
 	"github.com/lonng/nano/internal/codec"
 	"github.com/lonng/nano/internal/env"
@@ -64,28 +67,29 @@ func cache() {
 	}
 }
 
-type (
-	handler struct {
-		services map[string]*component.Service // all registered service
-		handlers map[string]*component.Handler // all handler method
-		pipeline pipeline.Pipeline
-	}
-)
+type LocalHandler struct {
+	localServices  map[string]*component.Service // all registered service
+	localHandlers  map[string]*component.Handler // all handler method
+	remoteServices map[string][]*clusterpb.MemberInfo
+	pipeline       pipeline.Pipeline
+	rpcClient      *rpcClient
+}
 
-func newHandler(pipeline pipeline.Pipeline) *handler {
-	h := &handler{
-		services: make(map[string]*component.Service),
-		handlers: make(map[string]*component.Handler),
-		pipeline: pipeline,
+func NewHandler(pipeline pipeline.Pipeline) *LocalHandler {
+	h := &LocalHandler{
+		localServices:  make(map[string]*component.Service),
+		localHandlers:  make(map[string]*component.Handler),
+		remoteServices: map[string][]*clusterpb.MemberInfo{},
+		pipeline:       pipeline,
 	}
 
 	return h
 }
 
-func (h *handler) register(comp component.Component, opts []component.Option) error {
+func (h *LocalHandler) register(comp component.Component, opts []component.Option) error {
 	s := component.NewService(comp, opts)
 
-	if _, ok := h.services[s.Name]; ok {
+	if _, ok := h.localServices[s.Name]; ok {
 		return fmt.Errorf("handler: service already defined: %s", s.Name)
 	}
 
@@ -93,15 +97,47 @@ func (h *handler) register(comp component.Component, opts []component.Option) er
 		return err
 	}
 
-	// register all handlers
-	h.services[s.Name] = s
+	// register all localHandlers
+	h.localServices[s.Name] = s
 	for name, handler := range s.Handlers {
-		h.handlers[fmt.Sprintf("%s.%s", s.Name, name)] = handler
+		h.localHandlers[fmt.Sprintf("%s.%s", s.Name, name)] = handler
 	}
 	return nil
 }
 
-func (h *handler) handle(conn net.Conn) {
+func (h *LocalHandler) setRpcClient(client *rpcClient) {
+	h.rpcClient = client
+}
+
+func (h *LocalHandler) initRemoteService(members []*clusterpb.MemberInfo) {
+	for _, m := range members {
+		h.addRemoteService(m)
+	}
+}
+
+func (h *LocalHandler) addRemoteService(member *clusterpb.MemberInfo) {
+	for _, s := range member.Services {
+		h.remoteServices[s] = append(h.remoteServices[s], member)
+	}
+}
+
+func (h *LocalHandler) LocalService() []string {
+	var result []string
+	for service := range h.localServices {
+		result = append(result, service)
+	}
+	return result
+}
+
+func (h *LocalHandler) RemoteService() []string {
+	var result []string
+	for service := range h.remoteServices {
+		result = append(result, service)
+	}
+	return result
+}
+
+func (h *LocalHandler) handle(conn net.Conn) {
 	// create a client agent and startup write gorontine
 	agent := newAgent(conn, h.pipeline)
 
@@ -150,7 +186,7 @@ func (h *handler) handle(conn net.Conn) {
 	}
 }
 
-func (h *handler) processPacket(agent *agent, p *packet.Packet) error {
+func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
 		if _, err := agent.conn.Write(hrd); err != nil {
@@ -188,21 +224,84 @@ func (h *handler) processPacket(agent *agent, p *packet.Packet) error {
 	return nil
 }
 
-func (h *handler) processMessage(agent *agent, msg *message.Message) {
-	var lastMid uint
+func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
+	index := strings.LastIndex(msg.Route, ".")
+	if index < 0 {
+		log.Println(fmt.Sprintf("nano/handler: invalid route %s", msg.Route))
+		return
+	}
+
+	service := msg.Route[:index]
+	members, found := h.remoteServices[service]
+	if !found {
+		log.Println(fmt.Sprintf("nano/handler: %s not found(forgot registered?)", msg.Route))
+		return
+	}
+	// TODO: select remote
+	conns, err := h.rpcClient.getConnArray(members[0].MemberAddr)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var data []byte
+	if len(msg.Data) > 0 {
+		data = make([]byte, len(msg.Data))
+		copy(data, msg.Data)
+	}
+	client := clusterpb.NewMemberClient(conns.Get())
+	switch msg.Type {
+	case message.Request:
+		request := &clusterpb.RequestMessage{
+			Id:    msg.ID,
+			Route: msg.Route,
+			Data:  data,
+		}
+		_, err = client.HandleRequest(context.Background(), request)
+	case message.Notify:
+		request := &clusterpb.NotifyMessage{
+			Route: msg.Route,
+			Data:  data,
+		}
+		_, err = client.HandleNotify(context.Background(), request)
+	}
+	if err != nil {
+		log.Println(fmt.Sprintf("Process remote message (%d:%s) error: %v", msg.ID, msg.Route, err))
+		return
+	}
+}
+
+func (h *LocalHandler) processMessage(agent *agent, msg *message.Message) {
+	var lastMid uint64
 	switch msg.Type {
 	case message.Request:
 		lastMid = msg.ID
 	case message.Notify:
 		lastMid = 0
-	}
-
-	handler, ok := h.handlers[msg.Route]
-	if !ok {
-		log.Println(fmt.Sprintf("nano/handler: %s not found(forgot registered?)", msg.Route))
+	default:
+		log.Println("Invalid message type: " + msg.Type.String())
 		return
 	}
 
+	handler, found := h.localHandlers[msg.Route]
+	if !found {
+		h.remoteProcess(agent, msg)
+		return
+	} else {
+		h.localProcess(handler, lastMid, agent, msg)
+	}
+
+}
+
+func (h *LocalHandler) handleWS(conn *websocket.Conn) {
+	c, err := newWSConn(conn)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	h.handle(c)
+}
+
+func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, agent *agent, msg *message.Message) {
 	if pipe := h.pipeline; pipe != nil {
 		err := pipe.Inbound().Process(agent.session, msg)
 		if err != nil {
@@ -239,13 +338,4 @@ func (h *handler) processMessage(agent *agent, msg *message.Message) {
 			}
 		}
 	})
-}
-
-func (h *handler) handleWS(conn *websocket.Conn) {
-	c, err := newWSConn(conn)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	h.handle(c)
 }

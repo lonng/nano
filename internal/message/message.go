@@ -54,6 +54,10 @@ var types = map[Type]string{
 	Push:     "Push",
 }
 
+func (t Type) String() string {
+	return types[t]
+}
+
 var (
 	routes = make(map[string]uint16) // route map to code
 	codes  = make(map[uint16]string) // code map to route
@@ -69,7 +73,7 @@ var (
 // Message represents a unmarshaled message or a message which to be marshaled
 type Message struct {
 	Type       Type   // message type
-	ID         uint   // unique id, zero while notify mode
+	ID         uint64 // unique id, zero while notify mode
 	Route      string // route for locating service
 	Data       []byte // payload
 	compressed bool   // is message compressed
@@ -176,13 +180,13 @@ func Decode(data []byte) (*Message, error) {
 	}
 
 	if m.Type == Request || m.Type == Response {
-		id := uint(0)
+		id := uint64(0)
 		// little end byte order
 		// WARNING: must can be stored in 64 bits integer
 		// variant length encode
 		for i := offset; i < len(data); i++ {
 			b := data[i]
-			id += uint(b&0x7F) << uint(7*(i-offset))
+			id += uint64(b&0x7F) << uint64(7*(i-offset))
 			if b < 128 {
 				offset = i + 1
 				break

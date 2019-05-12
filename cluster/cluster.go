@@ -22,6 +22,7 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/lonng/nano/cluster/clusterpb"
 )
@@ -30,17 +31,52 @@ import (
 // and each of them provide a group of different services. All services requests
 // from client will send to gate firstly and be forwarded to appropriate node.
 type cluster struct {
-	nodes []*Node
+	// If cluster is not large enough, use slice is OK
+	currentNode *Node
+	members     []*Member
+	rpcClient   *rpcClient
 }
 
-func newCluster() *cluster {
-	return &cluster{}
+func newCluster(currentNode *Node) *cluster {
+	return &cluster{currentNode: currentNode}
 }
 
-func (c *cluster) Nodes() []*Node {
-	return c.nodes
+func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*clusterpb.RegisterResponse, error) {
+	if req.MemberInfo == nil {
+		return nil, ErrInvalidRegisterReq
+	}
+
+	resp := &clusterpb.RegisterResponse{}
+	for _, m := range c.members {
+		if m.memberInfo.MemberAddr == req.MemberInfo.MemberAddr {
+			return nil, fmt.Errorf("address %s has registered", req.MemberInfo.MemberAddr)
+		}
+	}
+
+	// Notify registered node to update remote services
+	newMember := &clusterpb.NewMemberRequest{MemberInfo: req.MemberInfo}
+	for _, m := range c.members {
+		resp.Members = append(resp.Members, m.memberInfo)
+		if m.isMaster {
+			continue
+		}
+		conns, err := c.rpcClient.getConnArray(m.memberInfo.MemberAddr)
+		if err != nil {
+			return nil, err
+		}
+		client := clusterpb.NewMemberClient(conns.Get())
+		_, err = client.NewMember(context.Background(), newMember)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Register services to current node
+	c.currentNode.handler.addRemoteService(req.MemberInfo)
+	c.members = append(c.members, &Member{isMaster: false, memberInfo: req.MemberInfo})
+	return resp, nil
 }
 
-func (c *cluster) RegisterNode(context.Context, *clusterpb.RegisterNodeRequest) (*clusterpb.RegisterNodeResponse, error) {
-	panic("implement me")
+func (c *cluster) setRpcClient(client *rpcClient) {
+	c.rpcClient = client
 }

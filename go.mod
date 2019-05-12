@@ -12,6 +12,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.0
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
+	github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8
 	github.com/urfave/cli v1.20.0
 	golang.org/x/crypto v0.0.0-20190510104115-cbcb75029529 // indirect
 	golang.org/x/exp v0.0.0-20190510132918-efd6b22b2522 // indirect

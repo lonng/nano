@@ -18,7 +18,6 @@ type (
 		advertiseAddr string
 		memberAddr    string
 		isMaster      bool
-		grpcOptions   []grpc.DialOption
 		components    *component.Components
 	}
 
@@ -57,8 +56,8 @@ func WithMaster() Option {
 
 // WithGrpcOptions sets the grpc dial options
 func WithGrpcOptions(opts ...grpc.DialOption) Option {
-	return func(opt *options) {
-		opt.grpcOptions = opts
+	return func(_ *options) {
+		env.GrpcOptions = append(env.GrpcOptions, opts...)
 	}
 }
 

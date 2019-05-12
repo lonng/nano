@@ -56,7 +56,7 @@ type (
 		// regular agent member
 		session  *session.Session    // session
 		conn     net.Conn            // low-level conn fd
-		lastMid  uint                // last message id
+		lastMid  uint64              // last message id
 		state    int32               // current agent state
 		chDie    chan struct{}       // wait for close
 		chSend   chan pendingMessage // push message queue
@@ -70,7 +70,7 @@ type (
 	pendingMessage struct {
 		typ     message.Type // message type
 		route   string       // message route(push)
-		mid     uint         // response message id(response)
+		mid     uint64       // response message id(response)
 		payload interface{}  // payload
 	}
 )
@@ -105,7 +105,7 @@ func (a *agent) send(m pendingMessage) (err error) {
 	return
 }
 
-func (a *agent) MID() uint {
+func (a *agent) MID() uint64 {
 	return a.lastMid
 }
 
@@ -141,7 +141,7 @@ func (a *agent) Response(v interface{}) error {
 
 // Response, implementation for session.NetworkEntity interface
 // Response message to session
-func (a *agent) ResponseMID(mid uint, v interface{}) error {
+func (a *agent) ResponseMID(mid uint64, v interface{}) error {
 	if a.status() == statusClosed {
 		return ErrBrokenPipe
 	}

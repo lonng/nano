@@ -27,6 +27,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/lonng/nano/internal/env"
 	"google.golang.org/grpc"
 )
 
@@ -52,13 +53,13 @@ func newConnArray(maxSize uint, addr string) (*connArray, error) {
 	return a, nil
 }
 
-func (a *connArray) init(addr string, options ...grpc.DialOption) error {
+func (a *connArray) init(addr string) error {
 	for i := range a.v {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		conn, err := grpc.DialContext(
 			ctx,
 			addr,
-			options...,
+			env.GrpcOptions...,
 		)
 		cancel()
 		if err != nil {

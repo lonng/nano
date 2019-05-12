@@ -8,14 +8,16 @@ It is generated from these files:
 	cluster.proto
 
 It has these top-level messages:
-	RegisterNodeRequest
-	NodeService
-	RegisterNodeResponse
+	MemberInfo
+	RegisterRequest
+	RegisterResponse
 	RequestMessage
 	NotifyMessage
 	ResponseMessage
-	OnMessage
-	NodeHandleResponse
+	PushMessage
+	MemberHandleResponse
+	NewMemberRequest
+	NewMemberResponse
 */
 package clusterpb
 
@@ -39,71 +41,74 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type RegisterNodeRequest struct {
-	NodeType       string `protobuf:"bytes,1,opt,name=nodeType" json:"nodeType"`
-	ServiceAddress string `protobuf:"bytes,2,opt,name=serviceAddress" json:"serviceAddress"`
+type MemberInfo struct {
+	MemberType string   `protobuf:"bytes,1,opt,name=memberType" json:"memberType"`
+	MemberAddr string   `protobuf:"bytes,2,opt,name=memberAddr" json:"memberAddr"`
+	Services   []string `protobuf:"bytes,3,rep,name=services" json:"services"`
 }
 
-func (m *RegisterNodeRequest) Reset()                    { *m = RegisterNodeRequest{} }
-func (m *RegisterNodeRequest) String() string            { return proto.CompactTextString(m) }
-func (*RegisterNodeRequest) ProtoMessage()               {}
-func (*RegisterNodeRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *MemberInfo) Reset()                    { *m = MemberInfo{} }
+func (m *MemberInfo) String() string            { return proto.CompactTextString(m) }
+func (*MemberInfo) ProtoMessage()               {}
+func (*MemberInfo) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-func (m *RegisterNodeRequest) GetNodeType() string {
+func (m *MemberInfo) GetMemberType() string {
 	if m != nil {
-		return m.NodeType
+		return m.MemberType
 	}
 	return ""
 }
 
-func (m *RegisterNodeRequest) GetServiceAddress() string {
+func (m *MemberInfo) GetMemberAddr() string {
 	if m != nil {
-		return m.ServiceAddress
+		return m.MemberAddr
 	}
 	return ""
 }
 
-type NodeService struct {
-	NodeType string   `protobuf:"bytes,1,opt,name=nodeType" json:"nodeType"`
-	Services []string `protobuf:"bytes,2,rep,name=services" json:"services"`
-}
-
-func (m *NodeService) Reset()                    { *m = NodeService{} }
-func (m *NodeService) String() string            { return proto.CompactTextString(m) }
-func (*NodeService) ProtoMessage()               {}
-func (*NodeService) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *NodeService) GetNodeType() string {
-	if m != nil {
-		return m.NodeType
-	}
-	return ""
-}
-
-func (m *NodeService) GetServices() []string {
+func (m *MemberInfo) GetServices() []string {
 	if m != nil {
 		return m.Services
 	}
 	return nil
 }
 
-type RegisterNodeResponse struct {
-	NodeServices []*NodeService `protobuf:"bytes,1,rep,name=nodeServices" json:"nodeServices"`
+type RegisterRequest struct {
+	MemberInfo *MemberInfo `protobuf:"bytes,1,opt,name=memberInfo" json:"memberInfo"`
 }
 
-func (m *RegisterNodeResponse) Reset()                    { *m = RegisterNodeResponse{} }
-func (m *RegisterNodeResponse) String() string            { return proto.CompactTextString(m) }
-func (*RegisterNodeResponse) ProtoMessage()               {}
-func (*RegisterNodeResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *RegisterRequest) Reset()                    { *m = RegisterRequest{} }
+func (m *RegisterRequest) String() string            { return proto.CompactTextString(m) }
+func (*RegisterRequest) ProtoMessage()               {}
+func (*RegisterRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
-func (m *RegisterNodeResponse) GetNodeServices() []*NodeService {
+func (m *RegisterRequest) GetMemberInfo() *MemberInfo {
 	if m != nil {
-		return m.NodeServices
+		return m.MemberInfo
+	}
+	return nil
+}
+
+type RegisterResponse struct {
+	Members []*MemberInfo `protobuf:"bytes,1,rep,name=members" json:"members"`
+}
+
+func (m *RegisterResponse) Reset()                    { *m = RegisterResponse{} }
+func (m *RegisterResponse) String() string            { return proto.CompactTextString(m) }
+func (*RegisterResponse) ProtoMessage()               {}
+func (*RegisterResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *RegisterResponse) GetMembers() []*MemberInfo {
+	if m != nil {
+		return m.Members
 	}
 	return nil
 }
 
 type RequestMessage struct {
+	Id    uint64 `protobuf:"varint,1,opt,name=id" json:"id"`
+	Route string `protobuf:"bytes,2,opt,name=route" json:"route"`
+	Data  []byte `protobuf:"bytes,3,opt,name=data,proto3" json:"data"`
 }
 
 func (m *RequestMessage) Reset()                    { *m = RequestMessage{} }
@@ -111,7 +116,30 @@ func (m *RequestMessage) String() string            { return proto.CompactTextSt
 func (*RequestMessage) ProtoMessage()               {}
 func (*RequestMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
+func (m *RequestMessage) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *RequestMessage) GetRoute() string {
+	if m != nil {
+		return m.Route
+	}
+	return ""
+}
+
+func (m *RequestMessage) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
 type NotifyMessage struct {
+	Route string `protobuf:"bytes,1,opt,name=route" json:"route"`
+	Data  []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data"`
 }
 
 func (m *NotifyMessage) Reset()                    { *m = NotifyMessage{} }
@@ -119,7 +147,23 @@ func (m *NotifyMessage) String() string            { return proto.CompactTextStr
 func (*NotifyMessage) ProtoMessage()               {}
 func (*NotifyMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
 
+func (m *NotifyMessage) GetRoute() string {
+	if m != nil {
+		return m.Route
+	}
+	return ""
+}
+
+func (m *NotifyMessage) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
 type ResponseMessage struct {
+	Id   uint64 `protobuf:"varint,1,opt,name=id" json:"id"`
+	Data []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data"`
 }
 
 func (m *ResponseMessage) Reset()                    { *m = ResponseMessage{} }
@@ -127,31 +171,87 @@ func (m *ResponseMessage) String() string            { return proto.CompactTextS
 func (*ResponseMessage) ProtoMessage()               {}
 func (*ResponseMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
-type OnMessage struct {
+func (m *ResponseMessage) GetId() uint64 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
 }
 
-func (m *OnMessage) Reset()                    { *m = OnMessage{} }
-func (m *OnMessage) String() string            { return proto.CompactTextString(m) }
-func (*OnMessage) ProtoMessage()               {}
-func (*OnMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
-
-type NodeHandleResponse struct {
+func (m *ResponseMessage) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
 }
 
-func (m *NodeHandleResponse) Reset()                    { *m = NodeHandleResponse{} }
-func (m *NodeHandleResponse) String() string            { return proto.CompactTextString(m) }
-func (*NodeHandleResponse) ProtoMessage()               {}
-func (*NodeHandleResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+type PushMessage struct {
+	Route string `protobuf:"bytes,1,opt,name=route" json:"route"`
+	Data  []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data"`
+}
+
+func (m *PushMessage) Reset()                    { *m = PushMessage{} }
+func (m *PushMessage) String() string            { return proto.CompactTextString(m) }
+func (*PushMessage) ProtoMessage()               {}
+func (*PushMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
+
+func (m *PushMessage) GetRoute() string {
+	if m != nil {
+		return m.Route
+	}
+	return ""
+}
+
+func (m *PushMessage) GetData() []byte {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+type MemberHandleResponse struct {
+}
+
+func (m *MemberHandleResponse) Reset()                    { *m = MemberHandleResponse{} }
+func (m *MemberHandleResponse) String() string            { return proto.CompactTextString(m) }
+func (*MemberHandleResponse) ProtoMessage()               {}
+func (*MemberHandleResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+type NewMemberRequest struct {
+	MemberInfo *MemberInfo `protobuf:"bytes,1,opt,name=memberInfo" json:"memberInfo"`
+}
+
+func (m *NewMemberRequest) Reset()                    { *m = NewMemberRequest{} }
+func (m *NewMemberRequest) String() string            { return proto.CompactTextString(m) }
+func (*NewMemberRequest) ProtoMessage()               {}
+func (*NewMemberRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+
+func (m *NewMemberRequest) GetMemberInfo() *MemberInfo {
+	if m != nil {
+		return m.MemberInfo
+	}
+	return nil
+}
+
+type NewMemberResponse struct {
+}
+
+func (m *NewMemberResponse) Reset()                    { *m = NewMemberResponse{} }
+func (m *NewMemberResponse) String() string            { return proto.CompactTextString(m) }
+func (*NewMemberResponse) ProtoMessage()               {}
+func (*NewMemberResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
 
 func init() {
-	proto.RegisterType((*RegisterNodeRequest)(nil), "clusterpb.RegisterNodeRequest")
-	proto.RegisterType((*NodeService)(nil), "clusterpb.NodeService")
-	proto.RegisterType((*RegisterNodeResponse)(nil), "clusterpb.RegisterNodeResponse")
+	proto.RegisterType((*MemberInfo)(nil), "clusterpb.MemberInfo")
+	proto.RegisterType((*RegisterRequest)(nil), "clusterpb.RegisterRequest")
+	proto.RegisterType((*RegisterResponse)(nil), "clusterpb.RegisterResponse")
 	proto.RegisterType((*RequestMessage)(nil), "clusterpb.RequestMessage")
 	proto.RegisterType((*NotifyMessage)(nil), "clusterpb.NotifyMessage")
 	proto.RegisterType((*ResponseMessage)(nil), "clusterpb.ResponseMessage")
-	proto.RegisterType((*OnMessage)(nil), "clusterpb.OnMessage")
-	proto.RegisterType((*NodeHandleResponse)(nil), "clusterpb.NodeHandleResponse")
+	proto.RegisterType((*PushMessage)(nil), "clusterpb.PushMessage")
+	proto.RegisterType((*MemberHandleResponse)(nil), "clusterpb.MemberHandleResponse")
+	proto.RegisterType((*NewMemberRequest)(nil), "clusterpb.NewMemberRequest")
+	proto.RegisterType((*NewMemberResponse)(nil), "clusterpb.NewMemberResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -162,227 +262,260 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Cluster service
+// Client API for Master service
 
-type ClusterClient interface {
-	RegisterNode(ctx context.Context, in *RegisterNodeRequest, opts ...grpc.CallOption) (*RegisterNodeResponse, error)
+type MasterClient interface {
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 }
 
-type clusterClient struct {
+type masterClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewClusterClient(cc *grpc.ClientConn) ClusterClient {
-	return &clusterClient{cc}
+func NewMasterClient(cc *grpc.ClientConn) MasterClient {
+	return &masterClient{cc}
 }
 
-func (c *clusterClient) RegisterNode(ctx context.Context, in *RegisterNodeRequest, opts ...grpc.CallOption) (*RegisterNodeResponse, error) {
-	out := new(RegisterNodeResponse)
-	err := grpc.Invoke(ctx, "/clusterpb.Cluster/RegisterNode", in, out, c.cc, opts...)
+func (c *masterClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
+	out := new(RegisterResponse)
+	err := grpc.Invoke(ctx, "/clusterpb.Master/Register", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Cluster service
+// Server API for Master service
 
-type ClusterServer interface {
-	RegisterNode(context.Context, *RegisterNodeRequest) (*RegisterNodeResponse, error)
+type MasterServer interface {
+	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 }
 
-func RegisterClusterServer(s *grpc.Server, srv ClusterServer) {
-	s.RegisterService(&_Cluster_serviceDesc, srv)
+func RegisterMasterServer(s *grpc.Server, srv MasterServer) {
+	s.RegisterService(&_Master_serviceDesc, srv)
 }
 
-func _Cluster_RegisterNode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterNodeRequest)
+func _Master_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ClusterServer).RegisterNode(ctx, in)
+		return srv.(MasterServer).Register(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clusterpb.Cluster/RegisterNode",
+		FullMethod: "/clusterpb.Master/Register",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ClusterServer).RegisterNode(ctx, req.(*RegisterNodeRequest))
+		return srv.(MasterServer).Register(ctx, req.(*RegisterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Cluster_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "clusterpb.Cluster",
-	HandlerType: (*ClusterServer)(nil),
+var _Master_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "clusterpb.Master",
+	HandlerType: (*MasterServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "RegisterNode",
-			Handler:    _Cluster_RegisterNode_Handler,
+			MethodName: "Register",
+			Handler:    _Master_Register_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "cluster.proto",
 }
 
-// Client API for Node service
+// Client API for Member service
 
-type NodeClient interface {
-	HandleRequest(ctx context.Context, in *RequestMessage, opts ...grpc.CallOption) (*NodeHandleResponse, error)
-	HandleNotify(ctx context.Context, in *NotifyMessage, opts ...grpc.CallOption) (*NodeHandleResponse, error)
-	HandleOn(ctx context.Context, in *OnMessage, opts ...grpc.CallOption) (*NodeHandleResponse, error)
-	HandleResponse(ctx context.Context, in *ResponseMessage, opts ...grpc.CallOption) (*NodeHandleResponse, error)
+type MemberClient interface {
+	HandleRequest(ctx context.Context, in *RequestMessage, opts ...grpc.CallOption) (*MemberHandleResponse, error)
+	HandleNotify(ctx context.Context, in *NotifyMessage, opts ...grpc.CallOption) (*MemberHandleResponse, error)
+	HandlePush(ctx context.Context, in *PushMessage, opts ...grpc.CallOption) (*MemberHandleResponse, error)
+	HandleResponse(ctx context.Context, in *ResponseMessage, opts ...grpc.CallOption) (*MemberHandleResponse, error)
+	NewMember(ctx context.Context, in *NewMemberRequest, opts ...grpc.CallOption) (*NewMemberResponse, error)
 }
 
-type nodeClient struct {
+type memberClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewNodeClient(cc *grpc.ClientConn) NodeClient {
-	return &nodeClient{cc}
+func NewMemberClient(cc *grpc.ClientConn) MemberClient {
+	return &memberClient{cc}
 }
 
-func (c *nodeClient) HandleRequest(ctx context.Context, in *RequestMessage, opts ...grpc.CallOption) (*NodeHandleResponse, error) {
-	out := new(NodeHandleResponse)
-	err := grpc.Invoke(ctx, "/clusterpb.Node/HandleRequest", in, out, c.cc, opts...)
+func (c *memberClient) HandleRequest(ctx context.Context, in *RequestMessage, opts ...grpc.CallOption) (*MemberHandleResponse, error) {
+	out := new(MemberHandleResponse)
+	err := grpc.Invoke(ctx, "/clusterpb.Member/HandleRequest", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *nodeClient) HandleNotify(ctx context.Context, in *NotifyMessage, opts ...grpc.CallOption) (*NodeHandleResponse, error) {
-	out := new(NodeHandleResponse)
-	err := grpc.Invoke(ctx, "/clusterpb.Node/HandleNotify", in, out, c.cc, opts...)
+func (c *memberClient) HandleNotify(ctx context.Context, in *NotifyMessage, opts ...grpc.CallOption) (*MemberHandleResponse, error) {
+	out := new(MemberHandleResponse)
+	err := grpc.Invoke(ctx, "/clusterpb.Member/HandleNotify", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *nodeClient) HandleOn(ctx context.Context, in *OnMessage, opts ...grpc.CallOption) (*NodeHandleResponse, error) {
-	out := new(NodeHandleResponse)
-	err := grpc.Invoke(ctx, "/clusterpb.Node/HandleOn", in, out, c.cc, opts...)
+func (c *memberClient) HandlePush(ctx context.Context, in *PushMessage, opts ...grpc.CallOption) (*MemberHandleResponse, error) {
+	out := new(MemberHandleResponse)
+	err := grpc.Invoke(ctx, "/clusterpb.Member/HandlePush", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *nodeClient) HandleResponse(ctx context.Context, in *ResponseMessage, opts ...grpc.CallOption) (*NodeHandleResponse, error) {
-	out := new(NodeHandleResponse)
-	err := grpc.Invoke(ctx, "/clusterpb.Node/HandleResponse", in, out, c.cc, opts...)
+func (c *memberClient) HandleResponse(ctx context.Context, in *ResponseMessage, opts ...grpc.CallOption) (*MemberHandleResponse, error) {
+	out := new(MemberHandleResponse)
+	err := grpc.Invoke(ctx, "/clusterpb.Member/HandleResponse", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Node service
-
-type NodeServer interface {
-	HandleRequest(context.Context, *RequestMessage) (*NodeHandleResponse, error)
-	HandleNotify(context.Context, *NotifyMessage) (*NodeHandleResponse, error)
-	HandleOn(context.Context, *OnMessage) (*NodeHandleResponse, error)
-	HandleResponse(context.Context, *ResponseMessage) (*NodeHandleResponse, error)
+func (c *memberClient) NewMember(ctx context.Context, in *NewMemberRequest, opts ...grpc.CallOption) (*NewMemberResponse, error) {
+	out := new(NewMemberResponse)
+	err := grpc.Invoke(ctx, "/clusterpb.Member/NewMember", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
-func RegisterNodeServer(s *grpc.Server, srv NodeServer) {
-	s.RegisterService(&_Node_serviceDesc, srv)
+// Server API for Member service
+
+type MemberServer interface {
+	HandleRequest(context.Context, *RequestMessage) (*MemberHandleResponse, error)
+	HandleNotify(context.Context, *NotifyMessage) (*MemberHandleResponse, error)
+	HandlePush(context.Context, *PushMessage) (*MemberHandleResponse, error)
+	HandleResponse(context.Context, *ResponseMessage) (*MemberHandleResponse, error)
+	NewMember(context.Context, *NewMemberRequest) (*NewMemberResponse, error)
 }
 
-func _Node_HandleRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func RegisterMemberServer(s *grpc.Server, srv MemberServer) {
+	s.RegisterService(&_Member_serviceDesc, srv)
+}
+
+func _Member_HandleRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RequestMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NodeServer).HandleRequest(ctx, in)
+		return srv.(MemberServer).HandleRequest(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clusterpb.Node/HandleRequest",
+		FullMethod: "/clusterpb.Member/HandleRequest",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NodeServer).HandleRequest(ctx, req.(*RequestMessage))
+		return srv.(MemberServer).HandleRequest(ctx, req.(*RequestMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Node_HandleNotify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Member_HandleNotify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NotifyMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NodeServer).HandleNotify(ctx, in)
+		return srv.(MemberServer).HandleNotify(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clusterpb.Node/HandleNotify",
+		FullMethod: "/clusterpb.Member/HandleNotify",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NodeServer).HandleNotify(ctx, req.(*NotifyMessage))
+		return srv.(MemberServer).HandleNotify(ctx, req.(*NotifyMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Node_HandleOn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(OnMessage)
+func _Member_HandlePush_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PushMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NodeServer).HandleOn(ctx, in)
+		return srv.(MemberServer).HandlePush(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clusterpb.Node/HandleOn",
+		FullMethod: "/clusterpb.Member/HandlePush",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NodeServer).HandleOn(ctx, req.(*OnMessage))
+		return srv.(MemberServer).HandlePush(ctx, req.(*PushMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Node_HandleResponse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Member_HandleResponse_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ResponseMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NodeServer).HandleResponse(ctx, in)
+		return srv.(MemberServer).HandleResponse(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/clusterpb.Node/HandleResponse",
+		FullMethod: "/clusterpb.Member/HandleResponse",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NodeServer).HandleResponse(ctx, req.(*ResponseMessage))
+		return srv.(MemberServer).HandleResponse(ctx, req.(*ResponseMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Node_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "clusterpb.Node",
-	HandlerType: (*NodeServer)(nil),
+func _Member_NewMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NewMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MemberServer).NewMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/clusterpb.Member/NewMember",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MemberServer).NewMember(ctx, req.(*NewMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Member_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "clusterpb.Member",
+	HandlerType: (*MemberServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "HandleRequest",
-			Handler:    _Node_HandleRequest_Handler,
+			Handler:    _Member_HandleRequest_Handler,
 		},
 		{
 			MethodName: "HandleNotify",
-			Handler:    _Node_HandleNotify_Handler,
+			Handler:    _Member_HandleNotify_Handler,
 		},
 		{
-			MethodName: "HandleOn",
-			Handler:    _Node_HandleOn_Handler,
+			MethodName: "HandlePush",
+			Handler:    _Member_HandlePush_Handler,
 		},
 		{
 			MethodName: "HandleResponse",
-			Handler:    _Node_HandleResponse_Handler,
+			Handler:    _Member_HandleResponse_Handler,
+		},
+		{
+			MethodName: "NewMember",
+			Handler:    _Member_NewMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -392,26 +525,31 @@ var _Node_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("cluster.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 326 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0x4f, 0x4b, 0xf3, 0x40,
-	0x10, 0xc6, 0xfb, 0xe7, 0xe5, 0xb5, 0x9d, 0x26, 0xa9, 0xae, 0x41, 0x62, 0x40, 0x2d, 0x7b, 0x90,
-	0x9e, 0x72, 0x88, 0x37, 0x6f, 0x45, 0x04, 0x45, 0xda, 0x62, 0xf4, 0x22, 0x78, 0x69, 0x9b, 0xb1,
-	0x04, 0xca, 0x6e, 0xcc, 0xa6, 0x42, 0xbf, 0x95, 0x1f, 0x51, 0x92, 0xcd, 0xc6, 0xdd, 0xa2, 0xe6,
-	0x38, 0x4f, 0x66, 0x7e, 0xf3, 0xcc, 0xb3, 0x01, 0x7b, 0xb5, 0xd9, 0x8a, 0x1c, 0xb3, 0x20, 0xcd,
-	0x78, 0xce, 0x49, 0xbf, 0x2a, 0xd3, 0x25, 0x7d, 0x81, 0xe3, 0x08, 0xd7, 0x49, 0x51, 0xcd, 0x78,
-	0x8c, 0x11, 0xbe, 0x6f, 0x51, 0xe4, 0xc4, 0x87, 0x1e, 0xe3, 0x31, 0x3e, 0xef, 0x52, 0xf4, 0xda,
-	0xa3, 0xf6, 0xb8, 0x1f, 0xd5, 0x35, 0xb9, 0x04, 0x47, 0x60, 0xf6, 0x91, 0xac, 0x70, 0x12, 0xc7,
-	0x19, 0x0a, 0xe1, 0x75, 0xca, 0x8e, 0x3d, 0x95, 0xde, 0xc2, 0xa0, 0x40, 0x3e, 0x49, 0xf5, 0x4f,
-	0xa4, 0x0f, 0xbd, 0x6a, 0xb8, 0x80, 0x75, 0x8b, 0x6f, 0xaa, 0xa6, 0x11, 0xb8, 0xa6, 0x43, 0x91,
-	0x72, 0x26, 0x90, 0x5c, 0x83, 0xc5, 0xbe, 0xf1, 0xc2, 0x6b, 0x8f, 0xba, 0xe3, 0x41, 0x78, 0x12,
-	0xd4, 0xb7, 0x05, 0xda, 0xf6, 0xc8, 0xe8, 0xa5, 0x87, 0xe0, 0x54, 0x97, 0x4e, 0x51, 0x88, 0xc5,
-	0x1a, 0xe9, 0x10, 0xec, 0x19, 0xcf, 0x93, 0xb7, 0x9d, 0x12, 0x8e, 0x60, 0xa8, 0x56, 0x29, 0x69,
-	0x00, 0xfd, 0x39, 0x53, 0x85, 0x0b, 0xa4, 0xe0, 0xdf, 0x2d, 0x58, 0xbc, 0xa9, 0x4d, 0x85, 0xaf,
-	0x70, 0x70, 0x23, 0xf7, 0x93, 0x47, 0xb0, 0x74, 0xdf, 0xe4, 0x5c, 0x73, 0xf6, 0x43, 0xe4, 0xfe,
-	0xc5, 0xaf, 0xdf, 0x25, 0x9b, 0xb6, 0xc2, 0xcf, 0x0e, 0xfc, 0x2b, 0x59, 0x0f, 0x60, 0xab, 0xc5,
-	0xf2, 0xbd, 0x4e, 0x8d, 0x61, 0xfd, 0x32, 0xff, 0x6c, 0x2f, 0x11, 0xd3, 0x31, 0x6d, 0x91, 0x7b,
-	0xb0, 0xa4, 0x26, 0x03, 0x20, 0x9e, 0x31, 0xa0, 0x65, 0xd2, 0x8c, 0x9a, 0x40, 0x4f, 0x6a, 0x73,
-	0x46, 0x5c, 0xad, 0xb9, 0x8e, 0xad, 0x19, 0x31, 0x05, 0xc7, 0xd4, 0x88, 0x6f, 0xdc, 0x66, 0x3c,
-	0x49, 0x23, 0x6e, 0xf9, 0xbf, 0xfc, 0xe3, 0xaf, 0xbe, 0x02, 0x00, 0x00, 0xff, 0xff, 0xc9, 0x3c,
-	0x5c, 0x49, 0x02, 0x03, 0x00, 0x00,
+	// 412 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x54, 0xdd, 0x6e, 0xa2, 0x40,
+	0x14, 0x16, 0x70, 0x5d, 0x39, 0xfe, 0xac, 0x7b, 0xd6, 0x35, 0x2c, 0xbb, 0xd9, 0x12, 0xae, 0xbc,
+	0xb2, 0x89, 0x8d, 0x69, 0x7a, 0xd9, 0x34, 0x4d, 0xb5, 0x0d, 0xda, 0x90, 0xbe, 0x00, 0xca, 0xa8,
+	0x24, 0x2a, 0x94, 0x81, 0x36, 0xbe, 0x41, 0x1f, 0xbb, 0x81, 0x01, 0x1c, 0x28, 0x26, 0x36, 0xbd,
+	0xe3, 0x9c, 0x33, 0xdf, 0xcf, 0x9c, 0x6f, 0x02, 0xb4, 0x16, 0x9b, 0x90, 0x06, 0xc4, 0x1f, 0x78,
+	0xbe, 0x1b, 0xb8, 0x28, 0x27, 0xa5, 0x37, 0xd7, 0xd7, 0x00, 0x06, 0xd9, 0xce, 0x89, 0x3f, 0xd9,
+	0x2d, 0x5d, 0xfc, 0x0f, 0xb0, 0x8d, 0xab, 0xa7, 0xbd, 0x47, 0x14, 0x41, 0x13, 0xfa, 0xb2, 0xc9,
+	0x75, 0x0e, 0xf3, 0x6b, 0xdb, 0xf6, 0x15, 0x91, 0x9f, 0x47, 0x1d, 0x54, 0xa1, 0x4e, 0x89, 0xff,
+	0xe2, 0x2c, 0x08, 0x55, 0x24, 0x4d, 0xea, 0xcb, 0x66, 0x56, 0xeb, 0x63, 0xf8, 0x61, 0x92, 0x95,
+	0x13, 0xe9, 0x9a, 0xe4, 0x39, 0x24, 0x34, 0xc0, 0x51, 0x4a, 0x17, 0x89, 0xc7, 0x72, 0x8d, 0xe1,
+	0xef, 0x41, 0x66, 0x6e, 0x70, 0x70, 0x66, 0x72, 0x07, 0xf5, 0x1b, 0xe8, 0x1c, 0x98, 0xa8, 0xe7,
+	0xee, 0x28, 0xc1, 0x73, 0xf8, 0xce, 0x4e, 0x50, 0x45, 0xd0, 0xa4, 0xe3, 0x3c, 0xe9, 0x29, 0xfd,
+	0x1e, 0xda, 0x89, 0x0d, 0x83, 0x50, 0x6a, 0xad, 0x08, 0xb6, 0x41, 0x74, 0xec, 0xd8, 0x45, 0xd5,
+	0x14, 0x1d, 0x1b, 0xbb, 0xf0, 0xcd, 0x77, 0xc3, 0x80, 0x24, 0xf7, 0x64, 0x05, 0x22, 0x54, 0x6d,
+	0x2b, 0xb0, 0x14, 0x49, 0x13, 0xfa, 0x4d, 0x33, 0xfe, 0xd6, 0xaf, 0xa0, 0x35, 0x75, 0x03, 0x67,
+	0xb9, 0x4f, 0xa9, 0x32, 0xa8, 0x50, 0x06, 0x15, 0x39, 0xe8, 0x28, 0xda, 0x0a, 0xbb, 0xc3, 0x31,
+	0x1f, 0x65, 0xb0, 0x4b, 0x68, 0x3c, 0x86, 0x74, 0xfd, 0x79, 0xbd, 0x1e, 0x74, 0xd9, 0x36, 0xc6,
+	0xd6, 0xce, 0xde, 0x90, 0x54, 0x5b, 0x9f, 0x40, 0x67, 0x4a, 0x5e, 0xd9, 0xe8, 0x8b, 0xf1, 0xfc,
+	0x82, 0x9f, 0x1c, 0x15, 0xe3, 0x1f, 0xce, 0xa0, 0x66, 0x58, 0x11, 0x0e, 0x6f, 0xa1, 0x9e, 0xa6,
+	0x87, 0x2a, 0xc7, 0x56, 0x78, 0x1c, 0xea, 0xdf, 0xd2, 0x59, 0x62, 0xb7, 0x32, 0x7c, 0x93, 0xa0,
+	0xc6, 0x34, 0xd0, 0x80, 0x56, 0x7a, 0x1b, 0x66, 0xfc, 0x4f, 0x0e, 0xca, 0x87, 0xac, 0x9e, 0x7d,
+	0xf0, 0x5f, 0x58, 0x44, 0x05, 0x1f, 0xa0, 0xc9, 0x7a, 0x2c, 0x53, 0x54, 0x38, 0x48, 0x2e, 0xe6,
+	0x53, 0xc8, 0xee, 0x00, 0x58, 0x2f, 0x8a, 0x0b, 0x7b, 0x1c, 0x80, 0xcb, 0xef, 0x14, 0xa2, 0x19,
+	0xb4, 0xf3, 0xbd, 0xc2, 0xf2, 0x72, 0x6f, 0xe8, 0x14, 0xc2, 0x31, 0xc8, 0x59, 0x4c, 0xc8, 0x2f,
+	0xbb, 0xf8, 0x0e, 0xd4, 0x7f, 0xe5, 0xc3, 0x94, 0x69, 0x5e, 0x8b, 0xff, 0x2a, 0x17, 0xef, 0x01,
+	0x00, 0x00, 0xff, 0xff, 0x53, 0x62, 0xa0, 0xe1, 0x66, 0x04, 0x00, 0x00,
 }

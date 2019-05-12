@@ -61,7 +61,7 @@ type (
 		codec  *codec.Decoder // decoder
 		die    chan struct{}  // connector close channel
 		chSend chan []byte    // send queue
-		mid    uint           // message id
+		mid    uint64         // message id
 
 		// events handler
 		muEvents sync.RWMutex
@@ -69,7 +69,7 @@ type (
 
 		// response handler
 		muResponses sync.RWMutex
-		responses   map[uint]Callback
+		responses   map[uint64]Callback
 
 		connectedCallback func() // connected callback
 	}
@@ -83,7 +83,7 @@ func NewConnector() *Connector {
 		chSend:    make(chan []byte, 64),
 		mid:       1,
 		events:    map[string]Callback{},
-		responses: map[uint]Callback{},
+		responses: map[uint64]Callback{},
 	}
 }
 
@@ -172,7 +172,7 @@ func (c *Connector) eventHandler(event string) (Callback, bool) {
 	return cb, ok
 }
 
-func (c *Connector) responseHandler(mid uint) (Callback, bool) {
+func (c *Connector) responseHandler(mid uint64) (Callback, bool) {
 	c.muResponses.RLock()
 	defer c.muResponses.RUnlock()
 
@@ -180,7 +180,7 @@ func (c *Connector) responseHandler(mid uint) (Callback, bool) {
 	return cb, ok
 }
 
-func (c *Connector) setResponseHandler(mid uint, cb Callback) {
+func (c *Connector) setResponseHandler(mid uint64, cb Callback) {
 	c.muResponses.Lock()
 	defer c.muResponses.Unlock()
 

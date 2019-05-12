@@ -1,47 +1,60 @@
 syntax = "proto3";
 package clusterpb;
 
-message RegisterNodeRequest {
-    string nodeType = 1;
-    string serviceAddress = 2;
+message MemberInfo {
+    string memberType = 1;
+    string memberAddr = 2;
+    repeated string services = 3;
 }
 
-message NodeService {
-    string nodeType = 1;
-    repeated string services = 2;
+message RegisterRequest {
+    MemberInfo memberInfo = 1;
 }
 
-message RegisterNodeResponse {
-    repeated NodeService nodeServices = 1;
+message RegisterResponse {
+    repeated MemberInfo members = 1;
 }
 
-service Cluster {
-    rpc RegisterNode (RegisterNodeRequest) returns (RegisterNodeResponse) {}
+service Master {
+    rpc Register (RegisterRequest) returns (RegisterResponse) {}
 }
 
 message RequestMessage {
-
+    uint64 id = 1;
+    string route = 2;
+    bytes data = 3;
 }
 
 message NotifyMessage {
-
+    string route = 1;
+    bytes data = 2;
 }
 
 message ResponseMessage {
+    uint64 id = 1;
+    bytes data = 2;
+}
+
+message PushMessage {
+    string route = 1;
+    bytes data = 2;
+}
+
+message MemberHandleResponse {}
+
+message NewMemberRequest {
+    MemberInfo memberInfo = 1;
+}
+
+message NewMemberResponse {
 
 }
 
-message OnMessage {
+service Member {
+    rpc HandleRequest (RequestMessage) returns (MemberHandleResponse) {}
+    rpc HandleNotify (NotifyMessage) returns (MemberHandleResponse) {}
+    rpc HandlePush (PushMessage) returns (MemberHandleResponse) {}
+    rpc HandleResponse (ResponseMessage) returns (MemberHandleResponse) {}
 
-}
-
-message NodeHandleResponse {
-
-}
-
-service Node {
-    rpc HandleRequest (RequestMessage) returns (NodeHandleResponse) {}
-    rpc HandleNotify (NotifyMessage) returns (NodeHandleResponse) {}
-    rpc HandleOn (OnMessage) returns (NodeHandleResponse) {}
-    rpc HandleResponse (ResponseMessage) returns (NodeHandleResponse) {}
+    rpc NewMember (NewMemberRequest) returns (NewMemberResponse) {}
 }

@@ -33,9 +33,9 @@ import (
 // NetworkEntity represent low-level network instance
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
-	MID() uint
+	MID() uint64
 	Response(v interface{}) error
-	ResponseMID(mid uint, v interface{}) error
+	ResponseMID(mid uint64, v interface{}) error
 	Close() error
 	RemoteAddr() net.Addr
 }
@@ -81,7 +81,7 @@ func (s *Session) Response(v interface{}) error {
 
 // ResponseMID responses message to client, mid is
 // request message ID
-func (s *Session) ResponseMID(mid uint, v interface{}) error {
+func (s *Session) ResponseMID(mid uint64, v interface{}) error {
 	return s.entity.ResponseMID(mid, v)
 }
 
@@ -96,7 +96,7 @@ func (s *Session) UID() int64 {
 }
 
 // MID returns the last message id
-func (s *Session) MID() uint {
+func (s *Session) MID() uint64 {
 	return s.entity.MID()
 }
 

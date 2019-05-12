@@ -28,6 +28,7 @@ import (
 
 	"github.com/lonng/nano/serialize"
 	"github.com/lonng/nano/serialize/protobuf"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -46,6 +47,8 @@ var (
 	GlobalTicker *time.Ticker
 
 	Serializer serialize.Serializer
+
+	GrpcOptions = []grpc.DialOption{grpc.WithInsecure()}
 )
 
 func init() {
