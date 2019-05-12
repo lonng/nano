@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -39,6 +40,7 @@ import (
 	"github.com/lonng/nano/internal/packet"
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/scheduler"
+	"github.com/lonng/nano/session"
 )
 
 var (
@@ -72,15 +74,16 @@ type LocalHandler struct {
 	localHandlers  map[string]*component.Handler // all handler method
 	remoteServices map[string][]*clusterpb.MemberInfo
 	pipeline       pipeline.Pipeline
-	rpcClient      *rpcClient
+	currentNode    *Node
 }
 
-func NewHandler(pipeline pipeline.Pipeline) *LocalHandler {
+func NewHandler(currentNode *Node, pipeline pipeline.Pipeline) *LocalHandler {
 	h := &LocalHandler{
 		localServices:  make(map[string]*component.Service),
 		localHandlers:  make(map[string]*component.Handler),
 		remoteServices: map[string][]*clusterpb.MemberInfo{},
 		pipeline:       pipeline,
+		currentNode:    currentNode,
 	}
 
 	return h
@@ -105,10 +108,6 @@ func (h *LocalHandler) register(comp component.Component, opts []component.Optio
 	return nil
 }
 
-func (h *LocalHandler) setRpcClient(client *rpcClient) {
-	h.rpcClient = client
-}
-
 func (h *LocalHandler) initRemoteService(members []*clusterpb.MemberInfo) {
 	for _, m := range members {
 		h.addRemoteService(m)
@@ -126,6 +125,7 @@ func (h *LocalHandler) LocalService() []string {
 	for service := range h.localServices {
 		result = append(result, service)
 	}
+	sort.Strings(result)
 	return result
 }
 
@@ -134,12 +134,14 @@ func (h *LocalHandler) RemoteService() []string {
 	for service := range h.remoteServices {
 		result = append(result, service)
 	}
+	sort.Strings(result)
 	return result
 }
 
 func (h *LocalHandler) handle(conn net.Conn) {
 	// create a client agent and startup write gorontine
 	agent := newAgent(conn, h.pipeline)
+	h.currentNode.storeSession(agent.session)
 
 	// startup write goroutine
 	go agent.write()
@@ -238,7 +240,7 @@ func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
 		return
 	}
 	// TODO: select remote
-	conns, err := h.rpcClient.getConnArray(members[0].MemberAddr)
+	conns, err := h.currentNode.rpcClient.getConnArray(members[0].MemberAddr)
 	if err != nil {
 		log.Println(err)
 		return
@@ -252,15 +254,19 @@ func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
 	switch msg.Type {
 	case message.Request:
 		request := &clusterpb.RequestMessage{
-			Id:    msg.ID,
-			Route: msg.Route,
-			Data:  data,
+			GateAddr:  h.currentNode.MemberAddr,
+			SessionId: agent.session.ID(),
+			Id:        msg.ID,
+			Route:     msg.Route,
+			Data:      data,
 		}
 		_, err = client.HandleRequest(context.Background(), request)
 	case message.Notify:
 		request := &clusterpb.NotifyMessage{
-			Route: msg.Route,
-			Data:  data,
+			GateAddr:  h.currentNode.MemberAddr,
+			SessionId: agent.session.ID(),
+			Route:     msg.Route,
+			Data:      data,
 		}
 		_, err = client.HandleNotify(context.Background(), request)
 	}
@@ -287,9 +293,8 @@ func (h *LocalHandler) processMessage(agent *agent, msg *message.Message) {
 		h.remoteProcess(agent, msg)
 		return
 	} else {
-		h.localProcess(handler, lastMid, agent, msg)
+		h.localProcess(handler, lastMid, agent.session, msg)
 	}
-
 }
 
 func (h *LocalHandler) handleWS(conn *websocket.Conn) {
@@ -301,9 +306,9 @@ func (h *LocalHandler) handleWS(conn *websocket.Conn) {
 	h.handle(c)
 }
 
-func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, agent *agent, msg *message.Message) {
+func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, session *session.Session, msg *message.Message) {
 	if pipe := h.pipeline; pipe != nil {
-		err := pipe.Inbound().Process(agent.session, msg)
+		err := pipe.Inbound().Process(session, msg)
 		if err != nil {
 			log.Println("Pipeline process failed: " + err.Error())
 			return
@@ -324,12 +329,18 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 	}
 
 	if env.Debug {
-		log.Println(fmt.Sprintf("UID=%d, Message={%s}, Data=%+v", agent.session.UID(), msg.String(), data))
+		log.Println(fmt.Sprintf("UID=%d, Message={%s}, Data=%+v", session.UID(), msg.String(), data))
 	}
 
-	args := []reflect.Value{handler.Receiver, agent.srv, reflect.ValueOf(data)}
+	args := []reflect.Value{handler.Receiver, reflect.ValueOf(session), reflect.ValueOf(data)}
 	scheduler.PushTask(func() {
-		agent.lastMid = lastMid
+		switch v := session.NetworkEntity().(type) {
+		case *agent:
+			v.lastMid = lastMid
+		case *acceptor:
+			v.lastMid = lastMid
+		}
+
 		result := handler.Method.Func.Call(args)
 		// TODO: send error message to client
 		if len(result) > 0 {

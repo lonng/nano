@@ -20,24 +20,30 @@ service Master {
 }
 
 message RequestMessage {
-    uint64 id = 1;
-    string route = 2;
-    bytes data = 3;
+    string gateAddr = 1;
+    int64 sessionId = 2;
+    uint64 id = 3;
+    string route = 4;
+    bytes data = 5;
 }
 
 message NotifyMessage {
-    string route = 1;
-    bytes data = 2;
+    string gateAddr = 1;
+    int64 sessionId = 2;
+    string route = 3;
+    bytes data = 4;
 }
 
 message ResponseMessage {
-    uint64 id = 1;
-    bytes data = 2;
+    int64 sessionId = 1;
+    uint64 id = 2;
+    bytes data = 3;
 }
 
 message PushMessage {
-    string route = 1;
-    bytes data = 2;
+    int64 sessionId = 1;
+    string route = 2;
+    bytes data = 3;
 }
 
 message MemberHandleResponse {}
@@ -46,9 +52,19 @@ message NewMemberRequest {
     MemberInfo memberInfo = 1;
 }
 
-message NewMemberResponse {
+message NewMemberResponse {}
 
+message SessionClosedRequest {
+    int64 sessionId = 1;
 }
+
+message SessionClosedResponse {}
+
+message CloseSessionRequest {
+    int64 sessionId = 1;
+}
+
+message CloseSessionResponse {}
 
 service Member {
     rpc HandleRequest (RequestMessage) returns (MemberHandleResponse) {}
@@ -57,4 +73,6 @@ service Member {
     rpc HandleResponse (ResponseMessage) returns (MemberHandleResponse) {}
 
     rpc NewMember (NewMemberRequest) returns (NewMemberResponse) {}
+    rpc SessionClosed(SessionClosedRequest) returns(SessionClosedResponse) {}
+    rpc CloseSession(CloseSessionRequest) returns(CloseSessionResponse) {}
 }

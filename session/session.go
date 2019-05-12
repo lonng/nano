@@ -69,6 +69,11 @@ func New(entity NetworkEntity) *Session {
 	}
 }
 
+// NetworkEntity returns the low-level network agent object
+func (s *Session) NetworkEntity() NetworkEntity {
+	return s.entity
+}
+
 // Push message to client
 func (s *Session) Push(route string, v interface{}) error {
 	return s.entity.Push(route, v)

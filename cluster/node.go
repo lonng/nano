@@ -27,13 +27,17 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"github.com/lonng/nano/cluster/clusterpb"
 	"github.com/lonng/nano/component"
 	"github.com/lonng/nano/internal/env"
 	"github.com/lonng/nano/internal/log"
+	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/pipeline"
+	"github.com/lonng/nano/scheduler"
+	"github.com/lonng/nano/session"
 	"google.golang.org/grpc"
 )
 
@@ -56,14 +60,18 @@ type Node struct {
 	masterServer *grpc.Server
 	memberServer *grpc.Server
 	rpcClient    *rpcClient
+
+	mu       sync.RWMutex
+	sessions map[int64]*session.Session
 }
 
 func (n *Node) Startup() error {
 	if n.IsMaster && n.AdvertiseAddr == "" {
 		return errors.New("advertise address cannot be empty in master node")
 	}
+	n.sessions = map[int64]*session.Session{}
 	n.cluster = newCluster(n)
-	n.handler = NewHandler(n.Pipeline)
+	n.handler = NewHandler(n, n.Pipeline)
 	components := n.Components.List()
 	for _, c := range components {
 		err := n.handler.register(c.Comp, c.Opts)
@@ -120,9 +128,8 @@ func (n *Node) initMaster() error {
 		return err
 	}
 	n.masterServer = grpc.NewServer()
-	n.memberServer = grpc.NewServer()
 	clusterpb.RegisterMasterServer(n.masterServer, n.cluster)
-	clusterpb.RegisterMemberServer(n.memberServer, n)
+	clusterpb.RegisterMemberServer(n.masterServer, n)
 	go func() {
 		err := n.masterServer.Serve(listener)
 		if err != nil {
@@ -134,13 +141,12 @@ func (n *Node) initMaster() error {
 		isMaster: true,
 		memberInfo: &clusterpb.MemberInfo{
 			MemberType: "master",
-			MemberAddr: n.MemberAddr,
+			MemberAddr: n.AdvertiseAddr,
 			Services:   n.handler.LocalService(),
 		},
 	}
 	n.cluster.members = append(n.cluster.members, member)
 	n.cluster.setRpcClient(n.rpcClient)
-	n.handler.setRpcClient(n.rpcClient)
 	return nil
 }
 
@@ -182,7 +188,6 @@ func (n *Node) initMember() error {
 		return err
 	}
 	n.handler.initRemoteService(resp.Members)
-	n.handler.setRpcClient(n.rpcClient)
 	return nil
 }
 
@@ -269,23 +274,121 @@ func (n *Node) listenAndServeWSTLS() {
 	}
 }
 
-func (n *Node) HandleRequest(context.Context, *clusterpb.RequestMessage) (*clusterpb.MemberHandleResponse, error) {
-	panic("implement me")
+func (n *Node) storeSession(s *session.Session) {
+	n.mu.Lock()
+	n.sessions[s.ID()] = s
+	n.mu.Unlock()
 }
 
-func (n *Node) HandleNotify(context.Context, *clusterpb.NotifyMessage) (*clusterpb.MemberHandleResponse, error) {
-	panic("implement me")
+func (n *Node) findSession(sid int64) *session.Session {
+	n.mu.RLock()
+	s := n.sessions[sid]
+	n.mu.RUnlock()
+	return s
 }
 
-func (n *Node) HandlePush(context.Context, *clusterpb.PushMessage) (*clusterpb.MemberHandleResponse, error) {
-	panic("implement me")
+func (n *Node) findOrCreateSession(sid int64, gateAddr string) (*session.Session, error) {
+	n.mu.RLock()
+	s, found := n.sessions[sid]
+	n.mu.RUnlock()
+	if !found {
+		conns, err := n.rpcClient.getConnArray(gateAddr)
+		if err != nil {
+			return nil, err
+		}
+		ac := &acceptor{
+			sid:        sid,
+			gateClient: clusterpb.NewMemberClient(conns.Get()),
+		}
+		s = session.New(ac)
+		ac.session = s
+		n.mu.Lock()
+		n.sessions[sid] = s
+		n.mu.Unlock()
+	}
+	return s, nil
 }
 
-func (n *Node) HandleResponse(context.Context, *clusterpb.ResponseMessage) (*clusterpb.MemberHandleResponse, error) {
-	panic("implement me")
+func (n *Node) HandleRequest(_ context.Context, req *clusterpb.RequestMessage) (*clusterpb.MemberHandleResponse, error) {
+	handler, found := n.handler.localHandlers[req.Route]
+	if !found {
+		return nil, fmt.Errorf("service not found in current node: %v", req.Route)
+	}
+	s, err := n.findOrCreateSession(req.SessionId, req.GateAddr)
+	if err != nil {
+		return nil, err
+	}
+	msg := &message.Message{
+		Type:  message.Request,
+		ID:    req.Id,
+		Route: req.Route,
+		Data:  req.Data,
+	}
+	n.handler.localProcess(handler, req.Id, s, msg)
+	return &clusterpb.MemberHandleResponse{}, nil
+}
+
+func (n *Node) HandleNotify(_ context.Context, req *clusterpb.NotifyMessage) (*clusterpb.MemberHandleResponse, error) {
+	handler, found := n.handler.localHandlers[req.Route]
+	if !found {
+		return nil, fmt.Errorf("service not found in current node: %v", req.Route)
+	}
+	s, err := n.findOrCreateSession(req.SessionId, req.GateAddr)
+	if err != nil {
+		return nil, err
+	}
+	msg := &message.Message{
+		Type:  message.Notify,
+		Route: req.Route,
+		Data:  req.Data,
+	}
+	n.handler.localProcess(handler, 0, s, msg)
+	return &clusterpb.MemberHandleResponse{}, nil
+}
+
+func (n *Node) HandlePush(_ context.Context, req *clusterpb.PushMessage) (*clusterpb.MemberHandleResponse, error) {
+	s := n.findSession(req.SessionId)
+	if s == nil {
+		return &clusterpb.MemberHandleResponse{}, fmt.Errorf("session not found: %v", req.SessionId)
+	}
+	return &clusterpb.MemberHandleResponse{}, s.Push(req.Route, req.Data)
+}
+
+func (n *Node) HandleResponse(_ context.Context, req *clusterpb.ResponseMessage) (*clusterpb.MemberHandleResponse, error) {
+	s := n.findSession(req.SessionId)
+	if s == nil {
+		return &clusterpb.MemberHandleResponse{}, fmt.Errorf("session not found: %v", req.SessionId)
+	}
+	return &clusterpb.MemberHandleResponse{}, s.ResponseMID(req.Id, req.Data)
 }
 
 func (n *Node) NewMember(_ context.Context, req *clusterpb.NewMemberRequest) (*clusterpb.NewMemberResponse, error) {
 	n.handler.addRemoteService(req.MemberInfo)
 	return &clusterpb.NewMemberResponse{}, nil
+}
+
+func (n *Node) SessionClosed(_ context.Context, req *clusterpb.SessionClosedRequest) (*clusterpb.SessionClosedResponse, error) {
+	n.mu.Lock()
+	s, found := n.sessions[req.SessionId]
+	delete(n.sessions, req.SessionId)
+	n.mu.Unlock()
+	if found {
+		scheduler.PushTask(func() {
+			session.Lifetime.Close(s)
+		})
+	}
+	return &clusterpb.SessionClosedResponse{}, nil
+}
+
+func (n *Node) CloseSession(_ context.Context, req *clusterpb.CloseSessionRequest) (*clusterpb.CloseSessionResponse, error) {
+	n.mu.Lock()
+	s, found := n.sessions[req.SessionId]
+	delete(n.sessions, req.SessionId)
+	n.mu.Unlock()
+	if found {
+		scheduler.PushTask(func() {
+			session.Lifetime.Close(s)
+		})
+	}
+	return &clusterpb.CloseSessionResponse{}, nil
 }
