@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -60,6 +61,8 @@ type (
 		decoder *codec.Decoder      // binary decoder
 		options *options
 
+		mutex sync.RWMutex
+
 		srv reflect.Value // cached session reflect.Value
 	}
 
@@ -70,6 +73,22 @@ type (
 		payload interface{}  // payload
 	}
 )
+
+// ================
+// Attributes
+// ================
+
+func (a *agent) getLastAt() int64 {
+	a.mutex.RLock()
+	la := a.lastAt
+	a.mutex.RUnlock()
+	return la
+}
+func (a *agent) setLastAt(la int64) {
+	a.mutex.Lock()
+	a.lastAt = la
+	a.mutex.Unlock()
+}
 
 // Create new agent instance
 func newAgent(conn net.Conn, options *options) *agent {
@@ -198,7 +217,7 @@ func (a *agent) RemoteAddr() net.Addr {
 
 // String, implementation for Stringer interface
 func (a *agent) String() string {
-	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), a.lastAt)
+	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), a.getLastAt())
 }
 
 func (a *agent) status() int32 {
@@ -227,8 +246,8 @@ func (a *agent) write() {
 		select {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * env.heartbeat).Unix()
-			if a.lastAt < deadline {
-				logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
+			if a.getLastAt() < deadline {
+				logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.getLastAt(), deadline))
 				return
 			}
 			chWrite <- hbd

@@ -276,7 +276,7 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 		// expected
 	}
 
-	agent.lastAt = time.Now().Unix()
+	agent.setLastAt(time.Now().Unix())
 	return nil
 }
 
