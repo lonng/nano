@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sync/atomic"
 	"time"
 
 	"github.com/lonng/nano/component"
@@ -276,7 +277,7 @@ func (h *handlerService) processPacket(agent *agent, p *packet.Packet) error {
 		// expected
 	}
 
-	agent.setLastAt(time.Now().Unix())
+	atomic.StoreInt64(&agent.lastAt, time.Now().Unix())
 	return nil
 }
 
