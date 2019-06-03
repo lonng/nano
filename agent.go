@@ -198,7 +198,7 @@ func (a *agent) RemoteAddr() net.Addr {
 
 // String, implementation for Stringer interface
 func (a *agent) String() string {
-	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), a.lastAt)
+	return fmt.Sprintf("Remote=%s, LastTime=%d", a.conn.RemoteAddr().String(), atomic.LoadInt64(&a.lastAt))
 }
 
 func (a *agent) status() int32 {
@@ -227,8 +227,8 @@ func (a *agent) write() {
 		select {
 		case <-ticker.C:
 			deadline := time.Now().Add(-2 * env.heartbeat).Unix()
-			if a.lastAt < deadline {
-				logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", a.lastAt, deadline))
+			if atomic.LoadInt64(&a.lastAt) < deadline {
+				logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline))
 				return
 			}
 			chWrite <- hbd
