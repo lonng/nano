@@ -17,7 +17,9 @@ func TestProtobufSerialezer_Serialize(t *testing.T) {
 	}
 
 	m1 := &testdata.Ping{}
-	s.Unmarshal(b, m1)
+	if err := s.Unmarshal(b, m1); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
 
 	if !reflect.DeepEqual(m, m1) {
 		t.Fail()
@@ -30,7 +32,9 @@ func BenchmarkSerializer_Serialize(b *testing.B) {
 
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		s.Marshal(m)
+		if _, err := s.Marshal(m); err != nil {
+			b.Fatalf("unmarshal failed: %v", err)
+		}
 	}
 }
 
@@ -46,6 +50,8 @@ func BenchmarkSerializer_Deserialize(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		m1 := &testdata.Ping{}
-		s.Unmarshal(d, m1)
+		if err := s.Unmarshal(d, m1); err != nil {
+			b.Fatalf("unmarshal failed: %v", err)
+		}
 	}
 }
