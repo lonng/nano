@@ -56,6 +56,7 @@ type Session struct {
 	lastTime     int64                  // last heartbeat time
 	entity       NetworkEntity          // low-level network entity
 	data         map[string]interface{} // session data store
+	router       *Router
 }
 
 // New returns a new session instance
@@ -66,12 +67,18 @@ func New(entity NetworkEntity) *Session {
 		entity:   entity,
 		data:     make(map[string]interface{}),
 		lastTime: time.Now().Unix(),
+		router:   newRouter(),
 	}
 }
 
 // NetworkEntity returns the low-level network agent object
 func (s *Session) NetworkEntity() NetworkEntity {
 	return s.entity
+}
+
+// NetworkEntity returns the service router
+func (s *Session) Router() *Router {
+	return s.router
 }
 
 // Push message to client

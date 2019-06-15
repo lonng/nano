@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net"
 	"reflect"
 	"sort"
@@ -235,11 +236,21 @@ func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
 
 	service := msg.Route[:index]
 	members, found := h.remoteServices[service]
-	if !found {
+	if !found || len(members) == 0 {
 		log.Println(fmt.Sprintf("nano/handler: %s not found(forgot registered?)", msg.Route))
 		return
 	}
-	// TODO: select remote
+
+	// Select a remote service address
+	// 1. Use the service address directly if the router contains binding item
+	// 2. Select a remote service address randomly and bind to router
+	var remoteAddr string
+	if addr, found := agent.session.Router().Find(service); found {
+		remoteAddr = addr
+	} else {
+		remoteAddr = members[rand.Intn(len(members))].MemberAddr
+		agent.session.Router().Bind(service, remoteAddr)
+	}
 	conns, err := h.currentNode.rpcClient.getConnArray(members[0].MemberAddr)
 	if err != nil {
 		log.Println(err)
@@ -291,7 +302,6 @@ func (h *LocalHandler) processMessage(agent *agent, msg *message.Message) {
 	handler, found := h.localHandlers[msg.Route]
 	if !found {
 		h.remoteProcess(agent, msg)
-		return
 	} else {
 		h.localProcess(handler, lastMid, agent.session, msg)
 	}
