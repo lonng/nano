@@ -2,7 +2,7 @@ syntax = "proto3";
 package clusterpb;
 
 message MemberInfo {
-    string memberType = 1;
+    string label = 1;
     string memberAddr = 2;
     repeated string services = 3;
 }

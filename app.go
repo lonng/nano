@@ -31,6 +31,7 @@ import (
 	"github.com/lonng/nano/component"
 	"github.com/lonng/nano/internal/env"
 	"github.com/lonng/nano/internal/log"
+	"github.com/lonng/nano/internal/runtime"
 	"github.com/lonng/nano/scheduler"
 )
 
@@ -50,6 +51,7 @@ func run(addr string, isWs bool, certificate string, key string, opts ...Option)
 	}
 
 	node := &cluster.Node{
+		Label:          opt.label,
 		IsMaster:       opt.isMaster,
 		AdvertiseAddr:  opt.advertiseAddr,
 		MemberAddr:     opt.memberAddr,
@@ -64,6 +66,7 @@ func run(addr string, isWs bool, certificate string, key string, opts ...Option)
 	if err != nil {
 		log.Fatalf("Node startup failed: %v", err)
 	}
+	runtime.CurrentNode = node
 
 	log.Println(fmt.Sprintf("Nano server %s started, listen at %s", app.name, addr))
 	scheduler.Sched()
@@ -80,6 +83,7 @@ func run(addr string, isWs bool, certificate string, key string, opts ...Option)
 	log.Println("Nano server is stopping...")
 
 	node.Shutdown()
+	runtime.CurrentNode = nil
 	scheduler.Close()
 	atomic.StoreInt32(&running, 0)
 }

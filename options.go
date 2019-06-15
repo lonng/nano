@@ -19,6 +19,7 @@ type (
 		memberAddr    string
 		isMaster      bool
 		components    *component.Components
+		label         string
 	}
 
 	Option func(*options)
@@ -119,5 +120,11 @@ func WithTimerPrecision(precision time.Duration) Option {
 func WithSerializer(serializer serialize.Serializer) Option {
 	return func(opt *options) {
 		env.Serializer = serializer
+	}
+}
+
+func WithLabel(label string) Option {
+	return func(opt *options) {
+		opt.label = label
 	}
 }

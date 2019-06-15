@@ -45,8 +45,10 @@ import (
 // All services will register to cluster and messages will be forwarded to the node
 // which provides respective service
 type Node struct {
-	IsMaster       bool
-	AdvertiseAddr  string
+	Label          string
+	IsMaster       bool   // indicate if the current node is master
+	IsGate         bool   // indicate if the current node is gate
+	AdvertiseAddr  string // master server service address
 	MemberAddr     string
 	ServerAddr     string
 	Components     *component.Components
@@ -140,7 +142,7 @@ func (n *Node) initMaster() error {
 	member := &Member{
 		isMaster: true,
 		memberInfo: &clusterpb.MemberInfo{
-			MemberType: "master",
+			Label:      n.Label,
 			MemberAddr: n.AdvertiseAddr,
 			Services:   n.handler.LocalService(),
 		},
@@ -178,7 +180,7 @@ func (n *Node) initMember() error {
 	client := clusterpb.NewMasterClient(conns.Get())
 	request := &clusterpb.RegisterRequest{
 		MemberInfo: &clusterpb.MemberInfo{
-			MemberType: "member",
+			Label:      n.Label,
 			MemberAddr: n.MemberAddr,
 			Services:   n.handler.LocalService(),
 		},
