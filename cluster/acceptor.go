@@ -15,6 +15,7 @@ type acceptor struct {
 	gateClient clusterpb.MemberClient
 	session    *session.Session
 	lastMid    uint64
+	rpcHandler rpcHandler
 }
 
 // Push implements the session.NetworkEntity interface
@@ -33,18 +34,34 @@ func (a *acceptor) Push(route string, v interface{}) error {
 	return err
 }
 
-// MID implements the session.NetworkEntity interface
-func (a *acceptor) MID() uint64 {
+// RPC implements the session.NetworkEntity interface
+func (a *acceptor) RPC(route string, v interface{}) error {
+	// TODO: buffer
+	data, err := message.Serialize(v)
+	if err != nil {
+		return err
+	}
+	msg := &message.Message{
+		Type:  message.Notify,
+		Route: route,
+		Data:  data,
+	}
+	a.rpcHandler(a.session, msg, true)
+	return nil
+}
+
+// LastMid implements the session.NetworkEntity interface
+func (a *acceptor) LastMid() uint64 {
 	return a.lastMid
 }
 
 // Response implements the session.NetworkEntity interface
 func (a *acceptor) Response(v interface{}) error {
-	return a.ResponseMID(a.lastMid, v)
+	return a.ResponseMid(a.lastMid, v)
 }
 
-// ResponseMID implements the session.NetworkEntity interface
-func (a *acceptor) ResponseMID(mid uint64, v interface{}) error {
+// ResponseMid implements the session.NetworkEntity interface
+func (a *acceptor) ResponseMid(mid uint64, v interface{}) error {
 	// TODO: buffer
 	data, err := message.Serialize(v)
 	if err != nil {

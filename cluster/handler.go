@@ -29,6 +29,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -49,6 +50,8 @@ var (
 	hrd []byte // handshake response data
 	hbd []byte // heartbeat packet data
 )
+
+type rpcHandler func(session *session.Session, msg *message.Message, noCopy bool)
 
 func cache() {
 	data, err := json.Marshal(map[string]interface{}{
@@ -71,11 +74,14 @@ func cache() {
 }
 
 type LocalHandler struct {
-	localServices  map[string]*component.Service // all registered service
-	localHandlers  map[string]*component.Handler // all handler method
+	localServices map[string]*component.Service // all registered service
+	localHandlers map[string]*component.Handler // all handler method
+
+	mu             sync.RWMutex
 	remoteServices map[string][]*clusterpb.MemberInfo
-	pipeline       pipeline.Pipeline
-	currentNode    *Node
+
+	pipeline    pipeline.Pipeline
+	currentNode *Node
 }
 
 func NewHandler(currentNode *Node, pipeline pipeline.Pipeline) *LocalHandler {
@@ -116,6 +122,9 @@ func (h *LocalHandler) initRemoteService(members []*clusterpb.MemberInfo) {
 }
 
 func (h *LocalHandler) addRemoteService(member *clusterpb.MemberInfo) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	for _, s := range member.Services {
 		h.remoteServices[s] = append(h.remoteServices[s], member)
 	}
@@ -131,6 +140,9 @@ func (h *LocalHandler) LocalService() []string {
 }
 
 func (h *LocalHandler) RemoteService() []string {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
 	var result []string
 	for service := range h.remoteServices {
 		result = append(result, service)
@@ -141,7 +153,7 @@ func (h *LocalHandler) RemoteService() []string {
 
 func (h *LocalHandler) handle(conn net.Conn) {
 	// create a client agent and startup write gorontine
-	agent := newAgent(conn, h.pipeline)
+	agent := newAgent(conn, h.pipeline, h.remoteProcess)
 	h.currentNode.storeSession(agent.session)
 
 	// startup write goroutine
@@ -227,7 +239,13 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 	return nil
 }
 
-func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
+func (h *LocalHandler) findMembers(service string) []*clusterpb.MemberInfo {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.remoteServices[service]
+}
+
+func (h *LocalHandler) remoteProcess(session *session.Session, msg *message.Message, noCopy bool) {
 	index := strings.LastIndex(msg.Route, ".")
 	if index < 0 {
 		log.Println(fmt.Sprintf("nano/handler: invalid route %s", msg.Route))
@@ -235,8 +253,8 @@ func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
 	}
 
 	service := msg.Route[:index]
-	members, found := h.remoteServices[service]
-	if !found || len(members) == 0 {
+	members := h.findMembers(service)
+	if len(members) == 0 {
 		log.Println(fmt.Sprintf("nano/handler: %s not found(forgot registered?)", msg.Route))
 		return
 	}
@@ -245,11 +263,11 @@ func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
 	// 1. Use the service address directly if the router contains binding item
 	// 2. Select a remote service address randomly and bind to router
 	var remoteAddr string
-	if addr, found := agent.session.Router().Find(service); found {
+	if addr, found := session.Router().Find(service); found {
 		remoteAddr = addr
 	} else {
 		remoteAddr = members[rand.Intn(len(members))].MemberAddr
-		agent.session.Router().Bind(service, remoteAddr)
+		session.Router().Bind(service, remoteAddr)
 	}
 	conns, err := h.currentNode.rpcClient.getConnArray(members[0].MemberAddr)
 	if err != nil {
@@ -257,7 +275,7 @@ func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
 		return
 	}
 	var data []byte
-	if len(msg.Data) > 0 {
+	if !noCopy && len(msg.Data) > 0 {
 		data = make([]byte, len(msg.Data))
 		copy(data, msg.Data)
 	}
@@ -266,7 +284,7 @@ func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
 	case message.Request:
 		request := &clusterpb.RequestMessage{
 			GateAddr:  h.currentNode.MemberAddr,
-			SessionId: agent.session.ID(),
+			SessionId: session.ID(),
 			Id:        msg.ID,
 			Route:     msg.Route,
 			Data:      data,
@@ -275,7 +293,7 @@ func (h *LocalHandler) remoteProcess(agent *agent, msg *message.Message) {
 	case message.Notify:
 		request := &clusterpb.NotifyMessage{
 			GateAddr:  h.currentNode.MemberAddr,
-			SessionId: agent.session.ID(),
+			SessionId: session.ID(),
 			Route:     msg.Route,
 			Data:      data,
 		}
@@ -301,7 +319,7 @@ func (h *LocalHandler) processMessage(agent *agent, msg *message.Message) {
 
 	handler, found := h.localHandlers[msg.Route]
 	if !found {
-		h.remoteProcess(agent, msg)
+		h.remoteProcess(agent.session, msg, false)
 	} else {
 		h.localProcess(handler, lastMid, agent.session, msg)
 	}
@@ -313,7 +331,7 @@ func (h *LocalHandler) handleWS(conn *websocket.Conn) {
 		log.Println(err)
 		return
 	}
-	h.handle(c)
+	go h.handle(c)
 }
 
 func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, session *session.Session, msg *message.Message) {

@@ -33,9 +33,10 @@ import (
 // NetworkEntity represent low-level network instance
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
-	MID() uint64
+	RPC(route string, v interface{}) error
+	LastMid() uint64
 	Response(v interface{}) error
-	ResponseMID(mid uint64, v interface{}) error
+	ResponseMid(mid uint64, v interface{}) error
 	Close() error
 	RemoteAddr() net.Addr
 }
@@ -81,6 +82,11 @@ func (s *Session) Router() *Router {
 	return s.router
 }
 
+// RPC sends message to remote server
+func (s *Session) RPC(route string, v interface{}) error {
+	return s.entity.RPC(route, v)
+}
+
 // Push message to client
 func (s *Session) Push(route string, v interface{}) error {
 	return s.entity.Push(route, v)
@@ -94,7 +100,7 @@ func (s *Session) Response(v interface{}) error {
 // ResponseMID responses message to client, mid is
 // request message ID
 func (s *Session) ResponseMID(mid uint64, v interface{}) error {
-	return s.entity.ResponseMID(mid, v)
+	return s.entity.ResponseMid(mid, v)
 }
 
 // ID returns the session id
@@ -107,9 +113,9 @@ func (s *Session) UID() int64 {
 	return atomic.LoadInt64(&s.uid)
 }
 
-// MID returns the last message id
-func (s *Session) MID() uint64 {
-	return s.entity.MID()
+// LastMid returns the last message id
+func (s *Session) LastMid() uint64 {
+	return s.entity.LastMid()
 }
 
 // Bind bind UID to current session
@@ -397,6 +403,9 @@ func (s *Session) State() map[string]interface{} {
 
 // Restore session state after reconnect
 func (s *Session) Restore(data map[string]interface{}) {
+	s.Lock()
+	defer s.Unlock()
+
 	s.data = data
 }
 

@@ -64,7 +64,8 @@ type (
 		decoder  *codec.Decoder      // binary decoder
 		pipeline pipeline.Pipeline
 
-		srv reflect.Value // cached session reflect.Value
+		rpcHandler rpcHandler
+		srv        reflect.Value // cached session reflect.Value
 	}
 
 	pendingMessage struct {
@@ -76,15 +77,16 @@ type (
 )
 
 // Create new agent instance
-func newAgent(conn net.Conn, pipeline pipeline.Pipeline) *agent {
+func newAgent(conn net.Conn, pipeline pipeline.Pipeline, rpcHandler rpcHandler) *agent {
 	a := &agent{
-		conn:     conn,
-		state:    statusStart,
-		chDie:    make(chan struct{}),
-		lastAt:   time.Now().Unix(),
-		chSend:   make(chan pendingMessage, agentWriteBacklog),
-		decoder:  codec.NewDecoder(),
-		pipeline: pipeline,
+		conn:       conn,
+		state:      statusStart,
+		chDie:      make(chan struct{}),
+		lastAt:     time.Now().Unix(),
+		chSend:     make(chan pendingMessage, agentWriteBacklog),
+		decoder:    codec.NewDecoder(),
+		pipeline:   pipeline,
+		rpcHandler: rpcHandler,
 	}
 
 	// binding session
@@ -105,8 +107,8 @@ func (a *agent) send(m pendingMessage) (err error) {
 	return
 }
 
-// MID implements the session.NetworkEntity interface
-func (a *agent) MID() uint64 {
+// LastMid implements the session.NetworkEntity interface
+func (a *agent) LastMid() uint64 {
 	return a.lastMid
 }
 
@@ -134,15 +136,35 @@ func (a *agent) Push(route string, v interface{}) error {
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
 }
 
-// Response, implementation for session.NetworkEntity interface
-// Response message to session
-func (a *agent) Response(v interface{}) error {
-	return a.ResponseMID(a.lastMid, v)
+// RPC, implementation for session.NetworkEntity interface
+func (a *agent) RPC(route string, v interface{}) error {
+	if a.status() == statusClosed {
+		return ErrBrokenPipe
+	}
+
+	// TODO: buffer
+	data, err := message.Serialize(v)
+	if err != nil {
+		return err
+	}
+	msg := &message.Message{
+		Type:  message.Notify,
+		Route: route,
+		Data:  data,
+	}
+	a.rpcHandler(a.session, msg, true)
+	return nil
 }
 
 // Response, implementation for session.NetworkEntity interface
 // Response message to session
-func (a *agent) ResponseMID(mid uint64, v interface{}) error {
+func (a *agent) Response(v interface{}) error {
+	return a.ResponseMid(a.lastMid, v)
+}
+
+// ResponseMid, implementation for session.NetworkEntity interface
+// Response message to session
+func (a *agent) ResponseMid(mid uint64, v interface{}) error {
 	if a.status() == statusClosed {
 		return ErrBrokenPipe
 	}

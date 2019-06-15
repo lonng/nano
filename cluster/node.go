@@ -299,6 +299,7 @@ func (n *Node) findOrCreateSession(sid int64, gateAddr string) (*session.Session
 		ac := &acceptor{
 			sid:        sid,
 			gateClient: clusterpb.NewMemberClient(conns.Get()),
+			rpcHandler: n.handler.remoteProcess,
 		}
 		s = session.New(ac)
 		ac.session = s

@@ -45,6 +45,7 @@ type NetworkEntity struct {
 	messages  []message
 	responses []interface{}
 	msgmap    map[uint64]interface{}
+	rpcCall   []message
 }
 
 // NewNetworkEntity returns an mock network entity
@@ -54,14 +55,20 @@ func NewNetworkEntity() *NetworkEntity {
 	}
 }
 
+// RPC implements the session.NetworkEntity interface
+func (n *NetworkEntity) RPC(route string, v interface{}) error {
+	n.rpcCall = append(n.rpcCall, message{route: route, data: v})
+	return nil
+}
+
 // Push implements the session.NetworkEntity interface
 func (n *NetworkEntity) Push(route string, v interface{}) error {
 	n.messages = append(n.messages, message{route: route, data: v})
 	return nil
 }
 
-// MID implements the session.NetworkEntity interface
-func (n *NetworkEntity) MID() uint64 {
+// LastMid implements the session.NetworkEntity interface
+func (n *NetworkEntity) LastMid() uint64 {
 	return 1
 }
 
@@ -71,8 +78,8 @@ func (n *NetworkEntity) Response(v interface{}) error {
 	return nil
 }
 
-// ResponseMID implements the session.NetworkEntity interface
-func (n *NetworkEntity) ResponseMID(mid uint64, v interface{}) error {
+// ResponseMid implements the session.NetworkEntity interface
+func (n *NetworkEntity) ResponseMid(mid uint64, v interface{}) error {
 	_, found := n.msgmap[mid]
 	if found {
 		return fmt.Errorf("duplicated message id: %v", mid)
