@@ -50,12 +50,18 @@ func run(addr string, isWs bool, certificate string, key string, opts ...Option)
 		option(opt)
 	}
 
+	// Use listen address as client address in non-cluster mode
+	if opt.advertiseAddr == "" && opt.clientAddr == "" {
+		log.Println("The current server running in singleton mode")
+		opt.clientAddr = addr
+	}
+
 	node := &cluster.Node{
 		Label:          opt.label,
 		IsMaster:       opt.isMaster,
 		AdvertiseAddr:  opt.advertiseAddr,
-		MemberAddr:     opt.memberAddr,
-		ServerAddr:     addr,
+		ClientAddr:     opt.clientAddr,
+		ServiceAddr:    addr,
 		Components:     opt.components,
 		IsWebsocket:    isWs,
 		TSLCertificate: certificate,
@@ -68,7 +74,14 @@ func run(addr string, isWs bool, certificate string, key string, opts ...Option)
 	}
 	runtime.CurrentNode = node
 
-	log.Println(fmt.Sprintf("Nano server %s started, listen at %s", app.name, addr))
+	if node.ClientAddr != "" {
+		log.Println(fmt.Sprintf("Startup *Nano gate server* %s, client address: %v, service address: %s",
+			app.name, node.ClientAddr, node.ServiceAddr))
+	} else {
+		log.Println(fmt.Sprintf("Startup *Nano backend server* %s, service address %s",
+			app.name, node.ServiceAddr))
+	}
+
 	scheduler.Sched()
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)

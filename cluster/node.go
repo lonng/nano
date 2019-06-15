@@ -49,27 +49,26 @@ type Node struct {
 	IsMaster       bool   // indicate if the current node is master
 	IsGate         bool   // indicate if the current node is gate
 	AdvertiseAddr  string // master server service address
-	MemberAddr     string
-	ServerAddr     string
+	ClientAddr     string
+	ServiceAddr    string
 	Components     *component.Components
 	IsWebsocket    bool
 	TSLCertificate string
 	TSLKey         string
 	Pipeline       pipeline.Pipeline
 
-	cluster      *cluster
-	handler      *LocalHandler
-	masterServer *grpc.Server
-	memberServer *grpc.Server
-	rpcClient    *rpcClient
+	cluster   *cluster
+	handler   *LocalHandler
+	server    *grpc.Server
+	rpcClient *rpcClient
 
 	mu       sync.RWMutex
 	sessions map[int64]*session.Session
 }
 
 func (n *Node) Startup() error {
-	if n.IsMaster && n.AdvertiseAddr == "" {
-		return errors.New("advertise address cannot be empty in master node")
+	if n.ServiceAddr == "" {
+		return errors.New("service address cannot be empty in master node")
 	}
 	n.sessions = map[int64]*session.Session{}
 	n.cluster = newCluster(n)
@@ -81,21 +80,10 @@ func (n *Node) Startup() error {
 			return err
 		}
 	}
-	cache()
 
-	// Bootstrap cluster if either current is master or advertise address is not empty
-	// - Current node is master
-	// - Current node is cluster member
-	if n.IsMaster {
-		err := n.initMaster()
-		if err != nil {
-			return err
-		}
-	} else if n.AdvertiseAddr != "" {
-		err := n.initMember()
-		if err != nil {
-			return err
-		}
+	cache()
+	if err := n.initNode(); err != nil {
+		return err
 	}
 
 	// Initialize all components
@@ -106,17 +94,20 @@ func (n *Node) Startup() error {
 		c.Comp.AfterInit()
 	}
 
-	go func() {
-		if n.IsWebsocket {
-			if len(n.TSLCertificate) != 0 {
-				n.listenAndServeWSTLS()
+	if n.ClientAddr != "" {
+		go func() {
+			if n.IsWebsocket {
+				if len(n.TSLCertificate) != 0 {
+					n.listenAndServeWSTLS()
+				} else {
+					n.listenAndServeWS()
+				}
 			} else {
-				n.listenAndServeWS()
+				n.listenAndServe()
 			}
-		} else {
-			n.listenAndServe()
-		}
-	}()
+		}()
+	}
+
 	return nil
 }
 
@@ -124,72 +115,62 @@ func (n *Node) Handler() *LocalHandler {
 	return n.handler
 }
 
-func (n *Node) initMaster() error {
-	listener, err := net.Listen("tcp", n.AdvertiseAddr)
+func (n *Node) initNode() error {
+	// Current node is not master server and does not contains master
+	// address, so running in singleton mode
+	if !n.IsMaster && n.AdvertiseAddr == "" {
+		return nil
+	}
+
+	listener, err := net.Listen("tcp", n.ServiceAddr)
 	if err != nil {
 		return err
 	}
-	n.masterServer = grpc.NewServer()
-	clusterpb.RegisterMasterServer(n.masterServer, n.cluster)
-	clusterpb.RegisterMemberServer(n.masterServer, n)
-	go func() {
-		err := n.masterServer.Serve(listener)
-		if err != nil {
-			log.Println("Start master node failed: " + err.Error())
-		}
-	}()
+
+	// Initialize the gRPC server and register service
+	n.server = grpc.NewServer()
 	n.rpcClient = newRPCClient()
-	member := &Member{
-		isMaster: true,
-		memberInfo: &clusterpb.MemberInfo{
-			Label:      n.Label,
-			MemberAddr: n.AdvertiseAddr,
-			Services:   n.handler.LocalService(),
-		},
-	}
-	n.cluster.members = append(n.cluster.members, member)
-	n.cluster.setRpcClient(n.rpcClient)
-	return nil
-}
+	clusterpb.RegisterMemberServer(n.server, n)
 
-func (n *Node) initMember() error {
-	if n.MemberAddr == "" || !strings.Contains(n.MemberAddr, ":") || strings.SplitN(n.MemberAddr, ":", 2)[0] == "" {
-		return fmt.Errorf("member address (%s) invalid in cluster mode", n.MemberAddr)
-	}
-
-	listener, err := net.Listen("tcp", n.MemberAddr)
-	if err != nil {
-		return err
-	}
-
-	n.memberServer = grpc.NewServer()
-	clusterpb.RegisterMemberServer(n.memberServer, n)
 	go func() {
-		err := n.memberServer.Serve(listener)
+		err := n.server.Serve(listener)
 		if err != nil {
-			log.Println("Start master node failed: " + err.Error())
+			log.Fatalf("Start current node failed: %v", err)
 		}
 	}()
 
-	// Register current node to master
-	n.rpcClient = newRPCClient()
-	conns, err := n.rpcClient.getConnArray(n.AdvertiseAddr)
-	if err != nil {
-		return err
+	if n.IsMaster {
+		clusterpb.RegisterMasterServer(n.server, n.cluster)
+		member := &Member{
+			isMaster: true,
+			memberInfo: &clusterpb.MemberInfo{
+				Label:       n.Label,
+				ServiceAddr: n.ServiceAddr,
+				Services:    n.handler.LocalService(),
+			},
+		}
+		n.cluster.members = append(n.cluster.members, member)
+		n.cluster.setRpcClient(n.rpcClient)
+	} else {
+		pool, err := n.rpcClient.getConnPool(n.AdvertiseAddr)
+		if err != nil {
+			return err
+		}
+		client := clusterpb.NewMasterClient(pool.Get())
+		request := &clusterpb.RegisterRequest{
+			MemberInfo: &clusterpb.MemberInfo{
+				Label:       n.Label,
+				ServiceAddr: n.ServiceAddr,
+				Services:    n.handler.LocalService(),
+			},
+		}
+		resp, err := client.Register(context.Background(), request)
+		if err != nil {
+			return err
+		}
+		n.handler.initRemoteService(resp.Members)
 	}
-	client := clusterpb.NewMasterClient(conns.Get())
-	request := &clusterpb.RegisterRequest{
-		MemberInfo: &clusterpb.MemberInfo{
-			Label:      n.Label,
-			MemberAddr: n.MemberAddr,
-			Services:   n.handler.LocalService(),
-		},
-	}
-	resp, err := client.Register(context.Background(), request)
-	if err != nil {
-		return err
-	}
-	n.handler.initRemoteService(resp.Members)
+
 	return nil
 }
 
@@ -208,14 +189,14 @@ func (n *Node) Shutdown() {
 		components[i].Comp.Shutdown()
 	}
 
-	if n.masterServer != nil {
-		n.masterServer.GracefulStop()
+	if n.server != nil {
+		n.server.GracefulStop()
 	}
 }
 
 // Enable current server accept connection
 func (n *Node) listenAndServe() {
-	listener, err := net.Listen("tcp", n.ServerAddr)
+	listener, err := net.Listen("tcp", n.ClientAddr)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -249,7 +230,7 @@ func (n *Node) listenAndServeWS() {
 		n.handler.handleWS(conn)
 	})
 
-	if err := http.ListenAndServe(n.ServerAddr, nil); err != nil {
+	if err := http.ListenAndServe(n.ClientAddr, nil); err != nil {
 		log.Fatal(err.Error())
 	}
 }
@@ -271,7 +252,7 @@ func (n *Node) listenAndServeWSTLS() {
 		n.handler.handleWS(conn)
 	})
 
-	if err := http.ListenAndServeTLS(n.ServerAddr, n.TSLCertificate, n.TSLKey, nil); err != nil {
+	if err := http.ListenAndServeTLS(n.ClientAddr, n.TSLCertificate, n.TSLKey, nil); err != nil {
 		log.Fatal(err.Error())
 	}
 }
@@ -294,7 +275,7 @@ func (n *Node) findOrCreateSession(sid int64, gateAddr string) (*session.Session
 	s, found := n.sessions[sid]
 	n.mu.RUnlock()
 	if !found {
-		conns, err := n.rpcClient.getConnArray(gateAddr)
+		conns, err := n.rpcClient.getConnPool(gateAddr)
 		if err != nil {
 			return nil, err
 		}
@@ -317,7 +298,7 @@ func (n *Node) HandleRequest(_ context.Context, req *clusterpb.RequestMessage) (
 	if !found {
 		return nil, fmt.Errorf("service not found in current node: %v", req.Route)
 	}
-	s, err := n.findOrCreateSession(req.SessionId, req.GateAddr)
+	s, err := n.findOrCreateSession(req.SessionId, req.ServiceAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +317,7 @@ func (n *Node) HandleNotify(_ context.Context, req *clusterpb.NotifyMessage) (*c
 	if !found {
 		return nil, fmt.Errorf("service not found in current node: %v", req.Route)
 	}
-	s, err := n.findOrCreateSession(req.SessionId, req.GateAddr)
+	s, err := n.findOrCreateSession(req.SessionId, req.ServiceAddr)
 	if err != nil {
 		return nil, err
 	}

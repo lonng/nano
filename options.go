@@ -15,9 +15,9 @@ import (
 type (
 	options struct {
 		pipeline      pipeline.Pipeline
-		advertiseAddr string
-		memberAddr    string
 		isMaster      bool
+		advertiseAddr string
+		clientAddr    string
 		components    *component.Components
 		label         string
 	}
@@ -42,9 +42,9 @@ func WithAdvertiseAddr(addr string) Option {
 // WithMemberAddr sets the listen address which is used to establish connection between
 // cluster members. Will select an available port automatically if no member address
 // setting and panic if no available port
-func WithMemberAddr(addr string) Option {
+func WithClientAddr(addr string) Option {
 	return func(opt *options) {
-		opt.memberAddr = addr
+		opt.clientAddr = addr
 	}
 }
 

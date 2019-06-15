@@ -56,10 +56,9 @@ func (s *nodeSuite) TestNodeStartup(c *C) {
 	masterComps := &component.Components{}
 	masterComps.Register(&MasterComponent{})
 	masterNode := &cluster.Node{
-		IsMaster:      true,
-		AdvertiseAddr: "127.0.0.1:4450",
-		ServerAddr:    "127.0.0.1:4451",
-		Components:    masterComps,
+		IsMaster:    true,
+		ServiceAddr: "127.0.0.1:4450",
+		Components:  masterComps,
 	}
 	err := masterNode.Startup()
 	c.Assert(err, IsNil)
@@ -70,8 +69,8 @@ func (s *nodeSuite) TestNodeStartup(c *C) {
 	member1Comps.Register(&GateComponent{})
 	memberNode1 := &cluster.Node{
 		AdvertiseAddr: "127.0.0.1:4450",
-		MemberAddr:    "127.0.0.1:14451",
-		ServerAddr:    "127.0.0.1:14452",
+		ServiceAddr:   "127.0.0.1:14451",
+		ClientAddr:    "127.0.0.1:14452",
 		Components:    member1Comps,
 	}
 	err = memberNode1.Startup()
@@ -86,8 +85,7 @@ func (s *nodeSuite) TestNodeStartup(c *C) {
 	member2Comps.Register(&GameComponent{})
 	memberNode2 := &cluster.Node{
 		AdvertiseAddr: "127.0.0.1:4450",
-		MemberAddr:    "127.0.0.1:24451",
-		ServerAddr:    "127.0.0.1:24452",
+		ServiceAddr:   "127.0.0.1:24451",
 		Components:    member2Comps,
 	}
 	err = memberNode2.Startup()

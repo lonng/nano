@@ -266,10 +266,10 @@ func (h *LocalHandler) remoteProcess(session *session.Session, msg *message.Mess
 	if addr, found := session.Router().Find(service); found {
 		remoteAddr = addr
 	} else {
-		remoteAddr = members[rand.Intn(len(members))].MemberAddr
+		remoteAddr = members[rand.Intn(len(members))].ServiceAddr
 		session.Router().Bind(service, remoteAddr)
 	}
-	conns, err := h.currentNode.rpcClient.getConnArray(members[0].MemberAddr)
+	conns, err := h.currentNode.rpcClient.getConnPool(members[0].ServiceAddr)
 	if err != nil {
 		log.Println(err)
 		return
@@ -283,19 +283,19 @@ func (h *LocalHandler) remoteProcess(session *session.Session, msg *message.Mess
 	switch msg.Type {
 	case message.Request:
 		request := &clusterpb.RequestMessage{
-			GateAddr:  h.currentNode.MemberAddr,
-			SessionId: session.ID(),
-			Id:        msg.ID,
-			Route:     msg.Route,
-			Data:      data,
+			ServiceAddr: h.currentNode.ServiceAddr,
+			SessionId:   session.ID(),
+			Id:          msg.ID,
+			Route:       msg.Route,
+			Data:        data,
 		}
 		_, err = client.HandleRequest(context.Background(), request)
 	case message.Notify:
 		request := &clusterpb.NotifyMessage{
-			GateAddr:  h.currentNode.MemberAddr,
-			SessionId: session.ID(),
-			Route:     msg.Route,
-			Data:      data,
+			ServiceAddr: h.currentNode.ServiceAddr,
+			SessionId:   session.ID(),
+			Route:       msg.Route,
+			Data:        data,
 		}
 		_, err = client.HandleNotify(context.Background(), request)
 	}

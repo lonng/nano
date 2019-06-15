@@ -49,8 +49,8 @@ func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*
 
 	resp := &clusterpb.RegisterResponse{}
 	for _, m := range c.members {
-		if m.memberInfo.MemberAddr == req.MemberInfo.MemberAddr {
-			return nil, fmt.Errorf("address %s has registered", req.MemberInfo.MemberAddr)
+		if m.memberInfo.ServiceAddr == req.MemberInfo.ServiceAddr {
+			return nil, fmt.Errorf("address %s has registered", req.MemberInfo.ServiceAddr)
 		}
 	}
 
@@ -61,11 +61,11 @@ func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*
 		if m.isMaster {
 			continue
 		}
-		conns, err := c.rpcClient.getConnArray(m.memberInfo.MemberAddr)
+		pool, err := c.rpcClient.getConnPool(m.memberInfo.ServiceAddr)
 		if err != nil {
 			return nil, err
 		}
-		client := clusterpb.NewMemberClient(conns.Get())
+		client := clusterpb.NewMemberClient(pool.Get())
 		_, err = client.NewMember(context.Background(), newMember)
 		if err != nil {
 			return nil, err

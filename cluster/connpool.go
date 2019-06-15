@@ -96,7 +96,7 @@ func newRPCClient() *rpcClient {
 	}
 }
 
-func (c *rpcClient) getConnArray(addr string) (*connArray, error) {
+func (c *rpcClient) getConnPool(addr string) (*connArray, error) {
 	c.RLock()
 	if c.isClosed {
 		c.RUnlock()
