@@ -41,6 +41,7 @@ func newCluster(currentNode *Node) *cluster {
 	return &cluster{currentNode: currentNode}
 }
 
+// Register implements the MasterServer gRPC service
 func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*clusterpb.RegisterResponse, error) {
 	if req.MemberInfo == nil {
 		return nil, ErrInvalidRegisterReq

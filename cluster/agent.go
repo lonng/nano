@@ -105,6 +105,7 @@ func (a *agent) send(m pendingMessage) (err error) {
 	return
 }
 
+// MID implements the session.NetworkEntity interface
 func (a *agent) MID() uint64 {
 	return a.lastMid
 }

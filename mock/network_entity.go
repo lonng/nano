@@ -25,15 +25,14 @@ import (
 	"net"
 )
 
-// fakeAddr mock the net.Addr interface
-type fakeAddr struct {
-}
+// NetAddr mock the net.Addr interface
+type NetAddr struct{}
 
 // Network implements the net.Addr interface
-func (a fakeAddr) Network() string { return "mock" }
+func (a NetAddr) Network() string { return "mock" }
 
 // String implements the net.Addr interface
-func (a fakeAddr) String() string { return "mock-addr" }
+func (a NetAddr) String() string { return "mock-addr" }
 
 type message struct {
 	route string
@@ -89,7 +88,7 @@ func (n *NetworkEntity) Close() error {
 
 // RemoteAddr implements the session.NetworkEntity interface
 func (n *NetworkEntity) RemoteAddr() net.Addr {
-	return fakeAddr{}
+	return NetAddr{}
 }
 
 // LastResponse returns the last respond message
