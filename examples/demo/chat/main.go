@@ -57,12 +57,12 @@ type (
 	}
 )
 
-func (stats *stats) outbound(s *session.Session, msg pipeline.Message) error {
+func (stats *stats) outbound(s *session.Session, msg *pipeline.Message) error {
 	stats.outboundBytes += len(msg.Data)
 	return nil
 }
 
-func (stats *stats) inbound(s *session.Session, msg pipeline.Message) error {
+func (stats *stats) inbound(s *session.Session, msg *pipeline.Message) error {
 	stats.inboundBytes += len(msg.Data)
 	return nil
 }
@@ -134,28 +134,28 @@ func (mgr *RoomManager) Message(s *session.Session, msg *UserMessage) error {
 }
 
 func main() {
-	// override default serializer
-	nano.SetSerializer(json.NewSerializer())
-
-	// rewrite component and handler name
-	room := NewRoomManager()
-	nano.Register(room,
-		component.WithName("room"),
+	components := &component.Components{}
+	components.Register(
+		NewRoomManager(),
+		component.WithName("room"), // rewrite component and handler name
 		component.WithNameFunc(strings.ToLower),
 	)
 
 	// traffic stats
-	pipeline := pipeline.New()
+	pip := pipeline.New()
 	var stats = &stats{}
-	pipeline.Outbound().PushBack(stats.outbound)
-	pipeline.Inbound().PushBack(stats.inbound)
+	pip.Outbound().PushBack(stats.outbound)
+	pip.Inbound().PushBack(stats.inbound)
 
-	nano.EnableDebug()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
-	nano.SetWSPath("/nano")
-
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
-	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
-	nano.ListenWS(":3250", nano.WithPipeline(pipeline))
+	nano.ListenWS(":3250",
+		nano.WithPipeline(pip),
+		nano.WithCheckOriginFunc(func(_ *http.Request) bool { return true }),
+		nano.WithWSPath("/nano"),
+		nano.WithDebugMode(),
+		nano.WithSerializer(json.NewSerializer()), // override default serializer
+		nano.WithComponents(components),
+	)
 }

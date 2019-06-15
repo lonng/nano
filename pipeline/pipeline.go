@@ -8,6 +8,8 @@ import (
 )
 
 type (
+	Message = message.Message
+
 	Func func(s *session.Session, msg *message.Message) error
 
 	Pipeline interface {
