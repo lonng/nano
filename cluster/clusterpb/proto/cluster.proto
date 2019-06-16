@@ -20,7 +20,7 @@ service Master {
 }
 
 message RequestMessage {
-    string serviceAddr = 1;
+    string gateAddr = 1;
     int64 sessionId = 2;
     uint64 id = 3;
     string route = 4;
@@ -28,7 +28,7 @@ message RequestMessage {
 }
 
 message NotifyMessage {
-    string serviceAddr = 1;
+    string gateAddr = 1;
     int64 sessionId = 2;
     string route = 3;
     bytes data = 4;

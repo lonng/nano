@@ -269,7 +269,7 @@ func (h *LocalHandler) remoteProcess(session *session.Session, msg *message.Mess
 		remoteAddr = members[rand.Intn(len(members))].ServiceAddr
 		session.Router().Bind(service, remoteAddr)
 	}
-	conns, err := h.currentNode.rpcClient.getConnPool(members[0].ServiceAddr)
+	pool, err := h.currentNode.rpcClient.getConnPool(remoteAddr)
 	if err != nil {
 		log.Println(err)
 		return
@@ -279,29 +279,38 @@ func (h *LocalHandler) remoteProcess(session *session.Session, msg *message.Mess
 		data = make([]byte, len(msg.Data))
 		copy(data, msg.Data)
 	}
-	client := clusterpb.NewMemberClient(conns.Get())
+
+	// Retrieve gate address and session id
+	gateAddr := h.currentNode.ServiceAddr
+	sessionId := session.ID()
+	switch v := session.NetworkEntity().(type) {
+	case *acceptor:
+		gateAddr = v.gateAddr
+		sessionId = v.sid
+	}
+
+	client := clusterpb.NewMemberClient(pool.Get())
 	switch msg.Type {
 	case message.Request:
 		request := &clusterpb.RequestMessage{
-			ServiceAddr: h.currentNode.ServiceAddr,
-			SessionId:   session.ID(),
-			Id:          msg.ID,
-			Route:       msg.Route,
-			Data:        data,
+			GateAddr:  gateAddr,
+			SessionId: sessionId,
+			Id:        msg.ID,
+			Route:     msg.Route,
+			Data:      data,
 		}
 		_, err = client.HandleRequest(context.Background(), request)
 	case message.Notify:
 		request := &clusterpb.NotifyMessage{
-			ServiceAddr: h.currentNode.ServiceAddr,
-			SessionId:   session.ID(),
-			Route:       msg.Route,
-			Data:        data,
+			GateAddr:  gateAddr,
+			SessionId: sessionId,
+			Route:     msg.Route,
+			Data:      data,
 		}
 		_, err = client.HandleNotify(context.Background(), request)
 	}
 	if err != nil {
-		log.Println(fmt.Sprintf("Process remote message (%d:%s) error: %v", msg.ID, msg.Route, err))
-		return
+		log.Println(fmt.Sprintf("Process remote message (%d:%s) error: %+v", msg.ID, msg.Route, err))
 	}
 }
 

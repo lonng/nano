@@ -16,6 +16,7 @@ type acceptor struct {
 	session    *session.Session
 	lastMid    uint64
 	rpcHandler rpcHandler
+	gateAddr   string
 }
 
 // Push implements the session.NetworkEntity interface

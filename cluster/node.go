@@ -283,6 +283,7 @@ func (n *Node) findOrCreateSession(sid int64, gateAddr string) (*session.Session
 			sid:        sid,
 			gateClient: clusterpb.NewMemberClient(conns.Get()),
 			rpcHandler: n.handler.remoteProcess,
+			gateAddr:   gateAddr,
 		}
 		s = session.New(ac)
 		ac.session = s
@@ -298,7 +299,7 @@ func (n *Node) HandleRequest(_ context.Context, req *clusterpb.RequestMessage) (
 	if !found {
 		return nil, fmt.Errorf("service not found in current node: %v", req.Route)
 	}
-	s, err := n.findOrCreateSession(req.SessionId, req.ServiceAddr)
+	s, err := n.findOrCreateSession(req.SessionId, req.GateAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +318,7 @@ func (n *Node) HandleNotify(_ context.Context, req *clusterpb.NotifyMessage) (*c
 	if !found {
 		return nil, fmt.Errorf("service not found in current node: %v", req.Route)
 	}
-	s, err := n.findOrCreateSession(req.SessionId, req.ServiceAddr)
+	s, err := n.findOrCreateSession(req.SessionId, req.GateAddr)
 	if err != nil {
 		return nil, err
 	}

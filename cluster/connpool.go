@@ -31,7 +31,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-type connArray struct {
+type connPool struct {
 	index uint32
 	v     []*grpc.ClientConn
 }
@@ -39,11 +39,11 @@ type connArray struct {
 type rpcClient struct {
 	sync.RWMutex
 	isClosed bool
-	conns    map[string]*connArray
+	pools    map[string]*connPool
 }
 
-func newConnArray(maxSize uint, addr string) (*connArray, error) {
-	a := &connArray{
+func newConnArray(maxSize uint, addr string) (*connPool, error) {
+	a := &connPool{
 		index: 0,
 		v:     make([]*grpc.ClientConn, maxSize),
 	}
@@ -53,7 +53,7 @@ func newConnArray(maxSize uint, addr string) (*connArray, error) {
 	return a, nil
 }
 
-func (a *connArray) init(addr string) error {
+func (a *connPool) init(addr string) error {
 	for i := range a.v {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		conn, err := grpc.DialContext(
@@ -73,12 +73,12 @@ func (a *connArray) init(addr string) error {
 	return nil
 }
 
-func (a *connArray) Get() *grpc.ClientConn {
+func (a *connPool) Get() *grpc.ClientConn {
 	next := atomic.AddUint32(&a.index, 1) % uint32(len(a.v))
 	return a.v[next]
 }
 
-func (a *connArray) Close() {
+func (a *connPool) Close() {
 	for i, c := range a.v {
 		if c != nil {
 			err := c.Close()
@@ -92,21 +92,21 @@ func (a *connArray) Close() {
 
 func newRPCClient() *rpcClient {
 	return &rpcClient{
-		conns: make(map[string]*connArray),
+		pools: make(map[string]*connPool),
 	}
 }
 
-func (c *rpcClient) getConnPool(addr string) (*connArray, error) {
+func (c *rpcClient) getConnPool(addr string) (*connPool, error) {
 	c.RLock()
 	if c.isClosed {
 		c.RUnlock()
 		return nil, errors.New("rpc client is closed")
 	}
-	array, ok := c.conns[addr]
+	array, ok := c.pools[addr]
 	c.RUnlock()
 	if !ok {
 		var err error
-		array, err = c.createConnArray(addr)
+		array, err = c.createConnPool(addr)
 		if err != nil {
 			return nil, err
 		}
@@ -114,10 +114,10 @@ func (c *rpcClient) getConnPool(addr string) (*connArray, error) {
 	return array, nil
 }
 
-func (c *rpcClient) createConnArray(addr string) (*connArray, error) {
+func (c *rpcClient) createConnPool(addr string) (*connPool, error) {
 	c.Lock()
 	defer c.Unlock()
-	array, ok := c.conns[addr]
+	array, ok := c.pools[addr]
 	if !ok {
 		var err error
 		// TODO: make conn count configurable
@@ -125,17 +125,17 @@ func (c *rpcClient) createConnArray(addr string) (*connArray, error) {
 		if err != nil {
 			return nil, err
 		}
-		c.conns[addr] = array
+		c.pools[addr] = array
 	}
 	return array, nil
 }
 
-func (c *rpcClient) closeConns() {
+func (c *rpcClient) closePool() {
 	c.Lock()
 	if !c.isClosed {
 		c.isClosed = true
 		// close all connections
-		for _, array := range c.conns {
+		for _, array := range c.pools {
 			array.Close()
 		}
 	}
