@@ -51,7 +51,7 @@ func run(addr string, isWs bool, certificate string, key string, opts ...Option)
 	}
 
 	// Use listen address as client address in non-cluster mode
-	if opt.advertiseAddr == "" && opt.clientAddr == "" {
+	if !opt.isMaster && opt.advertiseAddr == "" && opt.clientAddr == "" {
 		log.Println("The current server running in singleton mode")
 		opt.clientAddr = addr
 	}

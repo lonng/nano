@@ -370,7 +370,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 	}
 
 	args := []reflect.Value{handler.Receiver, reflect.ValueOf(session), reflect.ValueOf(data)}
-	scheduler.PushTask(func() {
+	task := func() {
 		switch v := session.NetworkEntity().(type) {
 		case *agent:
 			v.lastMid = lastMid
@@ -384,5 +384,31 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 				log.Println(fmt.Sprintf("Service %s error: %+v", msg.Route, err))
 			}
 		}
-	})
+	}
+
+	index := strings.LastIndex(msg.Route, ".")
+	if index < 0 {
+		log.Println(fmt.Sprintf("nano/handler: invalid route %s", msg.Route))
+		return
+	}
+
+	// A message can be dispatch to global thread or a user customized thread
+	service := msg.Route[:index]
+	if s, found := h.localServices[service]; found && s.SchedName != "" {
+		sched := session.Value(s.SchedName)
+		if sched == nil {
+			log.Println(fmt.Sprintf("nanl/handler: cannot found `schedular.LocalScheduler` by %s", s.SchedName))
+			return
+		}
+
+		local, ok := sched.(scheduler.LocalScheduler)
+		if !ok {
+			log.Println(fmt.Sprintf("nanl/handler: Type %T does not implement the `schedular.LocalScheduler` interface",
+				sched))
+			return
+		}
+		local.Schedule(task)
+	} else {
+		scheduler.PushTask(task)
+	}
 }

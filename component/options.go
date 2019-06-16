@@ -22,8 +22,9 @@ package component
 
 type (
 	options struct {
-		name     string              // component name
-		nameFunc func(string) string // rename handler name
+		name      string              // component name
+		nameFunc  func(string) string // rename handler name
+		schedName string              // schedName name
 	}
 
 	// Option used to customize handler
@@ -42,5 +43,12 @@ func WithName(name string) Option {
 func WithNameFunc(fn func(string) string) Option {
 	return func(opt *options) {
 		opt.nameFunc = fn
+	}
+}
+
+// WithSchedulerName set the name of the service scheduler
+func WithSchedulerName(name string) Option {
+	return func(opt *options) {
+		opt.schedName = name
 	}
 }
