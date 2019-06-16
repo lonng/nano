@@ -370,10 +370,9 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 		}
 
 		result := handler.Method.Func.Call(args)
-		// TODO: send error message to client
 		if len(result) > 0 {
 			if err := result[0].Interface(); err != nil {
-				log.Println(err.(error).Error())
+				log.Println(fmt.Sprintf("Service %s error: %+v", msg.Route, err))
 			}
 		}
 	})

@@ -93,7 +93,7 @@ func (t *Timer) Stop() {
 func safecall(id int64, fn TimerFunc) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(fmt.Sprintf("Call timer function error, TimerID=%d, Error=%v\n%s", id, err, debug.Stack()))
+			log.Println(fmt.Sprintf("Handle timer panic: %+v\n%s", err, debug.Stack()))
 		}
 	}()
 
