@@ -299,7 +299,7 @@ func (h *LocalHandler) remoteProcess(session *session.Session, msg *message.Mess
 		log.Println(err)
 		return
 	}
-	var data []byte
+	var data = msg.Data
 	if !noCopy && len(msg.Data) > 0 {
 		data = make([]byte, len(msg.Data))
 		copy(data, msg.Data)
@@ -385,7 +385,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 		data = reflect.New(handler.Type.Elem()).Interface()
 		err := env.Serializer.Unmarshal(payload, data)
 		if err != nil {
-			log.Println("Deserialize failed: " + err.Error())
+			log.Println(fmt.Sprintf("Deserialize to %T failed: %+v (%v)", data, err, payload))
 			return
 		}
 	}
