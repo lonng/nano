@@ -25,6 +25,7 @@ import (
 	"fmt"
 
 	"github.com/lonng/nano/cluster/clusterpb"
+	"github.com/lonng/nano/internal/log"
 )
 
 // cluster represents a nano cluster, which contains a bunch of nano nodes
@@ -72,9 +73,55 @@ func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*
 		}
 	}
 
+	log.Println("New peer register to cluster", req.MemberInfo.ServiceAddr)
+
 	// Register services to current node
 	c.currentNode.handler.addRemoteService(req.MemberInfo)
 	c.members = append(c.members, &Member{isMaster: false, memberInfo: req.MemberInfo})
+	return resp, nil
+}
+
+// Register implements the MasterServer gRPC service
+func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest) (*clusterpb.UnregisterResponse, error) {
+	if req.ServiceAddr == "" {
+		return nil, ErrInvalidRegisterReq
+	}
+
+	var index = -1
+	resp := &clusterpb.UnregisterResponse{}
+	for i, m := range c.members {
+		if m.memberInfo.ServiceAddr == req.ServiceAddr {
+			index = i
+			break
+		}
+	}
+	if index < 0 {
+		return nil, fmt.Errorf("address %s has  notregistered", req.ServiceAddr)
+	}
+
+	// Notify registered node to update remote services
+	delMember := &clusterpb.DelMemberRequest{ServiceAddr: req.ServiceAddr}
+	for _, m := range c.members {
+		pool, err := c.rpcClient.getConnPool(m.memberInfo.ServiceAddr)
+		if err != nil {
+			return nil, err
+		}
+		client := clusterpb.NewMemberClient(pool.Get())
+		_, err = client.DelMember(context.Background(), delMember)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	log.Println("Exists peer unregister to cluster", req.ServiceAddr)
+
+	// Register services to current node
+	c.currentNode.handler.delMember(req.ServiceAddr)
+	if index == len(c.members)-1 {
+		c.members = c.members[:index]
+	} else {
+		c.members = append(c.members[:index], c.members[index+1:]...)
+	}
 	return resp, nil
 }
 

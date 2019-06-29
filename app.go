@@ -82,7 +82,7 @@ func run(addr string, isWs bool, certificate string, key string, opts ...Option)
 			app.name, node.ServiceAddr))
 	}
 
-	scheduler.Sched()
+	go scheduler.Sched()
 	sg := make(chan os.Signal)
 	signal.Notify(sg, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
 

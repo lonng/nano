@@ -110,7 +110,9 @@ func (h *LocalHandler) register(comp component.Component, opts []component.Optio
 	// register all localHandlers
 	h.localServices[s.Name] = s
 	for name, handler := range s.Handlers {
-		h.localHandlers[fmt.Sprintf("%s.%s", s.Name, name)] = handler
+		n := fmt.Sprintf("%s.%s", s.Name, name)
+		log.Println("Register local handler", n)
+		h.localHandlers[n] = handler
 	}
 	return nil
 }
@@ -126,7 +128,30 @@ func (h *LocalHandler) addRemoteService(member *clusterpb.MemberInfo) {
 	defer h.mu.Unlock()
 
 	for _, s := range member.Services {
+		log.Println("Register remote service", s)
 		h.remoteServices[s] = append(h.remoteServices[s], member)
+	}
+}
+
+func (h *LocalHandler) delMember(addr string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for name, members := range h.remoteServices {
+		for i, maddr := range members {
+			if addr == maddr.ServiceAddr {
+				if i == len(members)-1 {
+					members = members[:i]
+				} else {
+					members = append(members[:i], members[i+1:]...)
+				}
+			}
+		}
+		if len(members) == 0 {
+			delete(h.remoteServices, name)
+		} else {
+			h.remoteServices[name] = members
+		}
 	}
 }
 

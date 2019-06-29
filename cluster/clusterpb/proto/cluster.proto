@@ -15,8 +15,15 @@ message RegisterResponse {
     repeated MemberInfo members = 1;
 }
 
+message UnregisterRequest {
+    string serviceAddr = 1;
+}
+
+message UnregisterResponse {}
+
 service Master {
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
+    rpc Unregister (UnregisterRequest) returns (UnregisterResponse) {}
 }
 
 message RequestMessage {
@@ -54,6 +61,12 @@ message NewMemberRequest {
 
 message NewMemberResponse {}
 
+message DelMemberRequest {
+    string serviceAddr = 1;
+}
+
+message DelMemberResponse {}
+
 message SessionClosedRequest {
     int64 sessionId = 1;
 }
@@ -73,6 +86,7 @@ service Member {
     rpc HandleResponse (ResponseMessage) returns (MemberHandleResponse) {}
 
     rpc NewMember (NewMemberRequest) returns (NewMemberResponse) {}
+    rpc DelMember (DelMemberRequest) returns (DelMemberResponse) {}
     rpc SessionClosed(SessionClosedRequest) returns(SessionClosedResponse) {}
     rpc CloseSession(CloseSessionRequest) returns(CloseSessionResponse) {}
 }

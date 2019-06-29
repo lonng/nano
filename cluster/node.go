@@ -189,6 +189,24 @@ func (n *Node) Shutdown() {
 		components[i].Comp.Shutdown()
 	}
 
+	if !n.IsMaster && n.AdvertiseAddr != "" {
+		pool, err := n.rpcClient.getConnPool(n.AdvertiseAddr)
+		if err != nil {
+			log.Println("Retrieve master address error", err)
+			goto EXIT
+		}
+		client := clusterpb.NewMasterClient(pool.Get())
+		request := &clusterpb.UnregisterRequest{
+			ServiceAddr: n.ServiceAddr,
+		}
+		_, err = client.Unregister(context.Background(), request)
+		if err != nil {
+			log.Println("Unregister current node failed", err)
+			goto EXIT
+		}
+	}
+
+EXIT:
 	if n.server != nil {
 		n.server.GracefulStop()
 	}
@@ -350,6 +368,11 @@ func (n *Node) HandleResponse(_ context.Context, req *clusterpb.ResponseMessage)
 func (n *Node) NewMember(_ context.Context, req *clusterpb.NewMemberRequest) (*clusterpb.NewMemberResponse, error) {
 	n.handler.addRemoteService(req.MemberInfo)
 	return &clusterpb.NewMemberResponse{}, nil
+}
+
+func (n *Node) DelMember(_ context.Context, req *clusterpb.DelMemberRequest) (*clusterpb.DelMemberResponse, error) {
+	n.handler.delMember(req.ServiceAddr)
+	return &clusterpb.DelMemberResponse{}, nil
 }
 
 func (n *Node) SessionClosed(_ context.Context, req *clusterpb.SessionClosedRequest) (*clusterpb.SessionClosedResponse, error) {
