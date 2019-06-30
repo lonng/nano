@@ -44,13 +44,3 @@ func (r *Router) Find(service string) (string, bool) {
 	}
 	return v.(string), true
 }
-
-// Remote returns all remote service that have been registered to router
-func (r *Router) Remote() []string {
-	var addrs []string
-	r.routes.Range(func(_, value interface{}) bool {
-		addrs = append(addrs, value.(string))
-		return true
-	})
-	return addrs
-}

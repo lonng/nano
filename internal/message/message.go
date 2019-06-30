@@ -86,12 +86,7 @@ func New() *Message {
 
 // String, implementation of fmt.Stringer interface
 func (m *Message) String() string {
-	return fmt.Sprintf("Type: %s, ID: %d, Route: %s, Compressed: %t, BodyLength: %d",
-		types[m.Type],
-		m.ID,
-		m.Route,
-		m.compressed,
-		len(m.Data))
+	return fmt.Sprintf("%s %s (%dbytes)", types[m.Type], m.Route, len(m.Data))
 }
 
 // Encode marshals message to binary format.

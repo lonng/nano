@@ -170,6 +170,7 @@ func (n *Node) initNode() error {
 			resp, err := client.Register(context.Background(), request)
 			if err == nil {
 				n.handler.initRemoteService(resp.Members)
+				n.cluster.initMembers(resp.Members)
 				break
 			}
 			log.Println("Register current node to cluster failed", err, "and will retry in", n.RetryInterval.String())
@@ -374,11 +375,13 @@ func (n *Node) HandleResponse(_ context.Context, req *clusterpb.ResponseMessage)
 
 func (n *Node) NewMember(_ context.Context, req *clusterpb.NewMemberRequest) (*clusterpb.NewMemberResponse, error) {
 	n.handler.addRemoteService(req.MemberInfo)
+	n.cluster.addMember(req.MemberInfo)
 	return &clusterpb.NewMemberResponse{}, nil
 }
 
 func (n *Node) DelMember(_ context.Context, req *clusterpb.DelMemberRequest) (*clusterpb.DelMemberResponse, error) {
 	n.handler.delMember(req.ServiceAddr)
+	n.cluster.delMember(req.ServiceAddr)
 	return &clusterpb.DelMemberResponse{}, nil
 }
 

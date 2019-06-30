@@ -163,6 +163,9 @@ func runChat(args *cli.Context) error {
 	log.Println("Current chat server listen address", listen)
 	log.Println("Remote master server address", masterAddr)
 
+	// Register session closed callback
+	session.Lifetime.OnClosed(chat.OnSessionClosed)
+
 	// Startup Nano server with the specified listen address
 	nano.Listen(listen,
 		nano.WithAdvertiseAddr(masterAddr),

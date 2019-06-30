@@ -10,7 +10,8 @@
         <li v-for="msg in messages">[<span style="color:red;">{{msg.name}}</span>]{{msg.content}}</li>
     </ul>
     <div class="controls">
-        <text type="text" v-model="nickname">
+        <input type="text" v-model="nickname">
+        <input type="text" v-model="balance">
         <input type="text" v-model="inputMessage">
         <input type="button" v-on:click="sendMessage" value="Send">
     </div>
@@ -26,24 +27,31 @@
         data: {
             nickname: nickname,
             inputMessage:'',
-            messages: []
+            messages: [],
+            balance: 1000,
         },
         methods: {
             sendMessage: function () {
                 console.log(this.inputMessage);
-                starx.notify('room.message', {name: this.nickname, content: this.inputMessage});
+                starx.notify('RoomService.SyncMessage', {name: this.nickname, content: this.inputMessage});
                 this.inputMessage = '';
             }
         }
     });
 
     var onMessage = function (msg) {
+        console.log(msg);
         v.messages.push(msg)
     };
 
     var onNewUser = function (data) {
         console.log(data);
         v.messages.push({name:'system', content:data.content});
+    };
+
+    var onBalance = function (data) {
+        console.log(data);
+        v.balance = data.currentBalance;
     };
 
     var onMembers = function (data) {
@@ -67,6 +75,7 @@
         console.log("initialized");
         starx.on("onNewUser", onNewUser);
         starx.on("onMembers", onMembers);
+        starx.on("onBalance", onBalance);
         starx.request("BindService.Login", {"nickname": nickname}, login);
     })
 </script>

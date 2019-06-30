@@ -1,10 +1,9 @@
 package master
 
 import (
-	"fmt"
 	"log"
+	"strings"
 
-	"github.com/lonng/nano"
 	"github.com/lonng/nano/component"
 	"github.com/lonng/nano/examples/cluster/protocol"
 	"github.com/lonng/nano/session"
@@ -16,20 +15,24 @@ type User struct {
 	nickname string
 	gateId   int64
 	masterId int64
+	balance  int64
+	message  int
 }
 
 type TopicService struct {
 	component.Base
 	nextUid int64
 	users   map[int64]*User
-	group   *nano.Group
 }
 
 func newTopicService() *TopicService {
 	return &TopicService{
 		users: map[int64]*User{},
-		group: nano.NewGroup("all-users"),
 	}
+}
+
+type ExistsMembersResponse struct {
+	Members string `json:"members"`
 }
 
 func (ts *TopicService) NewUser(s *session.Session, msg *protocol.NewUserRequest) error {
@@ -39,37 +42,49 @@ func (ts *TopicService) NewUser(s *session.Session, msg *protocol.NewUserRequest
 		return errors.Trace(err)
 	}
 
+	var members []string
+	for _, u := range ts.users {
+		members = append(members, u.nickname)
+	}
+	err := s.Push("onMembers", &ExistsMembersResponse{Members: strings.Join(members, ",")})
+	if err != nil {
+		return errors.Trace(err)
+	}
+
 	user := &User{
 		session:  s,
 		nickname: msg.Nickname,
 		gateId:   msg.GateUid,
 		masterId: uid,
+		balance:  1000,
 	}
 	ts.users[uid] = user
 
-	broadcast := &protocol.NewUserBroadcast{
-		Content: fmt.Sprintf("User user join: %v", msg.Nickname),
+	chat := &protocol.JoinRoomRequest{
+		Nickname:  msg.Nickname,
+		GateUid:   msg.GateUid,
+		MasterUid: uid,
 	}
-	if err := ts.group.Broadcast("onNewUser", broadcast); err != nil {
-		return errors.Trace(err)
-	}
-	return ts.group.Add(s)
+	return s.RPC("RoomService.JoinRoom", chat)
 }
 
-type OpenTopicRequest struct {
-	Name string `json:"name"`
+type UserBalanceResponse struct {
+	CurrentBalance int64 `json:"currentBalance"`
 }
 
-func (ts *TopicService) OpenTopic(s *session.Session, msg *OpenTopicRequest) error {
-	return errors.Errorf("not implemented: %v", msg)
+func (ts *TopicService) Stats(s *session.Session, msg *protocol.MasterStats) error {
+	// It's OK to use map without lock because of this service running in main thread
+	user, found := ts.users[msg.Uid]
+	if !found {
+		return errors.Errorf("User not found: %v", msg.Uid)
+	}
+	user.message++
+	user.balance--
+	return s.Push("onBalance", &UserBalanceResponse{user.balance})
 }
 
 func (ts *TopicService) userDisconnected(s *session.Session) {
 	uid := s.UID()
 	delete(ts.users, uid)
-	if err := ts.group.Leave(s); err != nil {
-		log.Println("Remove user from group failed", s.UID(), err)
-		return
-	}
 	log.Println("User session disconnected", s.UID())
 }
