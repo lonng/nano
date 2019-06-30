@@ -26,6 +26,7 @@ import (
 	"os/signal"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/lonng/nano/cluster"
 	"github.com/lonng/nano/component"
@@ -56,10 +57,16 @@ func run(addr string, isWs bool, certificate string, key string, opts ...Option)
 		opt.clientAddr = addr
 	}
 
+	// Set the retry interval to 3 secondes if doesn't set by user
+	if opt.retryInterval == 0 {
+		opt.retryInterval = time.Second * 3
+	}
+
 	node := &cluster.Node{
 		Label:          opt.label,
 		IsMaster:       opt.isMaster,
 		AdvertiseAddr:  opt.advertiseAddr,
+		RetryInterval:  opt.retryInterval,
 		ClientAddr:     opt.clientAddr,
 		ServiceAddr:    addr,
 		Components:     opt.components,

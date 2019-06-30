@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/lonng/nano/cluster/clusterpb"
@@ -49,6 +50,7 @@ type Node struct {
 	IsMaster       bool   // indicate if the current node is master
 	IsGate         bool   // indicate if the current node is gate
 	AdvertiseAddr  string // master server service address
+	RetryInterval  time.Duration
 	ClientAddr     string
 	ServiceAddr    string
 	Components     *component.Components
@@ -164,11 +166,16 @@ func (n *Node) initNode() error {
 				Services:    n.handler.LocalService(),
 			},
 		}
-		resp, err := client.Register(context.Background(), request)
-		if err != nil {
-			return err
+		for {
+			resp, err := client.Register(context.Background(), request)
+			if err == nil {
+				n.handler.initRemoteService(resp.Members)
+				break
+			}
+			log.Println("Register current node to cluster failed", err, "and will retry in", n.RetryInterval.String())
+			time.Sleep(n.RetryInterval)
 		}
-		n.handler.initRemoteService(resp.Members)
+
 	}
 
 	return nil

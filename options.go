@@ -17,6 +17,7 @@ type (
 		pipeline      pipeline.Pipeline
 		isMaster      bool
 		advertiseAddr string
+		retryInterval time.Duration
 		clientAddr    string
 		components    *component.Components
 		label         string
@@ -33,9 +34,12 @@ func WithPipeline(pipeline pipeline.Pipeline) Option {
 
 // WithAdvertiseAddr sets the advertise address option, it will be the listen address in
 // master node and an advertise address which cluster member to connect
-func WithAdvertiseAddr(addr string) Option {
+func WithAdvertiseAddr(addr string, retryInterval ...time.Duration) Option {
 	return func(opt *options) {
 		opt.advertiseAddr = addr
+		if len(retryInterval) > 0 {
+			opt.retryInterval = retryInterval[0]
+		}
 	}
 }
 
