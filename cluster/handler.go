@@ -190,6 +190,23 @@ func (h *LocalHandler) handle(conn net.Conn) {
 
 	// guarantee agent related resource be destroyed
 	defer func() {
+		remotes := agent.session.Router().Remote()
+		request := &clusterpb.SessionClosedRequest{
+			SessionId: agent.session.ID(),
+		}
+		for _, remote := range remotes {
+			pool, err := h.currentNode.rpcClient.getConnPool(remote)
+			if err != nil {
+				log.Println("Cannot retrieve connection pool for address", remote, err)
+				continue
+			}
+			client := clusterpb.NewMemberClient(pool.Get())
+			_, err = client.SessionClosed(context.Background(), request)
+			if err != nil {
+				log.Println("Cannot closed session in remote address", remote, err)
+			}
+		}
+
 		agent.Close()
 		if env.Debug {
 			log.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.UID()))

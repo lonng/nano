@@ -382,28 +382,26 @@ func (n *Node) DelMember(_ context.Context, req *clusterpb.DelMemberRequest) (*c
 	return &clusterpb.DelMemberResponse{}, nil
 }
 
+// SessionClosed implements the MemberServer interface
 func (n *Node) SessionClosed(_ context.Context, req *clusterpb.SessionClosedRequest) (*clusterpb.SessionClosedResponse, error) {
 	n.mu.Lock()
 	s, found := n.sessions[req.SessionId]
 	delete(n.sessions, req.SessionId)
 	n.mu.Unlock()
 	if found {
-		scheduler.PushTask(func() {
-			session.Lifetime.Close(s)
-		})
+		scheduler.PushTask(func() { session.Lifetime.Close(s) })
 	}
 	return &clusterpb.SessionClosedResponse{}, nil
 }
 
+// CloseSession implements the MemberServer interface
 func (n *Node) CloseSession(_ context.Context, req *clusterpb.CloseSessionRequest) (*clusterpb.CloseSessionResponse, error) {
 	n.mu.Lock()
 	s, found := n.sessions[req.SessionId]
 	delete(n.sessions, req.SessionId)
 	n.mu.Unlock()
 	if found {
-		scheduler.PushTask(func() {
-			session.Lifetime.Close(s)
-		})
+		s.Close()
 	}
 	return &clusterpb.CloseSessionResponse{}, nil
 }

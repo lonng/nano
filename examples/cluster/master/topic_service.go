@@ -2,6 +2,7 @@ package master
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/lonng/nano"
 	"github.com/lonng/nano/component"
@@ -32,10 +33,12 @@ func newTopicService() *TopicService {
 }
 
 func (ts *TopicService) NewUser(s *session.Session, msg *protocol.NewUserRequest) error {
-	// exists users
-
 	ts.nextUid++
 	uid := ts.nextUid
+	if err := s.Bind(uid); err != nil {
+		return errors.Trace(err)
+	}
+
 	user := &User{
 		session:  s,
 		nickname: msg.Nickname,
@@ -48,7 +51,7 @@ func (ts *TopicService) NewUser(s *session.Session, msg *protocol.NewUserRequest
 		Content: fmt.Sprintf("User user join: %v", msg.Nickname),
 	}
 	if err := ts.group.Broadcast("onNewUser", broadcast); err != nil {
-		return err
+		return errors.Trace(err)
 	}
 	return ts.group.Add(s)
 }
@@ -59,4 +62,14 @@ type OpenTopicRequest struct {
 
 func (ts *TopicService) OpenTopic(s *session.Session, msg *OpenTopicRequest) error {
 	return errors.Errorf("not implemented: %v", msg)
+}
+
+func (ts *TopicService) userDisconnected(s *session.Session) {
+	uid := s.UID()
+	delete(ts.users, uid)
+	if err := ts.group.Leave(s); err != nil {
+		log.Println("Remove user from group failed", s.UID(), err)
+		return
+	}
+	log.Println("User session disconnected", s.UID())
 }

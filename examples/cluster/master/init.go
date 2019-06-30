@@ -1,6 +1,9 @@
 package master
 
-import "github.com/lonng/nano/component"
+import (
+	"github.com/lonng/nano/component"
+	"github.com/lonng/nano/session"
+)
 
 var (
 	// All services in master server
@@ -13,4 +16,8 @@ var (
 
 func init() {
 	Services.Register(topicService)
+}
+
+func OnSessionClosed(s *session.Session) {
+	topicService.userDisconnected(s)
 }

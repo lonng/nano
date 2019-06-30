@@ -12,6 +12,7 @@ import (
 	"github.com/lonng/nano/examples/cluster/gate"
 	"github.com/lonng/nano/examples/cluster/master"
 	"github.com/lonng/nano/serialize/json"
+	"github.com/lonng/nano/session"
 	"github.com/pingcap/errors"
 	"github.com/urfave/cli"
 )
@@ -100,6 +101,9 @@ func runMaster(args *cli.Context) error {
 			panic(err)
 		}
 	}()
+
+	// Register session closed callback
+	session.Lifetime.OnClosed(master.OnSessionClosed)
 
 	// Startup Nano server with the specified listen address
 	nano.Listen(listen,
