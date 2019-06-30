@@ -253,7 +253,7 @@ func (a *agent) write() {
 	for {
 		select {
 		case <-ticker.C:
-			deadline := time.Now().Add(-2 * env.heartbeat).Unix()
+			deadline := time.Now().Add(-2 * env.Heartbeat).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
 				log.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline))
 				return
