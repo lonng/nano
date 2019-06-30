@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,11 +38,12 @@ type (
 	// Service implements a specific service, some of it's methods will be
 	// called when the correspond events is occurred.
 	Service struct {
-		Name     string              // name of service
-		Type     reflect.Type        // type of the receiver
-		Receiver reflect.Value       // receiver of methods for the service
-		Handlers map[string]*Handler // registered methods
-		Options  options             // options
+		Name      string              // name of service
+		Type      reflect.Type        // type of the receiver
+		Receiver  reflect.Value       // receiver of methods for the service
+		Handlers  map[string]*Handler // registered methods
+		SchedName string              // name of scheduler variable in session data
+		Options   options             // options
 	}
 )
 
@@ -62,6 +63,7 @@ func NewService(comp Component, opts []Option) *Service {
 	} else {
 		s.Name = reflect.Indirect(s.Receiver).Type().Name()
 	}
+	s.SchedName = s.Options.schedName
 
 	return s
 }

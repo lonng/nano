@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,12 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package message
 
-const (
-	_ int32 = iota
-	statusStart
-	statusHandshake
-	statusWorking
-	statusClosed
-)
+import "github.com/lonng/nano/internal/env"
+
+func Serialize(v interface{}) ([]byte, error) {
+	if data, ok := v.([]byte); ok {
+		return data, nil
+	}
+	data, err := env.Serializer.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}

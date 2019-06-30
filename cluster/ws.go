@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package cluster
 
 import (
 	"io"
@@ -134,13 +134,4 @@ func (c *wsConn) SetReadDeadline(t time.Time) error {
 // A zero value for t means Write will not time out.
 func (c *wsConn) SetWriteDeadline(t time.Time) error {
 	return c.conn.SetWriteDeadline(t)
-}
-
-func (h *handlerService) handleWS(conn *websocket.Conn) {
-	c, err := newWSConn(conn)
-	if err != nil {
-		logger.Println(err)
-		return
-	}
-	h.handle(c)
 }

@@ -1,0 +1,92 @@
+syntax = "proto3";
+package clusterpb;
+
+message MemberInfo {
+    string label = 1;
+    string serviceAddr = 2;
+    repeated string services = 3;
+}
+
+message RegisterRequest {
+    MemberInfo memberInfo = 1;
+}
+
+message RegisterResponse {
+    repeated MemberInfo members = 1;
+}
+
+message UnregisterRequest {
+    string serviceAddr = 1;
+}
+
+message UnregisterResponse {}
+
+service Master {
+    rpc Register (RegisterRequest) returns (RegisterResponse) {}
+    rpc Unregister (UnregisterRequest) returns (UnregisterResponse) {}
+}
+
+message RequestMessage {
+    string gateAddr = 1;
+    int64 sessionId = 2;
+    uint64 id = 3;
+    string route = 4;
+    bytes data = 5;
+}
+
+message NotifyMessage {
+    string gateAddr = 1;
+    int64 sessionId = 2;
+    string route = 3;
+    bytes data = 4;
+}
+
+message ResponseMessage {
+    int64 sessionId = 1;
+    uint64 id = 2;
+    bytes data = 3;
+}
+
+message PushMessage {
+    int64 sessionId = 1;
+    string route = 2;
+    bytes data = 3;
+}
+
+message MemberHandleResponse {}
+
+message NewMemberRequest {
+    MemberInfo memberInfo = 1;
+}
+
+message NewMemberResponse {}
+
+message DelMemberRequest {
+    string serviceAddr = 1;
+}
+
+message DelMemberResponse {}
+
+message SessionClosedRequest {
+    int64 sessionId = 1;
+}
+
+message SessionClosedResponse {}
+
+message CloseSessionRequest {
+    int64 sessionId = 1;
+}
+
+message CloseSessionResponse {}
+
+service Member {
+    rpc HandleRequest (RequestMessage) returns (MemberHandleResponse) {}
+    rpc HandleNotify (NotifyMessage) returns (MemberHandleResponse) {}
+    rpc HandlePush (PushMessage) returns (MemberHandleResponse) {}
+    rpc HandleResponse (ResponseMessage) returns (MemberHandleResponse) {}
+
+    rpc NewMember (NewMemberRequest) returns (NewMemberResponse) {}
+    rpc DelMember (DelMemberRequest) returns (DelMemberResponse) {}
+    rpc SessionClosed(SessionClosedRequest) returns(SessionClosedResponse) {}
+    rpc CloseSession(CloseSessionRequest) returns(CloseSessionResponse) {}
+}

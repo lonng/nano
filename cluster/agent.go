@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package cluster
 
 import (
 	"errors"
@@ -29,8 +29,12 @@ import (
 	"time"
 
 	"github.com/lonng/nano/internal/codec"
+	"github.com/lonng/nano/internal/env"
+	"github.com/lonng/nano/internal/log"
 	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/internal/packet"
+	"github.com/lonng/nano/pipeline"
+	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/session"
 )
 
@@ -50,37 +54,39 @@ type (
 	// Agent corresponding a user, used for store raw conn information
 	agent struct {
 		// regular agent member
-		session *session.Session    // session
-		conn    net.Conn            // low-level conn fd
-		lastMid uint                // last message id
-		state   int32               // current agent state
-		chDie   chan struct{}       // wait for close
-		chSend  chan pendingMessage // push message queue
-		lastAt  int64               // last heartbeat unix time stamp
-		decoder *codec.Decoder      // binary decoder
-		options *options
+		session  *session.Session    // session
+		conn     net.Conn            // low-level conn fd
+		lastMid  uint64              // last message id
+		state    int32               // current agent state
+		chDie    chan struct{}       // wait for close
+		chSend   chan pendingMessage // push message queue
+		lastAt   int64               // last heartbeat unix time stamp
+		decoder  *codec.Decoder      // binary decoder
+		pipeline pipeline.Pipeline
 
-		srv reflect.Value // cached session reflect.Value
+		rpcHandler rpcHandler
+		srv        reflect.Value // cached session reflect.Value
 	}
 
 	pendingMessage struct {
 		typ     message.Type // message type
 		route   string       // message route(push)
-		mid     uint         // response message id(response)
+		mid     uint64       // response message id(response)
 		payload interface{}  // payload
 	}
 )
 
 // Create new agent instance
-func newAgent(conn net.Conn, options *options) *agent {
+func newAgent(conn net.Conn, pipeline pipeline.Pipeline, rpcHandler rpcHandler) *agent {
 	a := &agent{
-		conn:    conn,
-		state:   statusStart,
-		chDie:   make(chan struct{}),
-		lastAt:  time.Now().Unix(),
-		chSend:  make(chan pendingMessage, agentWriteBacklog),
-		decoder: codec.NewDecoder(),
-		options: options,
+		conn:       conn,
+		state:      statusStart,
+		chDie:      make(chan struct{}),
+		lastAt:     time.Now().Unix(),
+		chSend:     make(chan pendingMessage, agentWriteBacklog),
+		decoder:    codec.NewDecoder(),
+		pipeline:   pipeline,
+		rpcHandler: rpcHandler,
 	}
 
 	// binding session
@@ -101,7 +107,8 @@ func (a *agent) send(m pendingMessage) (err error) {
 	return
 }
 
-func (a *agent) MID() uint {
+// LastMid implements the session.NetworkEntity interface
+func (a *agent) LastMid() uint64 {
 	return a.lastMid
 }
 
@@ -115,13 +122,13 @@ func (a *agent) Push(route string, v interface{}) error {
 		return ErrBufferExceed
 	}
 
-	if env.debug {
+	if env.Debug {
 		switch d := v.(type) {
 		case []byte:
-			logger.Println(fmt.Sprintf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
+			log.Println(fmt.Sprintf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
 				a.session.ID(), a.session.UID(), route, len(d)))
 		default:
-			logger.Println(fmt.Sprintf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
+			log.Println(fmt.Sprintf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
 				a.session.ID(), a.session.UID(), route, v))
 		}
 	}
@@ -129,15 +136,35 @@ func (a *agent) Push(route string, v interface{}) error {
 	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
 }
 
-// Response, implementation for session.NetworkEntity interface
-// Response message to session
-func (a *agent) Response(v interface{}) error {
-	return a.ResponseMID(a.lastMid, v)
+// RPC, implementation for session.NetworkEntity interface
+func (a *agent) RPC(route string, v interface{}) error {
+	if a.status() == statusClosed {
+		return ErrBrokenPipe
+	}
+
+	// TODO: buffer
+	data, err := message.Serialize(v)
+	if err != nil {
+		return err
+	}
+	msg := &message.Message{
+		Type:  message.Notify,
+		Route: route,
+		Data:  data,
+	}
+	a.rpcHandler(a.session, msg, true)
+	return nil
 }
 
 // Response, implementation for session.NetworkEntity interface
 // Response message to session
-func (a *agent) ResponseMID(mid uint, v interface{}) error {
+func (a *agent) Response(v interface{}) error {
+	return a.ResponseMid(a.lastMid, v)
+}
+
+// ResponseMid, implementation for session.NetworkEntity interface
+// Response message to session
+func (a *agent) ResponseMid(mid uint64, v interface{}) error {
 	if a.status() == statusClosed {
 		return ErrBrokenPipe
 	}
@@ -150,13 +177,13 @@ func (a *agent) ResponseMID(mid uint, v interface{}) error {
 		return ErrBufferExceed
 	}
 
-	if env.debug {
+	if env.Debug {
 		switch d := v.(type) {
 		case []byte:
-			logger.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%dbytes",
+			log.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%dbytes",
 				a.session.ID(), a.session.UID(), mid, len(d)))
 		default:
-			logger.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%+v",
+			log.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%+v",
 				a.session.ID(), a.session.UID(), mid, v))
 		}
 	}
@@ -173,8 +200,8 @@ func (a *agent) Close() error {
 	}
 	a.setStatus(statusClosed)
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("Session closed, ID=%d, UID=%d, IP=%s",
+	if env.Debug {
+		log.Println(fmt.Sprintf("Session closed, ID=%d, UID=%d, IP=%s",
 			a.session.ID(), a.session.UID(), a.conn.RemoteAddr()))
 	}
 
@@ -184,7 +211,7 @@ func (a *agent) Close() error {
 		// expect
 	default:
 		close(a.chDie)
-		handler.chCloseSession <- a.session
+		scheduler.PushTask(func() { session.Lifetime.Close(a.session) })
 	}
 
 	return a.conn.Close()
@@ -210,7 +237,7 @@ func (a *agent) setStatus(state int32) {
 }
 
 func (a *agent) write() {
-	ticker := time.NewTicker(env.heartbeat)
+	ticker := time.NewTicker(env.Heartbeat)
 	chWrite := make(chan []byte, agentWriteBacklog)
 	// clean func
 	defer func() {
@@ -218,17 +245,17 @@ func (a *agent) write() {
 		close(a.chSend)
 		close(chWrite)
 		a.Close()
-		if env.debug {
-			logger.Println(fmt.Sprintf("Session write goroutine exit, SessionID=%d, UID=%d", a.session.ID(), a.session.UID()))
+		if env.Debug {
+			log.Println(fmt.Sprintf("Session write goroutine exit, SessionID=%d, UID=%d", a.session.ID(), a.session.UID()))
 		}
 	}()
 
 	for {
 		select {
 		case <-ticker.C:
-			deadline := time.Now().Add(-2 * env.heartbeat).Unix()
+			deadline := time.Now().Add(-2 * env.Heartbeat).Unix()
 			if atomic.LoadInt64(&a.lastAt) < deadline {
-				logger.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline))
+				log.Println(fmt.Sprintf("Session heartbeat timeout, LastTime=%d, Deadline=%d", atomic.LoadInt64(&a.lastAt), deadline))
 				return
 			}
 			chWrite <- hbd
@@ -236,18 +263,18 @@ func (a *agent) write() {
 		case data := <-chWrite:
 			// close agent while low-level conn broken
 			if _, err := a.conn.Write(data); err != nil {
-				logger.Println(err.Error())
+				log.Println(err.Error())
 				return
 			}
 
 		case data := <-a.chSend:
-			payload, err := serializeOrRaw(data.payload)
+			payload, err := message.Serialize(data.payload)
 			if err != nil {
 				switch data.typ {
 				case message.Push:
-					logger.Println(fmt.Sprintf("Push: %s error: %s", data.route, err.Error()))
+					log.Println(fmt.Sprintf("Push: %s error: %s", data.route, err.Error()))
 				case message.Response:
-					logger.Println(fmt.Sprintf("Response message(id: %d) error: %s", data.mid, err.Error()))
+					log.Println(fmt.Sprintf("Response message(id: %d) error: %s", data.mid, err.Error()))
 				default:
 					// expect
 				}
@@ -261,24 +288,24 @@ func (a *agent) write() {
 				Route: data.route,
 				ID:    data.mid,
 			}
-			if pipe := a.options.pipeline; pipe != nil {
-				err := pipe.Outbound().Process(a.session, Message{m})
+			if pipe := a.pipeline; pipe != nil {
+				err := pipe.Outbound().Process(a.session, m)
 				if err != nil {
-					logger.Println("broken pipeline", err.Error())
+					log.Println("broken pipeline", err.Error())
 					break
 				}
 			}
 
 			em, err := m.Encode()
 			if err != nil {
-				logger.Println(err.Error())
+				log.Println(err.Error())
 				break
 			}
 
 			// packet encode
 			p, err := codec.Encode(packet.Data, em)
 			if err != nil {
-				logger.Println(err)
+				log.Println(err)
 				break
 			}
 			chWrite <- p
@@ -286,7 +313,7 @@ func (a *agent) write() {
 		case <-a.chDie: // agent closed signal
 			return
 
-		case <-env.die: // application quit
+		case <-env.Die: // application quit
 			return
 		}
 	}

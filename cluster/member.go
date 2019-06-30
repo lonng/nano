@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,18 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package cluster
 
-import (
-	"github.com/lonng/nano/serialize"
-	"github.com/lonng/nano/serialize/protobuf"
-)
+import "github.com/lonng/nano/cluster/clusterpb"
 
-// Default serializer
-var serializer serialize.Serializer = protobuf.NewSerializer()
+type Member struct {
+	isMaster   bool
+	memberInfo *clusterpb.MemberInfo
+}
 
-// SetSerializer customize application serializer, which automatically Marshal
-// and UnMarshal handler payload
-func SetSerializer(seri serialize.Serializer) {
-	serializer = seri
+func (m *Member) MemberInfo() *clusterpb.MemberInfo {
+	return m.memberInfo
 }

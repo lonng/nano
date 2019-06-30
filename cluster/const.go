@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,51 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-package nano
+package cluster
 
-import (
-	"github.com/lonng/nano/component"
+const (
+	_ int32 = iota
+	statusStart
+	statusHandshake
+	statusWorking
+	statusClosed
 )
-
-var (
-	comps = make([]regComp, 0)
-)
-
-type regComp struct {
-	comp component.Component
-	opts []component.Option
-}
-
-func startupComponents() {
-	// component initialize hooks
-	for _, c := range comps {
-		c.comp.Init()
-	}
-
-	// component after initialize hooks
-	for _, c := range comps {
-		c.comp.AfterInit()
-	}
-
-	// register all components
-	for _, c := range comps {
-		if err := handler.register(c.comp, c.opts); err != nil {
-			logger.Println(err.Error())
-		}
-	}
-
-	handler.DumpServices()
-}
-
-func shutdownComponents() {
-	// reverse call `BeforeShutdown` hooks
-	length := len(comps)
-	for i := length - 1; i >= 0; i-- {
-		comps[i].comp.BeforeShutdown()
-	}
-
-	// reverse call `Shutdown` hooks
-	for i := length - 1; i >= 0; i-- {
-		comps[i].comp.Shutdown()
-	}
-}

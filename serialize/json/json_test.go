@@ -33,7 +33,9 @@ func BenchmarkSerializer_Serialize(b *testing.B) {
 	s := NewSerializer()
 
 	for i := 0; i < b.N; i++ {
-		s.Marshal(m)
+		if _, err := s.Marshal(m); err != nil {
+			b.Fatalf("unmarshal failed: %v", err)
+		}
 	}
 
 	b.ReportAllocs()
@@ -50,6 +52,8 @@ func BenchmarkSerializer_Deserialize(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		m1 := &Message{}
-		s.Unmarshal(d, m1)
+		if err := s.Unmarshal(d, m1); err != nil {
+			b.Fatalf("unmarshal failed: %v", err)
+		}
 	}
 }

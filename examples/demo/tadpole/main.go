@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/lonng/nano"
+	"github.com/lonng/nano/component"
 	"github.com/lonng/nano/examples/demo/tadpole/logic"
 	"github.com/lonng/nano/serialize/json"
 	"github.com/urfave/cli"
@@ -35,20 +36,23 @@ func main() {
 }
 
 func serve(ctx *cli.Context) error {
+	components := &component.Components{}
+	components.Register(logic.NewManager())
+	components.Register(logic.NewWorld())
+
 	// register all service
-	nano.Register(logic.NewManager())
-	nano.Register(logic.NewWorld())
-	nano.SetSerializer(json.NewSerializer())
+	options := []nano.Option{
+		nano.WithComponents(components),
+		nano.WithSerializer(json.NewSerializer()),
+		nano.WithCheckOriginFunc(func(_ *http.Request) bool { return true }),
+	}
 
 	//nano.EnableDebug()
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
-
 	addr := ctx.String("addr")
-	nano.ListenWS(addr)
-
+	nano.ListenWS(addr, options...)
 	return nil
 }

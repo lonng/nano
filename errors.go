@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,10 +24,8 @@ import "errors"
 
 // Errors that could be occurred during message handling.
 var (
-	ErrSessionOnNotify    = errors.New("current session working on notify mode")
 	ErrCloseClosedGroup   = errors.New("close closed group")
 	ErrClosedGroup        = errors.New("group closed")
 	ErrMemberNotFound     = errors.New("member not found in the group")
-	ErrCloseClosedSession = errors.New("close closed session")
 	ErrSessionDuplication = errors.New("session has existed in the current group")
 )

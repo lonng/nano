@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,9 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/lonng/nano/internal/env"
+	"github.com/lonng/nano/internal/log"
+	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/session"
 )
 
@@ -74,7 +77,7 @@ func (c *Group) Members() []int64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	members := []int64{}
+	var members []int64
 	for _, s := range c.sessions {
 		members = append(members, s.UID())
 	}
@@ -88,13 +91,13 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 		return ErrClosedGroup
 	}
 
-	data, err := serializeOrRaw(v)
+	data, err := message.Serialize(v)
 	if err != nil {
 		return err
 	}
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("Type=Multicast Route=%s, Data=%+v", route, v))
+	if env.Debug {
+		log.Println(fmt.Sprintf("Multicast %s, Data=%+v", route, v))
 	}
 
 	c.mu.RLock()
@@ -105,7 +108,7 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 			continue
 		}
 		if err = s.Push(route, data); err != nil {
-			logger.Println(err.Error())
+			log.Println(err.Error())
 		}
 	}
 
@@ -118,13 +121,13 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 		return ErrClosedGroup
 	}
 
-	data, err := serializeOrRaw(v)
+	data, err := message.Serialize(v)
 	if err != nil {
 		return err
 	}
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("Type=Broadcast Route=%s, Data=%+v", route, v))
+	if env.Debug {
+		log.Println(fmt.Sprintf("Broadcast %s, Data=%+v", route, v))
 	}
 
 	c.mu.RLock()
@@ -132,7 +135,7 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 
 	for _, s := range c.sessions {
 		if err = s.Push(route, data); err != nil {
-			logger.Println(fmt.Sprintf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
+			log.Println(fmt.Sprintf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
 		}
 	}
 
@@ -151,8 +154,8 @@ func (c *Group) Add(session *session.Session) error {
 		return ErrClosedGroup
 	}
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("Add session to group %s, ID=%d, UID=%d", c.name, session.ID(), session.UID()))
+	if env.Debug {
+		log.Println(fmt.Sprintf("Add session to group %s, ID=%d, UID=%d", c.name, session.ID(), session.UID()))
 	}
 
 	c.mu.Lock()
@@ -174,8 +177,8 @@ func (c *Group) Leave(s *session.Session) error {
 		return ErrClosedGroup
 	}
 
-	if env.debug {
-		logger.Println(fmt.Sprintf("Remove session from group %s, UID=%d", c.name, s.UID()))
+	if env.Debug {
+		log.Println(fmt.Sprintf("Remove session from group %s, UID=%d", c.name, s.UID()))
 	}
 
 	c.mu.Lock()

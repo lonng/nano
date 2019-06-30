@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
+
+	"github.com/lonng/nano/internal/log"
 )
 
 // Type represents the type of message, which could be Request/Notify/Response/Push
@@ -53,6 +54,10 @@ var types = map[Type]string{
 	Push:     "Push",
 }
 
+func (t Type) String() string {
+	return types[t]
+}
+
 var (
 	routes = make(map[string]uint16) // route map to code
 	codes  = make(map[uint16]string) // code map to route
@@ -68,7 +73,7 @@ var (
 // Message represents a unmarshaled message or a message which to be marshaled
 type Message struct {
 	Type       Type   // message type
-	ID         uint   // unique id, zero while notify mode
+	ID         uint64 // unique id, zero while notify mode
 	Route      string // route for locating service
 	Data       []byte // payload
 	compressed bool   // is message compressed
@@ -81,12 +86,7 @@ func New() *Message {
 
 // String, implementation of fmt.Stringer interface
 func (m *Message) String() string {
-	return fmt.Sprintf("Type: %s, ID: %d, Route: %s, Compressed: %t, BodyLength: %d",
-		types[m.Type],
-		m.ID,
-		m.Route,
-		m.compressed,
-		len(m.Data))
+	return fmt.Sprintf("%s %s (%dbytes)", types[m.Type], m.Route, len(m.Data))
 }
 
 // Encode marshals message to binary format.
@@ -175,13 +175,13 @@ func Decode(data []byte) (*Message, error) {
 	}
 
 	if m.Type == Request || m.Type == Response {
-		id := uint(0)
+		id := uint64(0)
 		// little end byte order
 		// WARNING: must can be stored in 64 bits integer
 		// variant length encode
 		for i := offset; i < len(data); i++ {
 			b := data[i]
-			id += uint(b&0x7F) << uint(7*(i-offset))
+			id += uint64(b&0x7F) << uint64(7*(i-offset))
 			if b < 128 {
 				offset = i + 1
 				break
@@ -221,11 +221,11 @@ func SetDictionary(dict map[string]uint16) {
 
 		// duplication check
 		if _, ok := routes[r]; ok {
-			log.Printf("duplicated route(route: %s, code: %d)\n", r, code)
+			log.Println(fmt.Sprintf("duplicated route(route: %s, code: %d)", r, code))
 		}
 
 		if _, ok := codes[code]; ok {
-			log.Printf("duplicated route(route: %s, code: %d)\n", r, code)
+			log.Println(fmt.Sprintf("duplicated route(route: %s, code: %d)", r, code))
 		}
 
 		// update map, using last value when key duplicated

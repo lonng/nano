@@ -24,7 +24,7 @@ mobile games, etc of all sizes.
 
 The simplest "nano" application as shown in the following figure, you can make powerful applications by combining different components.
 
-![Application](./application.png)
+![Application](media/application.png)
 
 In fact, the `nano` application is a collection of  [Component ](./docs/get_started.md#component) , and a component is a bundle of  [Handler](./docs/get_started.md#handler), once you register a component to nano, nano will register all methods that can be converted to `Handler` to nano service container. Service was accessed by `Component.Handler`, and the handler will be called while client request. The handler will receive two parameters while handling a message:
   - `*session.Session`: corresponding a client that apply this request or notify.

@@ -1,4 +1,4 @@
-// Copyright (c) nano Author. All Rights Reserved.
+// Copyright (c) nano Authors. All Rights Reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,9 +33,10 @@ import (
 // NetworkEntity represent low-level network instance
 type NetworkEntity interface {
 	Push(route string, v interface{}) error
-	MID() uint
+	RPC(route string, v interface{}) error
+	LastMid() uint64
 	Response(v interface{}) error
-	ResponseMID(mid uint, v interface{}) error
+	ResponseMid(mid uint64, v interface{}) error
 	Close() error
 	RemoteAddr() net.Addr
 }
@@ -56,6 +57,7 @@ type Session struct {
 	lastTime     int64                  // last heartbeat time
 	entity       NetworkEntity          // low-level network entity
 	data         map[string]interface{} // session data store
+	router       *Router
 }
 
 // New returns a new session instance
@@ -66,7 +68,23 @@ func New(entity NetworkEntity) *Session {
 		entity:   entity,
 		data:     make(map[string]interface{}),
 		lastTime: time.Now().Unix(),
+		router:   newRouter(),
 	}
+}
+
+// NetworkEntity returns the low-level network agent object
+func (s *Session) NetworkEntity() NetworkEntity {
+	return s.entity
+}
+
+// NetworkEntity returns the service router
+func (s *Session) Router() *Router {
+	return s.router
+}
+
+// RPC sends message to remote server
+func (s *Session) RPC(route string, v interface{}) error {
+	return s.entity.RPC(route, v)
 }
 
 // Push message to client
@@ -81,8 +99,8 @@ func (s *Session) Response(v interface{}) error {
 
 // ResponseMID responses message to client, mid is
 // request message ID
-func (s *Session) ResponseMID(mid uint, v interface{}) error {
-	return s.entity.ResponseMID(mid, v)
+func (s *Session) ResponseMID(mid uint64, v interface{}) error {
+	return s.entity.ResponseMid(mid, v)
 }
 
 // ID returns the session id
@@ -95,9 +113,9 @@ func (s *Session) UID() int64 {
 	return atomic.LoadInt64(&s.uid)
 }
 
-// MID returns the last message id
-func (s *Session) MID() uint {
-	return s.entity.MID()
+// LastMid returns the last message id
+func (s *Session) LastMid() uint64 {
+	return s.entity.LastMid()
 }
 
 // Bind bind UID to current session
@@ -385,6 +403,9 @@ func (s *Session) State() map[string]interface{} {
 
 // Restore session state after reconnect
 func (s *Session) Restore(data map[string]interface{}) {
+	s.Lock()
+	defer s.Unlock()
+
 	s.data = data
 }
 
