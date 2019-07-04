@@ -137,13 +137,14 @@ func runGate(args *cli.Context) error {
 	log.Println("Remote master server address", masterAddr)
 
 	// Startup Nano server with the specified listen address
-	nano.ListenWS(listen,
+	nano.Listen(listen,
 		nano.WithAdvertiseAddr(masterAddr),
 		nano.WithClientAddr(gateAddr),
 		nano.WithComponents(gate.Services),
 		nano.WithSerializer(json.NewSerializer()),
-		nano.WithCheckOriginFunc(func(_ *http.Request) bool { return true }),
+		nano.WithIsWebsocket(true),
 		nano.WithWSPath("/nano"),
+		nano.WithCheckOriginFunc(func(_ *http.Request) bool { return true }),
 		nano.WithDebugMode(),
 	)
 	return nil

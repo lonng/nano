@@ -42,22 +42,26 @@ import (
 	"google.golang.org/grpc"
 )
 
+// Options contains some configurations for current node
+type Options struct {
+	Pipeline       pipeline.Pipeline
+	IsMaster       bool
+	AdvertiseAddr  string
+	RetryInterval  time.Duration
+	ClientAddr     string
+	Components     *component.Components
+	Label          string
+	IsWebsocket    bool
+	TSLCertificate string
+	TSLKey         string
+}
+
 // Node represents a node in nano cluster, which will contains a group of services.
 // All services will register to cluster and messages will be forwarded to the node
 // which provides respective service
 type Node struct {
-	Label          string
-	IsMaster       bool   // indicate if the current node is master
-	IsGate         bool   // indicate if the current node is gate
-	AdvertiseAddr  string // master server service address
-	RetryInterval  time.Duration
-	ClientAddr     string
-	ServiceAddr    string
-	Components     *component.Components
-	IsWebsocket    bool
-	TSLCertificate string
-	TSLKey         string
-	Pipeline       pipeline.Pipeline
+	Options            // current node options
+	ServiceAddr string // current server service address (RPC)
 
 	cluster   *cluster
 	handler   *LocalHandler
