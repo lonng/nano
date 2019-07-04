@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -32,15 +34,22 @@ import (
 	"github.com/lonng/nano/component"
 	"github.com/lonng/nano/internal/env"
 	"github.com/lonng/nano/internal/log"
-	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/internal/runtime"
 	"github.com/lonng/nano/scheduler"
 )
 
 var running int32
 
-// Message is the alias of `message.Message`
-type Message = message.Message
+// VERSION returns current nano version
+var VERSION = "0.5.0"
+
+var (
+	// app represents the current server process
+	app = &struct {
+		name    string    // current application name
+		startAt time.Time // startup time
+	}{}
+)
 
 // Listen listens on the TCP network address addr
 // and then calls Serve with handler to handle requests
@@ -49,6 +58,17 @@ func Listen(addr string, opts ...Option) {
 	if atomic.AddInt32(&running, 1) != 1 {
 		log.Println("Nano has running")
 		return
+	}
+
+	// application initialize
+	app.name = strings.TrimLeft(filepath.Base(os.Args[0]), "/")
+	app.startAt = time.Now()
+
+	// environment initialize
+	if wd, err := os.Getwd(); err != nil {
+		panic(err)
+	} else {
+		env.Wd, _ = filepath.Abs(wd)
 	}
 
 	opt := cluster.Options{

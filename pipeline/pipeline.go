@@ -8,6 +8,7 @@ import (
 )
 
 type (
+	// Message is the alias of `message.Message`
 	Message = message.Message
 
 	Func func(s *session.Session, msg *message.Message) error
