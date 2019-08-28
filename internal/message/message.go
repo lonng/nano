@@ -68,6 +68,7 @@ var (
 	ErrWrongMessageType  = errors.New("wrong message type")
 	ErrInvalidMessage    = errors.New("invalid message")
 	ErrRouteInfoNotFound = errors.New("route info not found in dictionary")
+	ErrWrongMessage      = errors.New("wrong message")
 )
 
 // Message represents a unmarshaled message or a message which to be marshaled
@@ -190,6 +191,10 @@ func Decode(data []byte) (*Message, error) {
 		m.ID = id
 	}
 
+	if offset >= len(data) {
+		return nil, ErrWrongMessage
+	}
+
 	if routable(m.Type) {
 		if flag&msgRouteCompressMask == 1 {
 			m.compressed = true
@@ -204,11 +209,17 @@ func Decode(data []byte) (*Message, error) {
 			m.compressed = false
 			rl := data[offset]
 			offset++
+			if offset+int(rl) >= len(data) {
+				return nil, ErrWrongMessage
+			}
 			m.Route = string(data[offset:(offset + int(rl))])
 			offset += int(rl)
 		}
 	}
 
+	if offset >= len(data) {
+		return nil, ErrWrongMessage
+	}
 	m.Data = data[offset:]
 	return m, nil
 }
