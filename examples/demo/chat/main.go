@@ -150,7 +150,8 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
-	nano.ListenWS(":3250",
+	nano.Listen(":3250",
+		nano.WithIsWebsocket(true),
 		nano.WithPipeline(pip),
 		nano.WithCheckOriginFunc(func(_ *http.Request) bool { return true }),
 		nano.WithWSPath("/nano"),
