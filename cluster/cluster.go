@@ -107,6 +107,9 @@ func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest
 	// Notify registered node to update remote services
 	delMember := &clusterpb.DelMemberRequest{ServiceAddr: req.ServiceAddr}
 	for _, m := range c.members {
+		if m.MemberInfo().ServiceAddr == c.currentNode.ServiceAddr {
+			continue
+		}
 		pool, err := c.rpcClient.getConnPool(m.memberInfo.ServiceAddr)
 		if err != nil {
 			return nil, err
