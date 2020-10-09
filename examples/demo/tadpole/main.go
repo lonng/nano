@@ -42,6 +42,7 @@ func serve(ctx *cli.Context) error {
 
 	// register all service
 	options := []nano.Option{
+		nano.WithIsWebsocket(true),
 		nano.WithComponents(components),
 		nano.WithSerializer(json.NewSerializer()),
 		nano.WithCheckOriginFunc(func(_ *http.Request) bool { return true }),
@@ -53,6 +54,6 @@ func serve(ctx *cli.Context) error {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	addr := ctx.String("addr")
-	nano.ListenWS(addr, options...)
+	nano.Listen(addr, options...)
 	return nil
 }
