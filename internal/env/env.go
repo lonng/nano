@@ -59,7 +59,7 @@ func init() {
 	Heartbeat = 30 * time.Second
 	Debug = false
 	CheckOrigin = func(_ *http.Request) bool { return true }
-	HandshakeValidator func(_ []byte) error {return nil}
+	HandshakeValidator = func(_ []byte) error {return nil}
 	Serializer = protobuf.NewSerializer()
 	
 }
