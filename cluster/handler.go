@@ -252,12 +252,10 @@ func (h *LocalHandler) handle(conn net.Conn) {
 func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
-		
-		//Verify handshake data
-		if err := env.HandshakeValidator(p.Data); err != nil { 
-			return err 
+		if err := env.HandshakeValidator(p.Data); err != nil {
+			return err
 		}
-		
+
 		if _, err := agent.conn.Write(hrd); err != nil {
 			return err
 		}

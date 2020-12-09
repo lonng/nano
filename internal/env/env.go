@@ -32,13 +32,13 @@ import (
 )
 
 var (
-	Wd          string                   // working path
-	Die         chan bool                // wait for end application
-	Heartbeat   time.Duration            // Heartbeat internal
-	CheckOrigin func(*http.Request) bool // check origin when websocket enabled
-	Debug       bool                     // enable Debug
-	WSPath      string                   // WebSocket path(eg: ws://127.0.0.1/WSPath)
-	HandshakeValidator func([]byte) error // When you need to verify the custom data of the handshake request
+	Wd                 string                   // working path
+	Die                chan bool                // wait for end application
+	Heartbeat          time.Duration            // Heartbeat internal
+	CheckOrigin        func(*http.Request) bool // check origin when websocket enabled
+	Debug              bool                     // enable Debug
+	WSPath             string                   // WebSocket path(eg: ws://127.0.0.1/WSPath)
+	HandshakeValidator func([]byte) error       // When you need to verify the custom data of the handshake request
 
 	// timerPrecision indicates the precision of timer, default is time.Second
 	TimerPrecision = time.Second
@@ -50,8 +50,6 @@ var (
 	Serializer serialize.Serializer
 
 	GrpcOptions = []grpc.DialOption{grpc.WithInsecure()}
-	
-	
 )
 
 func init() {
@@ -59,7 +57,6 @@ func init() {
 	Heartbeat = 30 * time.Second
 	Debug = false
 	CheckOrigin = func(_ *http.Request) bool { return true }
-	HandshakeValidator = func(_ []byte) error {return nil}
+	HandshakeValidator = func(_ []byte) error { return nil }
 	Serializer = protobuf.NewSerializer()
-	
 }

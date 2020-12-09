@@ -145,7 +145,8 @@ func WithLogger(l log.Logger) Option {
 		log.SetLogger(l)
 	}
 }
-// WithHandshakeValidator sets the function that Verify `handshake` data 
+
+// WithHandshakeValidator sets the function that Verify `handshake` data
 func WithHandshakeValidator(fn func([]byte) error) Option {
 	return func(opt *cluster.Options) {
 		env.HandshakeValidator = fn
