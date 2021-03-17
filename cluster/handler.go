@@ -190,30 +190,40 @@ func (h *LocalHandler) handle(conn net.Conn) {
 
 	// guarantee agent related resource be destroyed
 	defer func() {
-		request := &clusterpb.SessionClosedRequest{
-			SessionId: agent.session.ID(),
-		}
+		if !h.currentNode.IsMaster && h.currentNode.AdvertiseAddr == "" {
+			agent.Close()
 
-		members := h.currentNode.cluster.remoteAddrs()
-		for _, remote := range members {
-			log.Println("Notify remote server success", remote)
-			pool, err := h.currentNode.rpcClient.getConnPool(remote)
-			if err != nil {
-				log.Println("Cannot retrieve connection pool for address", remote, err)
-				continue
+			req := &clusterpb.CloseSessionRequest{
+				SessionId: agent.session.ID(),
 			}
-			client := clusterpb.NewMemberClient(pool.Get())
-			_, err = client.SessionClosed(context.Background(), request)
-			if err != nil {
-				log.Println("Cannot closed session in remote address", remote, err)
-				continue
+			h.currentNode.CloseSession(context.Background(), req)
+		} else {
+			request := &clusterpb.SessionClosedRequest{
+				SessionId: agent.session.ID(),
 			}
-			if env.Debug {
+
+			members := h.currentNode.cluster.remoteAddrs()
+			for _, remote := range members {
 				log.Println("Notify remote server success", remote)
+				pool, err := h.currentNode.rpcClient.getConnPool(remote)
+				if err != nil {
+					log.Println("Cannot retrieve connection pool for address", remote, err)
+					continue
+				}
+				client := clusterpb.NewMemberClient(pool.Get())
+				_, err = client.SessionClosed(context.Background(), request)
+				if err != nil {
+					log.Println("Cannot closed session in remote address", remote, err)
+					continue
+				}
+				if env.Debug {
+					log.Println("Notify remote server success", remote)
+				}
 			}
+
+			agent.Close()
 		}
 
-		agent.Close()
 		if env.Debug {
 			log.Println(fmt.Sprintf("Session read goroutine exit, SessionID=%d, UID=%d", agent.session.ID(), agent.session.UID()))
 		}
