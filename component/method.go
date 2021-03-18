@@ -25,7 +25,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/lonng/nano/session"
+	"github.com/ikerlin/nano/session"
 )
 
 var (

@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/lonng/nano/internal/log"
+	"github.com/ikerlin/nano/internal/log"
 )
 
 // Type represents the type of message, which could be Request/Notify/Response/Push

@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/lonng/nano/session"
+	"github.com/ikerlin/nano/session"
 )
 
 func TestChannel_Add(t *testing.T) {

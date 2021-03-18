@@ -1,9 +1,9 @@
 package gate
 
 import (
-	"github.com/lonng/nano/component"
-	"github.com/lonng/nano/examples/cluster/protocol"
-	"github.com/lonng/nano/session"
+	"github.com/ikerlin/nano/component"
+	"github.com/ikerlin/nano/examples/cluster/protocol"
+	"github.com/ikerlin/nano/session"
 	"github.com/pingcap/errors"
 )
 
