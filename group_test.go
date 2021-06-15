@@ -29,7 +29,7 @@ func TestChannel_Add(t *testing.T) {
 		t.Fatalf("count expect: %d, got: %d", paraCount, c.Count())
 	}
 
-	n := rand.Int63n(int64(paraCount) + 1)
+	n := rand.Int63n(int64(paraCount)) + 1
 	if !c.Contains(n) {
 		t.Fail()
 	}

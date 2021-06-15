@@ -187,11 +187,7 @@ func (c *cluster) delMember(addr string) {
 		}
 	}
 	if index != -1 {
-		if index == len(c.members)-1 {
-			c.members = c.members[:index]
-		} else {
-			c.members = append(c.members[:index], c.members[index+1:]...)
-		}
+		c.members = append(c.members[:index], c.members[index+1:]...)
 	}
 	c.mu.Unlock()
 }

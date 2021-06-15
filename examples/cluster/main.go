@@ -123,7 +123,7 @@ func runGate(args *cli.Context) error {
 	}
 
 	masterAddr := args.String("master")
-	if listen == "" {
+	if masterAddr == "" {
 		return errors.Errorf("master address cannot empty")
 	}
 
