@@ -27,12 +27,11 @@ import (
 
 type (
 	//Handler represents a message.Message's handler's meta information.
-	//Handler represents a message.Message's handler's meta information.
 	Handler struct {
 		Receiver reflect.Value  // receiver of method
 		Method   reflect.Method // method stub
-		Type     reflect.Type   // low-level type of method
-		IsRawArg bool           // whether the data need to serialize
+		Type     reflect.Type   // arg type of method
+		IsRawArg bool           // whether the data need to unserialize
 	}
 
 	// Service implements a specific service, some of it's methods will be
