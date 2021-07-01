@@ -42,7 +42,7 @@ The Nano will remain simple, but you can perform any operations in the component
 
 #### How to execute the asynchronous task
 
-```go
+```golang
 func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) error {
     var onDBResult = func(player *Player) {
         manager.players = append(manager.players, player)
@@ -102,17 +102,32 @@ func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) err
 
 ## Installation
 
-```shell
+```bash
 go get github.com/lonng/nano
 
 # dependencies
-go get -u github.com/golang/protobuf
+go get -u github.com/pingcap/check
+go get -u github.com/pingcap/errors
+go get -u github.com/urfave/cli
+
+go get -u google.golang.org/protobuf/proto
 go get -u github.com/gorilla/websocket
+go get -u google.golang.org/grpc
+```
+
+## Protocol Buffers
+```bash
+# protoc
+# download form: https://github.com/protocolbuffers/protobuf/releases
+# protoc-gen-go
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 ```
 
 ## Benchmark
 
-```shell
+```bash
 # Case:   PingPong
 # OS:     Windows 10
 # Device: i5-6500 3.2GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
@@ -120,6 +135,7 @@ go get -u github.com/gorilla/websocket
 
 cd $GOPATH/src/github.com/lonng/nano/benchmark/io
 go test -v -tags "benchmark"
+go test  -tags "benchmark" -v benchmark\io\io_test.go
 ```
 
 ## License
