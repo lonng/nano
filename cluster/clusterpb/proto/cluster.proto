@@ -1,5 +1,6 @@
 syntax = "proto3";
 package clusterpb;
+option go_package = "/clusterpb";
 
 message MemberInfo {
     string label = 1;

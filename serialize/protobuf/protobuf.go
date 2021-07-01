@@ -23,7 +23,7 @@ package protobuf
 import (
 	"errors"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 // ErrWrongValueType is the error used for marshal the value with protobuf encoding.

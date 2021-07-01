@@ -1,1 +1,1 @@
-protoc --go_out=. *.proto
+protoc --go_opt=paths=source_relative --go_out=. --proto_path=. *.proto
