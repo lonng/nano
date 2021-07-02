@@ -121,8 +121,14 @@ go get -u google.golang.org/grpc
 # download form: https://github.com/protocolbuffers/protobuf/releases
 # protoc-gen-go
 go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+# delve
+go install github.com/go-delve/delve/cmd/dlv@latest
+```
+
+## Test
+```bash
+go test -v ./...
 ```
 
 ## Benchmark
@@ -133,9 +139,8 @@ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 # Device: i5-6500 3.2GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
 # Other:  ...
 
-cd $GOPATH/src/github.com/lonng/nano/benchmark/io
+cd ./benchmark/io
 go test -v -tags "benchmark"
-go test  -tags "benchmark" -v benchmark\io\io_test.go
 ```
 
 ## License

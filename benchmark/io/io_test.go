@@ -27,6 +27,7 @@ const (
 type TestHandler struct {
 	component.Base
 	metrics int32
+	group   *nano.Group
 }
 
 func (h *TestHandler) AfterInit() {
@@ -41,16 +42,26 @@ func (h *TestHandler) AfterInit() {
 	}()
 }
 
+func NewTestHandler() *TestHandler {
+	return &TestHandler{
+		group: nano.NewGroup("handler"),
+	}
+}
+
 func (h *TestHandler) Ping(s *session.Session, data *testdata.Ping) error {
 	atomic.AddInt32(&h.metrics, 1)
 	return s.Push("pong", &testdata.Pong{Content: data.Content})
 }
 
 func server() {
-	nano.Register(&TestHandler{})
-	nano.SetSerializer(protobuf.NewSerializer())
+	components := &component.Components{}
+	components.Register(NewTestHandler())
 
-	nano.Listen(addr)
+	nano.Listen(addr,
+		nano.WithDebugMode(),
+		nano.WithSerializer(protobuf.NewSerializer()),
+		nano.WithComponents(components),
+	)
 }
 
 func client() {
@@ -68,7 +79,7 @@ func client() {
 	c.On("pong", func(data interface{}) {})
 
 	<-chReady
-	for {
+	for /*i := 0; i < 1; i++*/ {
 		c.Notify("TestHandler.Ping", &testdata.Ping{})
 		time.Sleep(10 * time.Millisecond)
 	}

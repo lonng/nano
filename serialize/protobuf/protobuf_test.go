@@ -1,7 +1,7 @@
 package protobuf
 
 import (
-	"reflect"
+	"google.golang.org/protobuf/proto"
 	"testing"
 
 	"github.com/lonng/nano/benchmark/testdata"
@@ -20,8 +20,8 @@ func TestProtobufSerialezer_Serialize(t *testing.T) {
 	if err := s.Unmarshal(b, m1); err != nil {
 		t.Fatalf("unmarshal failed: %v", err)
 	}
-
-	if !reflect.DeepEqual(m, m1) {
+	// refer: https://developers.google.com/protocol-buffers/docs/reference/go/faq#deepequal
+	if !proto.Equal(m, m1) {
 		t.Fail()
 	}
 }

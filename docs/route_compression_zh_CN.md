@@ -43,7 +43,7 @@ nano.request('Room.Join',
 也就是说不再以字符串作为通信格式了，直接发送有效的二进制数据将会更好地减少额外开销，`nano`可以使用Protobuf
 作为二进制协议, 可以通过:
 ```go
-nano.SetSerializer(protobuf.NewSerializer())
+nano.WithSerializer(protobuf.NewSerializer())
 ```
 让nano选择Protobuf作为二进制协议
 
