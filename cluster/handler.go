@@ -54,10 +54,27 @@ var (
 type rpcHandler func(session *session.Session, msg *message.Message, noCopy bool)
 
 func cache() {
-	data, err := json.Marshal(map[string]interface{}{
+	hrdata := map[string]interface{}{
 		"code": 200,
-		"sys":  map[string]float64{"heartbeat": env.Heartbeat.Seconds()},
-	})
+		"sys":  map[string]interface{}{"heartbeat": env.Heartbeat.Seconds()},
+	}
+	if dict, ok := message.GetDictionary(); ok {
+		hrdata = map[string]interface{}{
+			"code": 200,
+			"sys": map[string]interface{}{
+				"heartbeat": env.Heartbeat.Seconds(),
+				"dict":      dict,
+			},
+		}
+	}
+
+	// data, err := json.Marshal(map[string]interface{}{
+	// 	"code": 200,
+	// 	"sys": map[string]float64{
+	// 		"heartbeat": env.Heartbeat.Seconds(),
+	// 	},
+	// })
+	data, err := json.Marshal(hrdata)
 	if err != nil {
 		panic(err)
 	}

@@ -52,9 +52,12 @@ func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*
 	}
 
 	resp := &clusterpb.RegisterResponse{}
-	for _, m := range c.members {
+	for k, m := range c.members {
 		if m.memberInfo.ServiceAddr == req.MemberInfo.ServiceAddr {
-			return nil, fmt.Errorf("address %s has registered", req.MemberInfo.ServiceAddr)
+			// 节点异常崩溃，不会执行unregister，此时再次启动该节点，由于已存在注册信息，将再也无法成功注册，这里做个修改，先移除后重新注册
+			c.members = append(c.members[:k], c.members[k+1:]...)
+			break
+			//return nil, fmt.Errorf("address %s has registered", req.MemberInfo.ServiceAddr)
 		}
 	}
 

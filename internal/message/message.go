@@ -244,3 +244,10 @@ func SetDictionary(dict map[string]uint16) {
 		codes[code] = r
 	}
 }
+
+func GetDictionary() (map[string]uint16, bool) {
+	if len(routes) <= 0 {
+		return nil, false
+	}
+	return routes, true
+}
