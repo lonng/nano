@@ -124,7 +124,13 @@ func WithLabel(label string) Option {
 	}
 }
 
-// WithIsWebsocket indicates whether current node WebSocket is enabled
+// WithIsKcpSocket kcp 服务
+func WithIsKcpSocket(enableWs bool) Option {
+	return func(opt *cluster.Options) {
+		opt.IsKcpSocket = enableWs
+	}
+}
+
 func WithIsWebsocket(enableWs bool) Option {
 	return func(opt *cluster.Options) {
 		opt.IsWebsocket = enableWs

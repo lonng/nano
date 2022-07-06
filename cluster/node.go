@@ -39,6 +39,7 @@ import (
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/session"
+	"github.com/xtaci/kcp-go"
 	"google.golang.org/grpc"
 )
 
@@ -52,6 +53,7 @@ type Options struct {
 	Components     *component.Components
 	Label          string
 	IsWebsocket    bool
+	IsKcpSocket    bool
 	TSLCertificate string
 	TSLKey         string
 }
@@ -102,7 +104,9 @@ func (n *Node) Startup() error {
 
 	if n.ClientAddr != "" {
 		go func() {
-			if n.IsWebsocket {
+			if n.IsKcpSocket {
+				n.listenKcpServe()
+			} else if n.IsWebsocket {
 				if len(n.TSLCertificate) != 0 {
 					n.listenAndServeWSTLS()
 				} else {
@@ -239,6 +243,36 @@ func (n *Node) listenAndServe() {
 			continue
 		}
 
+		go n.handler.handle(conn)
+	}
+}
+
+// Enable current server accept connection
+func (n *Node) listenKcpServe() {
+	listener, err := kcp.Listen(n.ClientAddr)
+	if nil != err {
+		log.Fatal(err.Error())
+	}
+	defer listener.Close()
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println(err.Error())
+			continue
+		} else {
+			// 普通模式
+			// setKCPConfig(32, 32, 0, 40, 0, 0, 100, 1400)
+			// 极速模式
+			// setKCPConfig(32, 32, 1, 10, 2, 1, 30, 1400)
+			// 普通模式：ikcp_nodelay(kcp, 0, 40, 0, 0); 极速模式： ikcp_nodelay(kcp, 1, 10, 2, 1);
+			kcpConn := conn.(*kcp.UDPSession)
+			kcpConn.SetNoDelay(1, 10, 2, 1)
+			kcpConn.SetStreamMode(true)
+			kcpConn.SetWindowSize(4096, 4096)
+			kcpConn.SetReadBuffer(4 * 1024 * 1024)
+			kcpConn.SetWriteBuffer(4 * 1024 * 1024)
+			kcpConn.SetACKNoDelay(true)
+		}
 		go n.handler.handle(conn)
 	}
 }

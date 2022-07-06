@@ -14,3 +14,11 @@ test:
 
 proto:
 	@cd ./cluster/clusterpb/proto/ && protoc --go_out=plugins=grpc:../ *.proto
+
+.PHONY: up
+up:
+	git add .
+	git commit -am "update"
+	git pull origin master
+	git push origin master
+	@echo "\n game update 发布中..."
