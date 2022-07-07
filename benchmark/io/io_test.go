@@ -1,3 +1,4 @@
+//go:build benchmark
 // +build benchmark
 
 package io
@@ -79,7 +80,7 @@ func client() {
 	c.On("pong", func(data interface{}) {})
 
 	<-chReady
-	for /*i := 0; i < 1; i++*/ {
+	for i := 0; i < 100; i++ {
 		c.Notify("TestHandler.Ping", &testdata.Ping{})
 		time.Sleep(10 * time.Millisecond)
 	}
@@ -91,6 +92,7 @@ func TestIO(t *testing.T) {
 	// wait server startup
 	time.Sleep(1 * time.Second)
 	for i := 0; i < conc; i++ {
+		time.Sleep(1 * time.Second)
 		go client()
 	}
 

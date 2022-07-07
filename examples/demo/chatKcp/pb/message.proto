@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package pb;
+//option go_package = "github.com/byebyebruce/lockstepserver/pb;pb";
+option go_package = "./pb";
+
+
+// 消息ID
+enum ID {
+
+  MSG_BEGIN = 0;
+
+  MSG_Connect = 1;    //连接(客户端发来第一个消息)
+  MSG_Heartbeat = 2;    //心跳(服务端返回Connect成功之后每隔1秒发送一个心跳包)
+
+  MSG_JoinRoom = 10;   // 进入房间
+  MSG_CreateRoom = 11;   // 创建房间
+  MSG_RoomInfo = 12;   // 房间信息
+
+  MSG_Progress = 20;   //进度
+
+  MSG_Ready = 30;   //准备
+  MSG_Start = 40;   //开始
+
+  MSG_Frame = 50;   //帧数据
+  MSG_Input = 60;   //输入
+
+  MSG_Result = 70;   //结果
+  MSG_Close = 100;   //房间关闭
+  MSG_END = 255;
+}
+
+// 错误码
+enum ERRORCODE {
+  ERR_Ok = 0;    //OK
+  ERR_NoPlayer = 1;    //没有这个玩家
+  ERR_NoRoom = 2;    //没有房间
+  ERR_RoomState = 3;    //房间状态不正确
+  ERR_Token = 4;    //Token验证失败
+}
+
+// 房间类型
+enum ROOMTYPE {
+  Room_Type_Default = 0;   // 单机游戏
+  Room_Type_One = 1;   // 1人游戏
+  Room_Type_Two = 2 ;  // 2人游戏
+  Room_Type_Four = 4  ; // 4人游戏
+  Room_Type_VS_Two = 102 ;// 匹配 2人游戏
+  Room_Type_VS_Four = 104 ;// 匹配 4人游戏
+}
+
+//客户端发来的第一个消息
+message C2S_ConnectMsg  {
+  optional uint64 playerID = 1;    // 唯一ID
+  optional string token = 10;      // 令牌
+}
+
+// 加入房间 -> S2C_JoinRoomMsg
+message C2S_JoinRoomMsg  {
+  optional uint64 roomId = 1;    // 房间号
+}
+
+//服务端返回连接结果
+message S2C_ConnectMsg  {
+  optional ERRORCODE errorCode = 1;    //错误码
+}
+
+// 创建房间 -> S2C_JoinRoomMsg
+message C2S_CreateRoomMsg {
+  optional uint64 roomId = 1; // 房间 id
+  optional ROOMTYPE roomType = 2; // 房间类型
+}
+
+// 广播📢 - 服务端返回进入房间消息
+message S2C_JoinRoomMsg  {
+  optional int32 roomSeatId = 1;   //自己的位置索引id(1~N)
+  repeated uint64 others = 2;   //其他人的id
+  repeated int32 pros = 3;   //其他人的进度
+  optional int32 randomSeed = 4;   //随机种子
+  optional ERRORCODE errorCode = 5;    //错误码
+  optional uint64 ownerId = 6;   // 房主
+}
+
+// 广播📢 - 服务端广播房间信息
+message S2C_RoomInfoMsg  {
+  optional uint64  roomId = 1;   // 房间 id
+  optional uint64 ownerId = 2;   // 房主
+  repeated uint64 others = 3;   //其他人的id
+  optional int32 randomSeed = 4;   //随机种子
+  optional ERRORCODE errorCode = 5;    //错误码
+}
+
+// 广播📢 - 服务端广播开始游戏消息
+message S2C_StartMsg  {
+  optional int64 timeStamp = 1;   //同步时间戳
+}
+
+// 读条进度
+message C2S_ProgressMsg  {
+  optional int32 pro = 1;   //进度值0~100
+}
+
+// 读条进度
+message S2C_ProgressMsg  {
+  optional uint64 id = 1;   //id
+  optional int32 pro = 2;   //进度值0~100
+}
+
+// 操作输入消息
+message C2S_InputMsg  {
+  optional uint32 frameID = 4;    //帧ID
+
+  optional int32 sid = 1;    //操作id
+  optional float x = 2;    //操作位置x
+  optional float y = 3;    //操作位置y
+  optional float z = 5;
+  optional float ex = 6;
+  optional float ey = 7;
+  optional float ez = 8;
+  optional float turretY = 9;
+  optional float gunX = 10;
+  optional uint64 hp = 12;  // 血量
+  optional uint64 damage = 13;  // 伤害
+}
+
+// 帧存储操作输入
+message InputData {
+  optional int32 sid = 1;    //操作id
+  optional float x = 2;    //操作位置x
+  optional float y = 3;    //操作位置y
+  optional float z = 5;
+  optional float ex = 6;
+  optional float ey = 7;
+  optional float ez = 8;
+  optional float turretY = 9;
+  optional float gunX = 10;
+  optional uint64 hp = 12;  // 血量
+  optional uint64 damage = 13;  // 伤害
+
+  optional uint64 playerID = 21;    // 玩家id
+  optional int32 roomSeatId = 22;    //操作者的位置索引id(1~N)
+}
+
+// 帧数据
+message FrameData {
+  optional uint32 frameID = 1;   // 帧ID
+  repeated InputData input = 2;   // 操作输入
+}
+
+// 广播📢 - 广播帧消息
+message S2C_FrameMsg {
+  repeated FrameData frames = 1;   // 帧数据
+}
+
+// 结果消息
+message C2S_ResultMsg {
+  optional uint64 winnerID = 1; // 胜利者ID
+}
+
+// 广播📢 - 结果消息
+message S2C_ResultMsg {
+  optional uint64 winnerID = 1; // 胜利者ID
+}
+
