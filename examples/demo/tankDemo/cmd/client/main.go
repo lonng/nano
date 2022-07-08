@@ -5,7 +5,7 @@ import (
 	"github.com/cute-angelia/go-utils/components/loggerV3"
 	"github.com/cute-angelia/go-utils/syntax/ijson"
 	"github.com/cute-angelia/go-utils/utils/conf"
-	"github.com/lonng/nano/examples/demo/chatKcp/pb"
+	"github.com/lonng/nano/examples/demo/tankDemo/pb"
 	"github.com/lonng/nano/internal/codec"
 	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/internal/packet"
@@ -26,7 +26,7 @@ var (
 
 func init() {
 	var err error
-	hsd, err = codec.Encode(packet.Handshake, nil)
+	hsd, err = codec.Encode(packet.Handshake, []byte(`{"sys":{"version":"1.1.1","type":"js-websocket"},"user":{"id":1001}}`))
 	if err != nil {
 		panic(err)
 	}

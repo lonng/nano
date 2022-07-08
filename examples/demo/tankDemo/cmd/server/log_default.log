@@ -1,0 +1,48 @@
+{"level":"info","time":"2022-07-08 14:45:31.873","caller":"logger.go:13","message":"[Nano server got signal interrupt]"}
+{"level":"info","time":"2022-07-08 14:45:31.873","caller":"logger.go:13","message":"[Nano server is stopping...]"}
+{"level":"info","time":"2022-07-08 14:45:31.873","caller":"logger.go:13","message":"[Scheduler stopped]"}
+2022/07/08 14:45:34.329337 container.go:41: &{tankDemo false false 100 10 10 true . false debug} xx
+2022/07/08 14:45:34.329443 component.go:40: &{tankDemo false false 100 10 10 true . false debug} newComponent
+2022/07/08 14:45:34.329457 component.go:50: &{tankDemo false false 100 10 10 true . false debug} self.config
+{"level":"info","component":"game","time":"2022-07-08 14:45:34.330","caller":"game.go:29","message":"当前游戏服务器版本: 1.9.3, 是否强制更新: %!t(string=true), 当前心跳时间间隔: 30秒"}
+{"level":"info","component":"game","time":"2022-07-08 14:45:34.330","caller":"game.go:29","message":"当前游戏服务器版本: 1.9.3, 是否强制更新: %!t(string=true), 当前心跳时间间隔: 30秒"}
+,"time":"2022-07-08 14:45:34.330","caller":"game.go:30","message":"game service starup"}
+{"level":"info","time":"2022-07-08 14:45:34.330","caller":"logger.go:13","message":"[The current server running in singleton mode]"}
+{"level":"info","time":"2022-07-08 14:45:34.330","caller":"logger.go:13","message":"[Startup *Nano gate server* main, client address: :3251, service address: :3251]"}
+{"level":"info","time":"2022-07-08 14:46:09.057","caller":"logger.go:13","message":"[Nano server got signal interrupt]"}
+{"level":"info","time":"2022-07-08 14:46:09.057","caller":"logger.go:13","message":"[Nano server is stopping...]"}
+{"level":"info","time":"2022-07-08 14:46:09.057","caller":"logger.go:13","message":"[Scheduler stopped]"}
+container.go:41: &{tankDemo false false 100 10 10 true . false debug} xx
+component.go:40: &{tankDemo false false 100 10 10 true . false debug} newComponent
+component.go:50: &{tankDemo false false 100 10 10 true . false debug} self.config
+{"level":"info","component":"game","time":"2022-07-08 14:46:11.434","caller":"game.go:29","message":"当前游戏服务器版本: 1.9.3, 是否强制更新: %!t(string=true), 当前心跳时间间隔: 30秒"}
+{"level":"info","component":"game","time":"2022-07-08 14:46:11.434","caller":"game.go:29","message":"当前游戏服务器版本: 1.9.3, 是否强制更新: %!t(string=true), 当前心跳时间间隔: 30秒"}
+,"time":"2022-07-08 14:46:11.434","caller":"game.go:30","message":"game service starup"}
+{"level":"info","time":"2022-07-08 14:46:11.434","caller":"logger.go:13","message":"[The current server running in singleton mode]"}
+{"level":"info","time":"2022-07-08 14:46:11.434","caller":"logger.go:13","message":"[Startup *Nano gate server* main, client address: :3251, service address: :3251]"}
+{"level":"info","time":"2022-07-08 14:49:13.777","caller":"logger.go:13","message":"[Nano server got signal interrupt]"}
+{"level":"info","time":"2022-07-08 14:49:13.778","caller":"logger.go:13","message":"[Nano server is stopping...]"}
+{"level":"info","time":"2022-07-08 14:49:13.778","caller":"logger.go:13","message":"[Scheduler stopped]"}
+container.go:41: &{tankDemo false false 100 10 10 true . false debug} xx
+component.go:39: {
+    "Project": "tankDemo",
+    "IsOnline": false,
+    "FileJson": false,
+    "MaxSize": 100,
+    "MaxBackups": 10,
+    "MaxAge": 10,
+    "Everyday": true,
+    "LogPath": ".",
+    "HookError": false,
+    "Level": 0
+} <nil>
+component.go:44: &{tankDemo false false 100 10 10 true . false debug} newComponent
+component.go:54: &{tankDemo false false 100 10 10 true . false debug} self.config
+{"level":"info","component":"game","time":"2022-07-08 14:49:16.671","caller":"game.go:29","message":"当前游戏服务器版本: 1.9.3, 是否强制更新: %!t(string=true), 当前心跳时间间隔: 30秒"}
+{"level":"info","component":"game","time":"2022-07-08 14:49:16.671","caller":"game.go:29","message":"当前游戏服务器版本: 1.9.3, 是否强制更新: %!t(string=true), 当前心跳时间间隔: 30秒"}
+,"time":"2022-07-08 14:49:16.672","caller":"game.go:30","message":"game service starup"}
+{"level":"info","time":"2022-07-08 14:49:16.672","caller":"logger.go:13","message":"[The current server running in singleton mode]"}
+{"level":"info","time":"2022-07-08 14:49:16.672","caller":"logger.go:13","message":"[Startup *Nano gate server* main, client address: :3251, service address: :3251]"}
+{"level":"info","time":"2022-07-08 17:36:38.566","caller":"logger.go:13","message":"[Nano server got signal interrupt]"}
+{"level":"info","time":"2022-07-08 17:36:38.567","caller":"logger.go:13","message":"[Nano server is stopping...]"}
+{"level":"info","time":"2022-07-08 17:36:38.568","caller":"logger.go:13","message":"[Scheduler stopped]"}

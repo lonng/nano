@@ -1,0 +1,17 @@
+[core]
+debug = true
+heartbeat = 30
+
+[game-server]
+host = "127.0.0.1"
+port = 3251
+
+#更新设置
+[update]
+force = true #是否强制更新
+version = "1.9.3"
+android = "https://fir.im/tand"
+ios = "https://fir.im/tios"
+
+[common]
+server_addr = "127.0.0.1:3251"

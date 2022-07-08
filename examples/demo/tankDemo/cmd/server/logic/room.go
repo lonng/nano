@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/lonng/nano"
 	"github.com/lonng/nano/component"
-	"github.com/lonng/nano/examples/demo/chatKcp/pb"
+	"github.com/lonng/nano/examples/demo/tankDemo/pb"
 	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/session"
 	"google.golang.org/protobuf/proto"
