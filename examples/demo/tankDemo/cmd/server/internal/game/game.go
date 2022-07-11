@@ -13,10 +13,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	loggerGame = loggerV3.GetLogger().Info().Str("component", "game")
-)
-
 // Startup 初始化游戏服务器
 func Startup() {
 	rand.Seed(time.Now().Unix())
@@ -26,8 +22,7 @@ func Startup() {
 		heartbeat = 5
 	}
 
-	loggerGame.Msgf("当前游戏服务器版本: %s, 是否强制更新: %t, 当前心跳时间间隔: %d秒", viper.GetString("update.version"), viper.GetString("update.force"), heartbeat)
-	loggerGame.Msg("game service starup")
+	loggerV3.GetLogger().Info().Str("component", "game").Msgf("当前游戏服务器版本: %s, 是否强制更新: %t, 当前心跳时间间隔: %d秒", viper.GetString("update.version"), viper.GetBool("update.force"), heartbeat)
 
 	// register game handler
 	comps := &component.Components{}

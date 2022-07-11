@@ -44,9 +44,6 @@ enum ROOMTYPE {
   Room_Type_Default = 0;   // 单机游戏
   Room_Type_One = 1;   // 1人游戏
   Room_Type_Two = 2 ;  // 2人游戏
-  Room_Type_Four = 4  ; // 4人游戏
-  Room_Type_VS_Two = 102 ;// 匹配 2人游戏
-  Room_Type_VS_Four = 104 ;// 匹配 4人游戏
 }
 
 //客户端发来的第一个消息
