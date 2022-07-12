@@ -39,6 +39,7 @@ func Startup() {
 
 	addr := fmt.Sprintf(":%d", viper.GetInt("game-server.port"))
 	nano.Listen(addr,
+		nano.WithIsKcpSocket(true),
 		// nano.WithPipeline(pip),
 		nano.WithHeartbeatInterval(time.Duration(heartbeat)*time.Second),
 		nano.WithLogger(logger.NewLogger()),
