@@ -10,11 +10,14 @@ func _() {
 	var x [1]struct{}
 	_ = x[RoomNotFound-10000]
 	_ = x[RoomPlayerNumEnough-10001]
+	_ = x[RoomExist-10002]
+	_ = x[RoomJoinFailed-10003]
+	_ = x[RoomPlayerNotFound-10004]
 }
 
-const _ErrCode_name = "\"您输入的房间号不存在, 请确认后再次输入\"\"您加入的房间已经满人, 请确认房间号后再次确认\""
+const _ErrCode_name = "您输入的房间号不存在, 请确认后再次输入您加入的房间已经满人, 请确认房间号后再次确认房间已存在加入房间失败房间找不到该玩家"
 
-var _ErrCode_index = [...]uint8{0, 58, 125}
+var _ErrCode_index = [...]uint8{0, 56, 121, 136, 154, 178}
 
 func (i ErrCode) String() string {
 	i -= 10000

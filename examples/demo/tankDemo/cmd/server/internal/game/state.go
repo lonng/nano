@@ -1,4 +1,4 @@
-package logic
+package game
 
 import (
 	"github.com/lonng/nano/component"
@@ -7,6 +7,8 @@ import (
 	"github.com/lonng/nano/session"
 	"time"
 )
+
+var defaultStats = NewStats()
 
 type stats struct {
 	component.Base

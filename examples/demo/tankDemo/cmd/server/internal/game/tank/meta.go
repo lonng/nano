@@ -1,13 +1,10 @@
 package tank
 
 type Context struct {
-	RoomId uint64
 	Uid    int64
+	RoomId uint64
 }
 
 func (c *Context) Reset() {
-}
-
-func (c *Context) String() string {
-	return ""
+	c.RoomId = 0
 }

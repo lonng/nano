@@ -109,6 +109,7 @@ func (c *Connector) OnConnected(callback func()) {
 func (c *Connector) Request(route string, v proto.Message, callback Callback) error {
 	data, err := serialize(v)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 
@@ -118,6 +119,8 @@ func (c *Connector) Request(route string, v proto.Message, callback Callback) er
 		ID:    c.mid,
 		Data:  data,
 	}
+
+	log.Println(route, msg)
 
 	c.setResponseHandler(c.mid, callback)
 	if err := c.sendMessage(msg); err != nil {
@@ -327,11 +330,15 @@ func main() {
 	// 地址
 	serverAddr := viper.GetString("common.server_addr")
 
+	log.Println(serverAddr, "serverAddr")
+
 	c, e := kcp.Dial(serverAddr)
 	if nil != e {
 		panic(e)
 	}
 	defer c.Close()
+
+	log.Println("connecting...")
 
 	connector := NewConnector(c)
 	chReady := make(chan struct{})
@@ -355,14 +362,22 @@ func main() {
 		}
 	}()
 
-	// 加入房间
-
-	connector.Request("room.join", &pb.C2S_JoinRoomMsg{
-		RoomId: proto.Uint64(1),
+	// 登陆
+	connector.Request("Manager.Login", &pb.Login_Request{
+		Uid: time.Now().Unix(),
 	}, func(data interface{}) {
-		datapb := pb.S2C_JoinRoomMsg{}
-		pbs := protobuf.NewSerializer()
-		pbs.Unmarshal(data.([]byte), &datapb)
+		datapb := pb.Login_Response{}
+		protobuf.NewSerializer().Unmarshal(data.([]byte), &datapb)
+		log.Println(ijson.Pretty(datapb))
+	})
+
+	// 加入房间
+	connector.Request("RoomManager.CreateRoom", &pb.CreateRoom_Request{
+		RoomId:         1,
+		MaxPlayerCount: 2,
+	}, func(data interface{}) {
+		datapb := pb.CreateRoom_Response{}
+		protobuf.NewSerializer().Unmarshal(data.([]byte), &datapb)
 		log.Println(ijson.Pretty(datapb))
 	})
 

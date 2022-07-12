@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package pb;
+//option go_package = "github.com/byebyebruce/lockstepserver/pb;pb";
+option go_package = "./pb";
+
+// 定义
+// 错误信息
+message errorInfo {
+  int32 code = 1;
+  string msg = 2;
+}
+
+message userInfo {
+  int64 uid = 1;
+  string nickname = 2;
+  bool isRoomMaster = 3; // 房主
+}
+
+message roomInfo {
+  uint64 roomId = 1;
+  int64 randomSeed = 2;   //随机种子
+  repeated userInfo players = 3;   //其他人的id
+}
+
+// request
+// 创建房间
+message Login_Request {
+  int64 uid = 1;
+}
+
+message Login_Response {
+  errorInfo error = 1;
+}
+
+// 创建房间
+message CreateRoom_Request {
+  uint64 roomId = 1;
+  uint32 maxPlayerCount = 2;
+}
+
+message CreateRoom_Response {
+  errorInfo error = 1;
+  optional roomInfo data = 2;
+}
+
+// 加入房间
+message JoinRoom_Request {
+  int64 uid = 1;
+  uint64 roomId = 2;
+}
+
+message JoinRoom_Response {
+  errorInfo error = 1;
+  optional roomInfo data = 2;
+}
+
+// 退出房间
+message LeaveRoom_Request {
+  uint64 roomId = 1;
+}
+
+message LeaveRoom_Response {
+  errorInfo error = 1;
+}
+
+// 上传操作输入指令
+message Input_Notify  {
+  optional uint32 frameID = 4;    //帧ID
+  optional uint32 sid = 1;    //操作id
+  optional float x = 2;    //操作位置x
+  optional float y = 3;    //操作位置y
+  optional float z = 5;
+  optional float ex = 6;
+  optional float ey = 7;
+  optional float ez = 8;
+  optional float turretY = 9;
+  optional float gunX = 10;
+  optional uint64 hp = 12;  // 血量
+  optional uint64 damage = 13;  // 伤害
+}
+
+// 结果消息
+message Result_Notify {
+  uint64 winnerID = 1; // 胜利者ID
+}
+
+// 准备
+message Ready_Request {}
+message Ready_Response {
+  errorInfo error = 1;
+}
+
+// 服务端通知
+// 加入房间
+message JoinRoom_Notify {
+  roomInfo data = 2;
+}
+// 开始游戏消息
+message Start_Notify {}
+
+// 帧存储操作输入
+message InputData {
+  optional uint32 sid = 1;    //操作id
+  optional float x = 2;    //操作位置x
+  optional float y = 3;    //操作位置y
+  optional float z = 5;
+  optional float ex = 6;
+  optional float ey = 7;
+  optional float ez = 8;
+  optional float turretY = 9;
+  optional float gunX = 10;
+  optional uint64 hp = 12;  // 血量
+  optional uint64 damage = 13;  // 伤害
+
+  optional uint64 playerID = 21;    // 玩家id
+  optional uint32 roomSeatId = 22;    //操作者的位置索引id(1~N)
+}
+
+// 帧数据
+message FrameData {
+  optional uint32 frameID = 1;   // 帧ID
+  repeated InputData input = 2;   // 操作输入
+}
+
+// 广播帧消息
+message FrameMsg_Notify {
+  repeated FrameData frames = 1;   // 帧数据
+}
+
+// 结果消息
+message Win_Notify {
+  uint64 winnerID = 1; // 胜利者ID
+}

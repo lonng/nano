@@ -1,25 +1,52 @@
 package game
 
 import (
+	"github.com/google/uuid"
 	"github.com/lonng/nano"
 	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/pkg/constant"
-	"github.com/lonng/nano/examples/demo/tankDemo/pb"
+	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/pkg/errno"
 	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/session"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 type Room struct {
-	roomID   uint64
-	owner    *Player // 房主
-	players  []*Player
-	roomType pb.ROOMTYPE // 房间类型
+	group *nano.Group         // 组播通道
+	state constant.RoomStatus // 状态
 
-	group *nano.Group // 组播通道
-	die   chan struct{}
+	die chan struct{}
 
-	createdAt int64               // 创建时间
-	state     constant.RoomStatus // 状态
+	roomId         uint64
+	owner          *Player // 房主
+	players        []*Player
+	maxPlayerCount uint32 // 最多人数
+
+	randomSeed int64 // 随机种子
+	createdAt  int64 // 创建时间
+}
+
+func (d *Room) GetMaxPlayerCount() uint32 {
+	return d.maxPlayerCount
+}
+
+func (d *Room) SetMaxPlayerCount(maxPlayerCount uint32) {
+	d.maxPlayerCount = maxPlayerCount
+}
+
+func NewRoom(s *session.Session, roomId uint64, owner *Player, maxPlayerCount uint32) *Room {
+	d := &Room{
+		state:      constant.RoomStatusCreate,
+		roomId:     roomId,
+		players:    []*Player{},
+		group:      nano.NewGroup(uuid.New().String()),
+		die:        make(chan struct{}),
+		owner:      owner,
+		randomSeed: time.Now().Unix(),
+		createdAt:  time.Now().Unix(),
+	}
+	d.players = append(d.players, owner)
+	return d
 }
 
 func (d *Room) SetState(state constant.RoomStatus) {
@@ -56,7 +83,7 @@ func (d *Room) destroy() {
 
 	//删除桌子
 	scheduler.PushTask(func() {
-		defaultDeskManager.setDesk(d.roomID, nil)
+		defaultRoomManager.SetRoom(d.roomId, nil)
 	})
 }
 
@@ -104,11 +131,50 @@ func (d *Room) onPlayerExit(s *session.Session, isDisconnect bool) {
 	}
 }
 
-// totalPlayerCount 玩家总数
-func (d *Room) totalPlayerCount() uint32 {
-	if d.roomType == pb.ROOMTYPE_Room_Type_Two {
-		return 2
-	} else {
-		return 2
+// 获取玩家
+func (d *Room) getPlayerWithId(uid int64) (*Player, error) {
+	for _, p := range d.players {
+		if p.GetUid() == uid {
+			return p, nil
+		}
 	}
+	return nil, errno.RoomPlayerNotFound.Error()
+}
+
+// JoinRoom 玩家进入房间 如果是重新进入 isReJoin: true
+func (d *Room) JoinRoom(s *session.Session, isReJoin bool) error {
+	uid := s.UID()
+	var (
+		p   *Player
+		err error
+	)
+
+	if isReJoin {
+		p, err = d.getPlayerWithId(uid)
+		if err != nil {
+			log.Printf("玩家: %d重新加入房间, 但是没有找到玩家在房间中的数据", uid)
+			return err
+		}
+
+		// 加入分组
+		d.group.Add(s)
+	} else {
+		exists := false
+		for _, p := range d.players {
+			if p.GetUid() == uid {
+				exists = true
+				log.Println("玩家已经在房间中")
+				break
+			}
+		}
+		if !exists {
+			p = s.Value(kCurPlayer).(*Player)
+			d.players = append(d.players, p)
+			for _, p := range d.players {
+				p.setRoom(d)
+			}
+		}
+	}
+
+	return nil
 }
