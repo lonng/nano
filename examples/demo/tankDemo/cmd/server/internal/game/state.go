@@ -10,28 +10,28 @@ import (
 
 var defaultStats = NewStats()
 
-type stats struct {
+type Stats struct {
 	component.Base
 	timer         *scheduler.Timer
 	outboundBytes int
 	inboundBytes  int
 }
 
-func NewStats() *stats {
-	return &stats{}
+func NewStats() *Stats {
+	return &Stats{}
 }
 
-func (stats *stats) Outbound(s *session.Session, msg *pipeline.Message) error {
+func (stats *Stats) Outbound(s *session.Session, msg *pipeline.Message) error {
 	stats.outboundBytes += len(msg.Data)
 	return nil
 }
 
-func (stats *stats) Inbound(s *session.Session, msg *pipeline.Message) error {
+func (stats *Stats) Inbound(s *session.Session, msg *pipeline.Message) error {
 	stats.inboundBytes += len(msg.Data)
 	return nil
 }
 
-func (stats *stats) AfterInit() {
+func (stats *Stats) AfterInit() {
 	stats.timer = scheduler.NewTimer(time.Minute, func() {
 		println("OutboundBytes", stats.outboundBytes)
 		println("InboundBytes", stats.outboundBytes)

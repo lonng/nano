@@ -28,6 +28,7 @@ func Startup() {
 	comps := &component.Components{}
 	comps.Register(defaultManager)
 	comps.Register(defaultRoomManager)
+	//comps.Register(defaultNewTest)
 	comps.Register(defaultStats)
 
 	// 加密管道
