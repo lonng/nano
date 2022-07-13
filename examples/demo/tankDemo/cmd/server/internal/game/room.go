@@ -18,12 +18,20 @@ type Room struct {
 	die chan struct{}
 
 	roomId         uint64
-	owner          *Player // 房主
+	roomMaster     *Player // 房主
 	players        []*Player
 	maxPlayerCount uint32 // 最多人数
 
 	randomSeed int64 // 随机种子
 	createdAt  int64 // 创建时间
+}
+
+func (d *Room) GetRoomMaster() *Player {
+	return d.roomMaster
+}
+
+func (d *Room) SetRoomMaster(roomMaster *Player) {
+	d.roomMaster = roomMaster
 }
 
 func (d *Room) GetMaxPlayerCount() uint32 {
@@ -34,6 +42,7 @@ func (d *Room) SetMaxPlayerCount(maxPlayerCount uint32) {
 	d.maxPlayerCount = maxPlayerCount
 }
 
+// NewRoom 创建房间，设置房主，最大人数
 func NewRoom(s *session.Session, roomId uint64, owner *Player, maxPlayerCount uint32) *Room {
 	d := &Room{
 		state:      constant.RoomStatusCreate,
@@ -41,11 +50,12 @@ func NewRoom(s *session.Session, roomId uint64, owner *Player, maxPlayerCount ui
 		players:    []*Player{},
 		group:      nano.NewGroup(uuid.New().String()),
 		die:        make(chan struct{}),
-		owner:      owner,
 		randomSeed: time.Now().Unix(),
 		createdAt:  time.Now().Unix(),
+		roomMaster: owner,
 	}
-	d.players = append(d.players, owner)
+	// d.players = append(d.players, owner)
+
 	return d
 }
 
@@ -110,7 +120,7 @@ func (d *Room) onPlayerExit(s *session.Session, isDisconnect bool) {
 	}
 
 	//如果桌上已无玩家, destroy it
-	if d.owner.GetUid() == uid && !isDisconnect {
+	if d.GetRoomMaster().GetUid() == uid && !isDisconnect {
 		//if d.dissolve.offlineCount() == len(d.players) || (d.creator == uid && !isDisconnect) {
 		log.Println("所有玩家下线或房主主动解散房间")
 		//if d.dissolve.isDissolving() {

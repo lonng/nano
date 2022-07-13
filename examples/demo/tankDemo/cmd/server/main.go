@@ -6,7 +6,6 @@ import (
 	"github.com/cute-angelia/go-utils/utils/conf"
 	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/internal/game"
 	"github.com/urfave/cli"
-	"log"
 	"os"
 	"runtime/pprof"
 	"sync"
@@ -14,7 +13,6 @@ import (
 )
 
 func main() {
-	log.SetFlags(log.Lshortfile)
 	// 日志
 	loggerV3.New(
 		loggerV3.WithProject("tankDemo"),
@@ -43,6 +41,11 @@ func main() {
 			Name:  "cpuprofile",
 			Usage: "enable cpu profile",
 		},
+		cli.IntFlag{
+			Name:  "net",
+			Value: 1,
+			Usage: "网络模式， 1 kcp 2 websocket 3 tcp",
+		},
 	}
 
 	app.Action = serve
@@ -67,7 +70,7 @@ func serve(c *cli.Context) error {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	go func() { defer wg.Done(); game.Startup() }() // 开启游戏服
+	go func() { defer wg.Done(); game.Startup(c.Int("net")) }() // 开启游戏服
 
 	wg.Wait()
 	return nil

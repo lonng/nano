@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"github.com/cute-angelia/go-utils/components/loggerV3"
 	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/internal/logger"
+	"github.com/lonng/nano/serialize/protobuf"
 	"math/rand"
 	"time"
 
 	"github.com/lonng/nano"
 	"github.com/lonng/nano/component"
-	"github.com/lonng/nano/serialize/json"
 	"github.com/spf13/viper"
 )
 
 // Startup 初始化游戏服务器
-func Startup() {
+func Startup(netMode int) {
 	rand.Seed(time.Now().Unix())
 
 	heartbeat := viper.GetInt("core.heartbeat")
@@ -28,8 +28,8 @@ func Startup() {
 	comps := &component.Components{}
 	comps.Register(defaultManager)
 	comps.Register(defaultRoomManager)
+	// comps.Register(defaultStats)
 	//comps.Register(defaultNewTest)
-	comps.Register(defaultStats)
 
 	// 加密管道
 	//c := newCrypto()
@@ -38,12 +38,30 @@ func Startup() {
 	//pip.Outbound().PushBack(c.outbound)
 
 	addr := fmt.Sprintf(":%d", viper.GetInt("game-server.port"))
-	nano.Listen(addr,
-		nano.WithIsKcpSocket(true),
-		// nano.WithPipeline(pip),
-		nano.WithHeartbeatInterval(time.Duration(heartbeat)*time.Second),
-		nano.WithLogger(logger.NewLogger()),
-		nano.WithSerializer(json.NewSerializer()),
-		nano.WithComponents(comps),
-	)
+
+	if netMode == 1 {
+		nano.Listen(addr,
+			nano.WithIsKcpSocket(true),
+			//nano.WithPipeline(pip),
+			nano.WithHeartbeatInterval(time.Duration(heartbeat)*time.Second),
+			nano.WithLogger(logger.NewLogger()),
+			nano.WithSerializer(protobuf.NewSerializer()),
+			nano.WithComponents(comps),
+		)
+	} else if netMode == 2 {
+		nano.Listen(addr,
+			nano.WithIsWebsocket(true),
+			nano.WithHeartbeatInterval(time.Duration(heartbeat)*time.Second),
+			nano.WithLogger(logger.NewLogger()),
+			nano.WithSerializer(protobuf.NewSerializer()),
+			nano.WithComponents(comps),
+		)
+	} else {
+		nano.Listen(addr,
+			nano.WithHeartbeatInterval(time.Duration(heartbeat)*time.Second),
+			nano.WithLogger(logger.NewLogger()),
+			nano.WithSerializer(protobuf.NewSerializer()),
+			nano.WithComponents(comps),
+		)
+	}
 }

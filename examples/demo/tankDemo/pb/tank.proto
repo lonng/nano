@@ -14,11 +14,11 @@ message errorInfo {
 message userInfo {
   int64 uid = 1;
   string nickname = 2;
-  bool isRoomMaster = 3; // 房主
 }
 
 message roomInfo {
   uint64 roomId = 1;
+  int64 roomMaster = 4;
   int64 randomSeed = 2;   //随机种子
   repeated userInfo players = 3;   //其他人的id
 }

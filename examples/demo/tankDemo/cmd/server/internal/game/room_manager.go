@@ -67,8 +67,8 @@ func (manager *RoomManager) dumpRoomInfo() {
 
 	log.Printf("剩余房间数量: %d 在线人数: %d  当前时间: %s", c, defaultManager.playerCount(), time.Now().Format("2006-01-02 15:04:05"))
 	for no, d := range manager.rooms {
-		log.Printf("房号: %d, 创建时间: %s, 创建玩家: %d, 状态: %s",
-			no, time.Unix(d.createdAt, 0).String(), d.owner.GetUid(), d.state.String())
+		log.Printf("房号: %d, 创建时间: %s, 创建玩家: %d, 当前状态: %s",
+			no, time.Unix(d.createdAt, 0).String(), d.GetRoomMaster().GetUid(), d.state.String())
 	}
 }
 
@@ -110,23 +110,13 @@ func (manager *RoomManager) onPlayerDisconnect(s *session.Session) error {
 
 // Create 创建房间
 func (manager *RoomManager) CreateRoom(s *session.Session, data *pb.CreateRoom_Request) error {
-	d, ok := manager.rooms[data.GetRoomId()]
+	_, ok := manager.rooms[data.GetRoomId()]
 	if ok {
 		// 房间已存在
-		return s.Response(pb.CreateRoom_Response{
+		return s.Response(&pb.CreateRoom_Response{
 			Error: &pb.ErrorInfo{
 				Code: errno.RoomExist.Int32(),
 				Msg:  errno.RoomExist.String(),
-			},
-		})
-	}
-
-	// 人数足够了
-	if len(d.players) >= int(d.GetMaxPlayerCount()) {
-		return s.Response(pb.CreateRoom_Response{
-			Error: &pb.ErrorInfo{
-				Code: errno.RoomPlayerNumEnough.Int32(),
-				Msg:  errno.RoomPlayerNumEnough.String(),
 			},
 		})
 	}
@@ -137,10 +127,9 @@ func (manager *RoomManager) CreateRoom(s *session.Session, data *pb.CreateRoom_R
 	manager.SetRoom(data.GetRoomId(), newR)
 
 	// 玩家加入房间
-	if err := d.JoinRoom(s, false); err != nil {
+	if err := newR.JoinRoom(s, false); err != nil {
 		log.Printf("玩家加入房间失败，UID=%d, Error=%s", s.UID(), err.Error())
-
-		return s.Response(pb.CreateRoom_Response{
+		return s.Response(&pb.CreateRoom_Response{
 			Error: &pb.ErrorInfo{
 				Code: errno.RoomJoinFailed.Int32(),
 				Msg:  errno.RoomJoinFailed.String() + err.Error(),
@@ -155,9 +144,10 @@ func (manager *RoomManager) CreateRoom(s *session.Session, data *pb.CreateRoom_R
 		})
 	}
 
-	return s.Response(pb.CreateRoom_Response{
+	return s.Response(&pb.CreateRoom_Response{
 		Data: &pb.RoomInfo{
 			RoomId:     data.GetRoomId(),
+			RoomMaster: newR.GetRoomMaster().GetUid(),
 			RandomSeed: newR.randomSeed,
 			Players:    users,
 		},
