@@ -279,3 +279,8 @@ func (manager *RoomManager) Ready(s *session.Session, data *pb.Ready_Request) er
 
 	return nil
 }
+
+func (manager *RoomManager) OnReady(s *session.Session, data *pb.Ready_Request) error {
+	log.Println("OnReady", data)
+	return nil
+}

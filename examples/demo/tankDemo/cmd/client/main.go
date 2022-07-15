@@ -97,6 +97,12 @@ func serve(c *cli.Context) error {
 		}
 	})
 
+	//connector.Request("RoomManager.Ready",&pb.Ready_Request{})
+
+	if err := connector.Notify("RoomManager.OnReady", &pb.Ready_Request{}); err != nil {
+		log.Println(err)
+	}
+
 	//msgJoin := message.New()
 	//msgJoin.Route = "room.join"
 	//msgJoin.Type = message.Request

@@ -5,6 +5,7 @@ import (
 	"github.com/cute-angelia/go-utils/components/loggerV3"
 	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/internal/logger"
 	"github.com/lonng/nano/serialize/protobuf"
+	"log"
 	"math/rand"
 	"time"
 
@@ -40,6 +41,7 @@ func Startup(netMode int) {
 	addr := fmt.Sprintf(":%d", viper.GetInt("game-server.port"))
 
 	if netMode == 1 {
+		log.Println("网络模式", netMode, "KCP")
 		nano.Listen(addr,
 			nano.WithIsKcpSocket(true),
 			//nano.WithPipeline(pip),
@@ -49,6 +51,7 @@ func Startup(netMode int) {
 			nano.WithComponents(comps),
 		)
 	} else if netMode == 2 {
+		log.Println("网络模式", netMode, "websocket")
 		nano.Listen(addr,
 			nano.WithIsWebsocket(true),
 			nano.WithHeartbeatInterval(time.Duration(heartbeat)*time.Second),
@@ -57,6 +60,7 @@ func Startup(netMode int) {
 			nano.WithComponents(comps),
 		)
 	} else {
+		log.Println("网络模式", netMode, "tcp")
 		nano.Listen(addr,
 			nano.WithHeartbeatInterval(time.Duration(heartbeat)*time.Second),
 			nano.WithLogger(logger.NewLogger()),

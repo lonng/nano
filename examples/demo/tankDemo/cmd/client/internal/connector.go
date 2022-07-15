@@ -204,7 +204,7 @@ func (c *Connector) sendMessage(msg *message.Message) error {
 }
 
 func (c *Connector) write() {
-	defer close(c.chSend)
+	// defer close(c.chSend)
 
 	for {
 		select {
