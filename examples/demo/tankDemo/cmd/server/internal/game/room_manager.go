@@ -3,11 +3,14 @@ package game
 import (
 	"github.com/cute-angelia/go-utils/components/loggerV3"
 	"github.com/lonng/nano/component"
+	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/internal/common"
+	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/internal/tank"
 	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/pkg/constant"
 	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/pkg/errno"
 	"github.com/lonng/nano/examples/demo/tankDemo/pb"
 	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/session"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"time"
 )
@@ -72,6 +75,11 @@ func (manager *RoomManager) dumpRoomInfo() {
 	}
 }
 
+// GetPlayerBySession 获取用户
+func (manager *RoomManager) GetPlayerBySession(s *session.Session) *Player {
+	return s.Value(common.KeyCurPlayer).(*Player)
+}
+
 // 保存房间
 func (manager *RoomManager) SetRoom(roomId uint64, room *Room) {
 	if room == nil {
@@ -86,6 +94,15 @@ func (manager *RoomManager) GetRoom(roomId uint64) *Room {
 	return manager.rooms[roomId]
 }
 
+func (manager *RoomManager) GetRoomBySession(s *session.Session) *Room {
+	p := manager.GetPlayerBySession(s)
+	room, ok := manager.rooms[p.GetRoom().roomId]
+	if !ok {
+		return nil
+	}
+	return room
+}
+
 // 事件
 func (manager *RoomManager) onPlayerDisconnect(s *session.Session) error {
 	uid := s.UID()
@@ -96,7 +113,7 @@ func (manager *RoomManager) onPlayerDisconnect(s *session.Session) error {
 	log.Println("DeskManager.onPlayerDisconnect: 玩家网络断开")
 
 	// 移除session
-	p.removeSession()
+	p.RemoveSession()
 
 	if p.room == nil || p.room.isDestroy() {
 		defaultManager.offline(uid)
@@ -113,6 +130,7 @@ func (manager *RoomManager) CreateRoom(s *session.Session, data *pb.CreateRoom_R
 	_, ok := manager.rooms[data.GetRoomId()]
 	if ok {
 		// 房间已存在
+		loggerV3.GetLogger().Err(errno.RoomExist.Error()).Send()
 		return s.Response(&pb.CreateRoom_Response{
 			Error: &pb.ErrorInfo{
 				Code: errno.RoomExist.Int32(),
@@ -121,10 +139,15 @@ func (manager *RoomManager) CreateRoom(s *session.Session, data *pb.CreateRoom_R
 		})
 	}
 
+	player := s.Value(common.KeyCurPlayer).(*Player)
+
 	// 创建房间
-	p := s.Value(kCurPlayer).(*Player)
-	newR := NewRoom(s, data.GetRoomId(), p, data.MaxPlayerCount)
+	// todo 指定为坦克游戏
+	newR := NewRoom(data.GetRoomId(), player, data.MaxPlayerCount, tank.NewTank())
 	manager.SetRoom(data.GetRoomId(), newR)
+
+	// 玩家绑定房间
+	player.SetRoom(newR)
 
 	// 玩家加入房间
 	if err := newR.JoinRoom(s, false); err != nil {
@@ -207,6 +230,10 @@ func (manager *RoomManager) JoinRoom(s *session.Session, data *pb.JoinRoom_Reque
 		})
 	}()
 
+	// 玩家绑定房间
+	player := manager.GetPlayerBySession(s)
+	player.SetRoom(room)
+
 	return s.Response(pb.JoinRoom_Response{
 		Data: &pb.RoomInfo{
 			RoomId:     data.GetRoomId(),
@@ -240,8 +267,11 @@ func (manager *RoomManager) LeaveRoom(s *session.Session, data *pb.LeaveRoom_Req
 }
 
 func (manager *RoomManager) Ready(s *session.Session, data *pb.Ready_Request) error {
-	p := getPlayerBySession(s)
-	room, ok := manager.rooms[p.getRoom().roomId]
+	p := manager.GetPlayerBySession(s)
+
+	log.Println("ready")
+
+	room, ok := manager.rooms[p.GetRoom().roomId]
 	if !ok {
 		// 房间不存在
 		return s.Response(pb.Ready_Response{
@@ -253,9 +283,10 @@ func (manager *RoomManager) Ready(s *session.Session, data *pb.Ready_Request) er
 	}
 
 	// 设置状态
+	room.prepare.ready(s.UID())
 	p.SetStatus(PlayerStatusReady)
 
-	s.Response(pb.Ready_Response{
+	s.Response(&pb.Ready_Response{
 		Error: &pb.ErrorInfo{
 			Code: errno.CodeSuccess,
 			Msg:  "准备中",
@@ -275,12 +306,22 @@ func (manager *RoomManager) Ready(s *session.Session, data *pb.Ready_Request) er
 	if int(room.GetMaxPlayerCount()) == readyCount {
 		// 通知开始游戏
 		room.group.Broadcast("StartGame", &pb.Start_Notify{})
+
+		// 房间开始游戏
+		room.start()
+
 	}
 
 	return nil
 }
 
-func (manager *RoomManager) OnReady(s *session.Session, data *pb.Ready_Request) error {
-	log.Println("OnReady", data)
+func (manager *RoomManager) OnInput(s *session.Session, data *pb.Input_Notify) error {
+	if room := manager.GetRoomBySession(s); room != nil {
+		data.Uid = proto.Int64(s.UID())
+		room.game.OnGameLockStepPush(data)
+
+		log.Println("OnInput", data)
+	}
+
 	return nil
 }

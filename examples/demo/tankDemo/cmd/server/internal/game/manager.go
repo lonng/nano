@@ -81,7 +81,7 @@ func (m *Manager) Login(s *session.Session, req *pb.Login_Request) error {
 	log.Printf("玩家: %d登录: %+v", uid, req)
 	if p, ok := m.player(uid); !ok {
 		log.Printf("玩家: %d不在线，创建新的玩家", uid)
-		p = newPlayer(s, uid)
+		p = NewPlayer(s, uid)
 		m.setPlayer(uid, p)
 	} else {
 		log.Printf("玩家: %d已经在线", uid)
@@ -100,11 +100,13 @@ func (m *Manager) Login(s *session.Session, req *pb.Login_Request) error {
 		}
 
 		// 绑定新session
-		p.bindSession(s)
+		p.BindSession(s)
 	}
 
 	// 添加到广播频道
 	m.group.Add(s)
+
+	s.Push("OnTest", []byte("good == == =>"))
 
 	res := &pb.Login_Response{
 		Error: &pb.ErrorInfo{

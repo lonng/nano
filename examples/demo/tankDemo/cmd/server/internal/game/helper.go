@@ -2,11 +2,12 @@ package game
 
 import (
 	"errors"
+	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/internal/common"
 	"github.com/lonng/nano/session"
 )
 
 func playerWithSession(s *session.Session) (*Player, error) {
-	p, ok := s.Value(kCurPlayer).(*Player)
+	p, ok := s.Value(common.KeyCurPlayer).(*Player)
 	if !ok {
 		return nil, errors.New("玩家不存在")
 	}

@@ -1,11 +1,13 @@
 package game
 
 import (
-	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/internal/game/tank"
+	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/internal/common"
+	"github.com/lonng/nano/examples/demo/tankDemo/cmd/server/internal/tank"
 	"github.com/lonng/nano/session"
 	log "github.com/sirupsen/logrus"
 )
 
+// 房间玩家状态
 type playStatus int32
 
 const (
@@ -29,15 +31,7 @@ type Player struct {
 	status playStatus
 }
 
-func (p *Player) GetStatus() playStatus {
-	return p.status
-}
-
-func (p *Player) SetStatus(status playStatus) {
-	p.status = status
-}
-
-func newPlayer(s *session.Session, uid int64) *Player {
+func NewPlayer(s *session.Session, uid int64) *Player {
 	p := &Player{
 		uid:    uid,
 		ctx:    &tank.Context{Uid: uid},
@@ -48,37 +42,43 @@ func newPlayer(s *session.Session, uid int64) *Player {
 	p.ctx.Reset()
 
 	// session
-	p.bindSession(s)
+	p.BindSession(s)
 	return p
 }
 
-func getPlayerBySession(s *session.Session) *Player {
-	return s.Value(kCurPlayer).(*Player)
-}
-
-// 加入房间后，setRoom
-func (p *Player) setRoom(r *Room) {
+// SetRoom 加入房间后
+func (p *Player) SetRoom(r *Room) {
 	if r == nil {
 		log.Println("房间不存在")
 		return
 	}
 
+	p.room = r
+
 	p.ctx.RoomId = r.roomId
 	p.ctx.Uid = p.uid
 }
 
-func (p *Player) getRoom() *Room {
+func (p *Player) GetRoom() *Room {
 	return p.room
 }
 
-// 登陆成功后
-func (p *Player) bindSession(s *session.Session) {
-	p.session = s
-	p.session.Set(kCurPlayer, p)
+func (p *Player) GetStatus() playStatus {
+	return p.status
 }
 
-func (p *Player) removeSession() {
-	p.session.Remove(kCurPlayer)
+func (p *Player) SetStatus(status playStatus) {
+	p.status = status
+}
+
+// BindSession 登陆成功后
+func (p *Player) BindSession(s *session.Session) {
+	p.session = s
+	p.session.Set(common.KeyCurPlayer, p)
+}
+
+func (p *Player) RemoveSession() {
+	p.session.Remove(common.KeyCurPlayer)
 	p.session = nil
 }
 
@@ -86,7 +86,7 @@ func (p *Player) GetUid() int64 {
 	return p.uid
 }
 
-func (p *Player) reset() {
+func (p *Player) Reset() {
 	// 重置channel
 	p.ctx.Reset()
 }

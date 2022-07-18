@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/cute-angelia/go-utils v1.7.51
+	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/klauspost/reedsolomon v1.10.0 // indirect

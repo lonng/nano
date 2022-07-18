@@ -78,6 +78,8 @@ message Input_Notify  {
   optional float gunX = 10;
   optional uint64 hp = 12;  // 血量
   optional uint64 damage = 13;  // 伤害
+
+  optional int64 uid = 21;    // 玩家id
 }
 
 // 结果消息
@@ -99,28 +101,10 @@ message JoinRoom_Notify {
 // 开始游戏消息
 message Start_Notify {}
 
-// 帧存储操作输入
-message InputData {
-  optional uint32 sid = 1;    //操作id
-  optional float x = 2;    //操作位置x
-  optional float y = 3;    //操作位置y
-  optional float z = 5;
-  optional float ex = 6;
-  optional float ey = 7;
-  optional float ez = 8;
-  optional float turretY = 9;
-  optional float gunX = 10;
-  optional uint64 hp = 12;  // 血量
-  optional uint64 damage = 13;  // 伤害
-
-  optional uint64 playerID = 21;    // 玩家id
-  optional uint32 roomSeatId = 22;    //操作者的位置索引id(1~N)
-}
-
 // 帧数据
 message FrameData {
   optional uint32 frameID = 1;   // 帧ID
-  repeated InputData input = 2;   // 操作输入
+  repeated Input_Notify input = 2;   // 操作输入
 }
 
 // 广播帧消息

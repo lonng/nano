@@ -4,6 +4,7 @@ import (
 	"github.com/cute-angelia/go-utils/components/loggerV3"
 	"github.com/cute-angelia/go-utils/syntax/ijson"
 	"github.com/cute-angelia/go-utils/utils/conf"
+	"github.com/gogo/protobuf/proto"
 	"github.com/lonng/nano/examples/demo/tankDemo/cmd/client/internal"
 	"github.com/lonng/nano/examples/demo/tankDemo/pb"
 	"github.com/lonng/nano/internal/codec"
@@ -13,6 +14,7 @@ import (
 	"github.com/urfave/cli"
 	"github.com/xtaci/kcp-go"
 	"log"
+	"math/rand"
 	"net"
 	"os"
 	"sync"
@@ -97,11 +99,39 @@ func serve(c *cli.Context) error {
 		}
 	})
 
+	// 接受帧
+	connector.On("OnFrameMsgNotify", func(data interface{}) {
+		log.Println("OnFrameMsgNotify")
+		datapb := pb.FrameMsg_Notify{}
+		serializer.Unmarshal(data.([]byte), &datapb)
+		log.Println(ijson.Pretty(datapb))
+	})
+	connector.On("StartGame", func(data interface{}) {
+		for i := 1000; i > 0; i-- {
+
+			randsid := rand.Intn(1000)
+			randx := rand.Intn(1000)
+			randy := rand.Intn(1000)
+			connector.Notify("RoomManager.OnInput", &pb.Input_Notify{
+				Sid: proto.Uint32(uint32(randsid)),
+				X:   proto.Float32(float32(randx)),
+				Y:   proto.Float32(float32(randy)),
+			})
+			time.Sleep(time.Second)
+		}
+	})
+	connector.On("OnTest", func(data interface{}) {
+		log.Println(string(data.([]byte)))
+	})
+
 	//connector.Request("RoomManager.Ready",&pb.Ready_Request{})
 
-	if err := connector.Notify("RoomManager.OnReady", &pb.Ready_Request{}); err != nil {
-		log.Println(err)
-	}
+	time.Sleep(time.Second * 2)
+	connector.Request("RoomManager.Ready", &pb.Ready_Request{}, func(data interface{}) {
+		datapb := pb.Ready_Response{}
+		serializer.Unmarshal(data.([]byte), &datapb)
+		log.Println(ijson.Pretty(datapb))
+	})
 
 	//msgJoin := message.New()
 	//msgJoin.Route = "room.join"
@@ -168,7 +198,7 @@ func main() {
 		},
 		cli.Int64Flag{
 			Name:  "max",
-			Value: 2,
+			Value: 1,
 			Usage: "room max",
 		},
 		cli.IntFlag{
