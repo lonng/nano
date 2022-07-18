@@ -107,7 +107,7 @@ func serve(c *cli.Context) error {
 		log.Println(ijson.Pretty(datapb))
 	})
 	connector.On("StartGame", func(data interface{}) {
-		for i := 1000; i > 0; i-- {
+		for i := 10; i > 0; i-- {
 
 			randsid := rand.Intn(1000)
 			randx := rand.Intn(1000)

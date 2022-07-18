@@ -13,7 +13,7 @@ import (
 const (
 	Frequency = 15
 	TickTimer = time.Second / Frequency // 帧率
-	TimeOut   = time.Minute * 30        // 30分钟超时
+	TimeOut   = time.Minute * 10        // 30分钟超时
 
 	BroadcastOffsetFrames = 3 // 每隔多少帧广播一次
 	kMaxFrameDataPerMsg   = 4 // 每个消息包最多包含多少个帧数据
@@ -26,6 +26,7 @@ type tank struct {
 
 	players map[int64]*session.Session // 玩家
 
+	forceSendFrame   bool             // 强制发送帧
 	frameCountClient uint32           // 客户端最新帧
 	frameCountPlayer map[int64]uint32 // 用户帧
 
@@ -39,6 +40,7 @@ func NewTank() *tank {
 		logic:            newLockstep(),
 		frameCountClient: 0,
 		frameCountPlayer: make(map[int64]uint32),
+		forceSendFrame:   true,
 	}
 }
 
@@ -64,7 +66,9 @@ func (tk *tank) OnJoinGame(s *session.Session) {
 
 func (tk *tank) OnGameStart() {
 	tk.gameStatus = common.GameStatusGameIng
-	go tk.Run()
+	go func() {
+		tk.Run()
+	}()
 }
 
 func (tk *tank) OnLeaveGame() {
@@ -162,11 +166,12 @@ func (tk *tank) checkIsOver() bool {
 
 func (tk *tank) broadcastFrameData() {
 	framesCount := tk.logic.getFrameCount()
-	if framesCount-tk.frameCountClient < BroadcastOffsetFrames {
+	if !tk.forceSendFrame && framesCount-tk.frameCountClient < BroadcastOffsetFrames {
 		return
 	}
 
 	defer func() {
+		tk.forceSendFrame = false
 		tk.frameCountClient = framesCount
 	}()
 
@@ -178,27 +183,17 @@ func (tk *tank) broadcastFrameData() {
 			continue
 		}
 
-		if err := p.Push("OnTest", []byte("good == =33333333= =>")); err != nil {
-			log.Println("33333333", err)
-		}
+		//if err := p.Push("OnTest", []byte("good == =33333333= =>")); err != nil {
+		//	log.Println("33333333", err)
+		//}
 
 		// 获得这个玩家已经发到哪一帧
 		i := tk.getPlayerFrameCount(p.UID())
-
-		//if p.id == 2 {
-		//	log.Println("玩家当前帧:", p.id, "=", i, "/", framesCount)
-		//}
-
 		c := 0
 		msg := &pb.FrameMsg_Notify{}
 
 		for ; i < framesCount; i++ {
 			frameData := tk.logic.getFrame(i)
-
-			//if p.id == 2 && nil != frameData {
-			//	log.Println("玩家当前帧:", p.id, "=", i, "/")
-			//}
-
 			if nil == frameData && i != (framesCount-1) {
 				continue
 			}
@@ -223,9 +218,7 @@ func (tk *tank) broadcastFrameData() {
 
 			// 如果是最后一帧或者达到这个消息包能装下的最大帧数，就发送
 			if i == (framesCount-1) || c >= kMaxFrameDataPerMsg {
-
 				log.Println("framesCount  msg:", msg)
-
 				if err := p.Push("OnFrameMsgNotify", msg); err != nil {
 					loggerV3.GetLogger().Err(err).Send()
 				}
