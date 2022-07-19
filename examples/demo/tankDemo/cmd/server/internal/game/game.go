@@ -43,6 +43,7 @@ func Startup(netMode int) {
 	if netMode == 1 {
 		log.Println("网络模式", netMode, "KCP")
 		nano.Listen(addr,
+			nano.WithDebugMode(),
 			nano.WithIsKcpSocket(true),
 			//nano.WithPipeline(pip),
 			nano.WithHeartbeatInterval(time.Duration(heartbeat)*time.Second),

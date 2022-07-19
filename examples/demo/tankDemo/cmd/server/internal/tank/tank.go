@@ -6,7 +6,6 @@ import (
 	"github.com/lonng/nano/examples/demo/tankDemo/pb"
 	"github.com/lonng/nano/session"
 	"google.golang.org/protobuf/proto"
-	"log"
 	"time"
 )
 
@@ -218,7 +217,6 @@ func (tk *tank) broadcastFrameData() {
 
 			// 如果是最后一帧或者达到这个消息包能装下的最大帧数，就发送
 			if i == (framesCount-1) || c >= kMaxFrameDataPerMsg {
-				log.Println("framesCount  msg:", msg)
 				if err := p.Push("OnFrameMsgNotify", msg); err != nil {
 					loggerV3.GetLogger().Err(err).Send()
 				}
