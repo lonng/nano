@@ -21,7 +21,7 @@ up:
 	git commit -am "update"
 	git pull origin master
 	git push origin master
-	@echo "\n game update 发布中..."
+	@echo "\n 发布中..."
 
 tag:
 	git pull origin master
