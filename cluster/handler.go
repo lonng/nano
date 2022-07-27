@@ -56,18 +56,21 @@ type rpcHandler func(session *session.Session, msg *message.Message, noCopy bool
 func cache() {
 	hrdata := map[string]interface{}{
 		"code": 200,
-		"sys":  map[string]interface{}{"heartbeat": env.Heartbeat.Seconds()},
+		"sys": map[string]interface{}{
+			"heartbeat":  env.Heartbeat.Seconds(),
+			"servertime": time.Now().UTC().Unix(),
+		},
 	}
 	if dict, ok := message.GetDictionary(); ok {
 		hrdata = map[string]interface{}{
 			"code": 200,
 			"sys": map[string]interface{}{
-				"heartbeat": env.Heartbeat.Seconds(),
-				"dict":      dict,
+				"heartbeat":  env.Heartbeat.Seconds(),
+				"servertime": time.Now().UTC().Unix(),
+				"dict":       dict,
 			},
 		}
 	}
-
 	// data, err := json.Marshal(map[string]interface{}{
 	// 	"code": 200,
 	// 	"sys": map[string]float64{
