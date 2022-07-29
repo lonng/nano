@@ -160,11 +160,7 @@ func (h *LocalHandler) delMember(addr string) {
 	for name, members := range h.remoteServices {
 		for i, maddr := range members {
 			if addr == maddr.ServiceAddr {
-				if i == len(members)-1 {
-					members = members[:i]
-				} else {
-					members = append(members[:i], members[i+1:]...)
-				}
+				members = append(members[:i], members[i+1:]...)
 			}
 		}
 		if len(members) == 0 {
@@ -252,16 +248,20 @@ func (h *LocalHandler) handle(conn net.Conn) {
 		packets, err := agent.decoder.Decode(buf[:n])
 		if err != nil {
 			log.Println(err.Error())
+
+			// process packets decoded
+			for _, p := range packets {
+				if err := h.processPacket(agent, p); err != nil {
+					log.Println(err.Error())
+					return
+				}
+			}
 			return
 		}
 
-		if len(packets) < 1 {
-			continue
-		}
-
-		// process all packet
-		for i := range packets {
-			if err := h.processPacket(agent, packets[i]); err != nil {
+		// process all packets
+		for _, p := range packets {
+			if err := h.processPacket(agent, p); err != nil {
 				log.Println(err.Error())
 				return
 			}
@@ -272,6 +272,10 @@ func (h *LocalHandler) handle(conn net.Conn) {
 func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 	switch p.Type {
 	case packet.Handshake:
+		if err := env.HandshakeValidator(p.Data); err != nil {
+			return err
+		}
+
 		if _, err := agent.conn.Write(hrd); err != nil {
 			return err
 		}

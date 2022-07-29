@@ -1,7 +1,7 @@
 # Nano [![Build Status][1]][2] [![GoDoc][3]][4] [![Go Report Card][5]][6] [![MIT licensed][7]][8] 
 
-[1]: https://travis-ci.org/lonng/nano.svg?branch=master
-[2]: https://travis-ci.org/lonng/nano
+[1]: https://github.com/lonng/nano/actions/workflows/go.yml/badge.svg?branch=master
+[2]: https://github.com/lonng/nano/actions/workflows/go.yml
 [3]: https://godoc.org/github.com/lonng/nano?status.svg
 [4]: https://godoc.org/github.com/lonng/nano
 [5]: https://goreportcard.com/badge/github.com/lonng/nano
@@ -42,7 +42,7 @@ The Nano will remain simple, but you can perform any operations in the component
 
 #### How to execute the asynchronous task
 
-```go
+```golang
 func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) error {
     var onDBResult = func(player *Player) {
         manager.players = append(manager.players, player)
@@ -102,23 +102,44 @@ func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) err
 
 ## Installation
 
-```shell
+```bash
 go get github.com/lonng/nano
 
 # dependencies
-go get -u github.com/golang/protobuf
+go get -u github.com/pingcap/check
+go get -u github.com/pingcap/errors
+go get -u github.com/urfave/cli
+
+go get -u google.golang.org/protobuf/proto
 go get -u github.com/gorilla/websocket
+go get -u google.golang.org/grpc
+```
+
+## Protocol Buffers
+```bash
+# protoc
+# download form: https://github.com/protocolbuffers/protobuf/releases
+# protoc-gen-go
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+# delve
+go install github.com/go-delve/delve/cmd/dlv@latest
+```
+
+## Test
+```bash
+go test -v ./...
 ```
 
 ## Benchmark
 
-```shell
+```bash
 # Case:   PingPong
 # OS:     Windows 10
 # Device: i5-6500 3.2GHz 4 Core/1000-Concurrent   => IOPS 11W(Average)
 # Other:  ...
 
-cd $GOPATH/src/github.com/lonng/nano/benchmark/io
+cd ./benchmark/io
 go test -v -tags "benchmark"
 ```
 

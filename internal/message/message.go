@@ -209,7 +209,7 @@ func Decode(data []byte) (*Message, error) {
 			m.compressed = false
 			rl := data[offset]
 			offset++
-			if offset+int(rl) >= len(data) {
+			if offset+int(rl) > len(data) {
 				return nil, ErrWrongMessage
 			}
 			m.Route = string(data[offset:(offset + int(rl))])
@@ -217,7 +217,7 @@ func Decode(data []byte) (*Message, error) {
 		}
 	}
 
-	if offset >= len(data) {
+	if offset > len(data) {
 		return nil, ErrWrongMessage
 	}
 	m.Data = data[offset:]
