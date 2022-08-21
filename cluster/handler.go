@@ -160,7 +160,11 @@ func (h *LocalHandler) delMember(addr string) {
 	for name, members := range h.remoteServices {
 		for i, maddr := range members {
 			if addr == maddr.ServiceAddr {
-				members = append(members[:i], members[i+1:]...)
+				if i == len(members)-1 {
+					members = members[:i]
+				} else {
+					members = append(members[:i], members[i+1:]...)
+				}
 			}
 		}
 		if len(members) == 0 {
@@ -212,7 +216,7 @@ func (h *LocalHandler) handle(conn net.Conn) {
 
 		members := h.currentNode.cluster.remoteAddrs()
 		for _, remote := range members {
-			log.Println("Notify remote server success", remote)
+			log.Println("Notify remote server", remote)
 			pool, err := h.currentNode.rpcClient.getConnPool(remote)
 			if err != nil {
 				log.Println("Cannot retrieve connection pool for address", remote, err)
