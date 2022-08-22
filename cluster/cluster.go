@@ -133,7 +133,7 @@ func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest
 	// Register services to current node
 	c.currentNode.handler.delMember(req.ServiceAddr)
 	c.mu.Lock()
-	if index == len(c.members)-1 {
+	if index >= len(c.members)-1 {
 		c.members = c.members[:index]
 	} else {
 		c.members = append(c.members[:index], c.members[index+1:]...)

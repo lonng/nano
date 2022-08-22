@@ -160,7 +160,7 @@ func (h *LocalHandler) delMember(addr string) {
 	for name, members := range h.remoteServices {
 		for i, maddr := range members {
 			if addr == maddr.ServiceAddr {
-				if i == len(members)-1 {
+				if i >= len(members)-1 {
 					members = members[:i]
 				} else {
 					members = append(members[:i], members[i+1:]...)
