@@ -52,9 +52,16 @@ func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*
 	}
 
 	resp := &clusterpb.RegisterResponse{}
-	for _, m := range c.members {
+	for k, m := range c.members {
 		if m.memberInfo.ServiceAddr == req.MemberInfo.ServiceAddr {
-			return nil, fmt.Errorf("address %s has registered", req.MemberInfo.ServiceAddr)
+			// 节点异常崩溃，不会执行unregister，此时再次启动该节点，由于已存在注册信息，将再也无法成功注册，这里做个修改，先移除后重新注册
+			if k >= len(c.members)-1 {
+				c.members = c.members[:k]
+			} else {
+				c.members = append(c.members[:k], c.members[k+1:]...)
+			}
+			break
+			//return nil, fmt.Errorf("address %s has registered", req.MemberInfo.ServiceAddr)
 		}
 	}
 
@@ -126,7 +133,7 @@ func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest
 	// Register services to current node
 	c.currentNode.handler.delMember(req.ServiceAddr)
 	c.mu.Lock()
-	if index == len(c.members)-1 {
+	if index >= len(c.members)-1 {
 		c.members = c.members[:index]
 	} else {
 		c.members = append(c.members[:index], c.members[index+1:]...)
@@ -187,7 +194,11 @@ func (c *cluster) delMember(addr string) {
 		}
 	}
 	if index != -1 {
-		c.members = append(c.members[:index], c.members[index+1:]...)
+		if index >= len(c.members)-1 {
+			c.members = c.members[:index]
+		} else {
+			c.members = append(c.members[:index], c.members[index+1:]...)
+		}
 	}
 	c.mu.Unlock()
 }

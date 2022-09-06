@@ -54,10 +54,30 @@ var (
 type rpcHandler func(session *session.Session, msg *message.Message, noCopy bool)
 
 func cache() {
-	data, err := json.Marshal(map[string]interface{}{
+	hrdata := map[string]interface{}{
 		"code": 200,
-		"sys":  map[string]float64{"heartbeat": env.Heartbeat.Seconds()},
-	})
+		"sys": map[string]interface{}{
+			"heartbeat":  env.Heartbeat.Seconds(),
+			"servertime": time.Now().UTC().Unix(),
+		},
+	}
+	if dict, ok := message.GetDictionary(); ok {
+		hrdata = map[string]interface{}{
+			"code": 200,
+			"sys": map[string]interface{}{
+				"heartbeat":  env.Heartbeat.Seconds(),
+				"servertime": time.Now().UTC().Unix(),
+				"dict":       dict,
+			},
+		}
+	}
+	// data, err := json.Marshal(map[string]interface{}{
+	// 	"code": 200,
+	// 	"sys": map[string]float64{
+	// 		"heartbeat": env.Heartbeat.Seconds(),
+	// 	},
+	// })
+	data, err := json.Marshal(hrdata)
 	if err != nil {
 		panic(err)
 	}
@@ -140,7 +160,11 @@ func (h *LocalHandler) delMember(addr string) {
 	for name, members := range h.remoteServices {
 		for i, maddr := range members {
 			if addr == maddr.ServiceAddr {
-				members = append(members[:i], members[i+1:]...)
+				if i >= len(members)-1 {
+					members = members[:i]
+				} else {
+					members = append(members[:i], members[i+1:]...)
+				}
 			}
 		}
 		if len(members) == 0 {
@@ -192,7 +216,7 @@ func (h *LocalHandler) handle(conn net.Conn) {
 
 		members := h.currentNode.cluster.remoteAddrs()
 		for _, remote := range members {
-			log.Println("Notify remote server success", remote)
+			log.Println("Notify remote server", remote)
 			pool, err := h.currentNode.rpcClient.getConnPool(remote)
 			if err != nil {
 				log.Println("Cannot retrieve connection pool for address", remote, err)
