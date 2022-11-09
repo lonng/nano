@@ -21,11 +21,21 @@
 package service
 
 import (
+	"github.com/lonng/nano/internal/env"
 	"sync/atomic"
 )
 
+type Connection interface {
+	Increment()
+	Decrement()
+	Count() int64
+	Reset()
+	SessionID() int64
+}
+
 // Connections is a global variable which is used by session.
-var Connections = newConnectionService()
+//var Connections  = newConnectionService()
+var Connections Connection = newDefaultConnectionServer(env.NodeId)
 
 type connectionService struct {
 	count int64

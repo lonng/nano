@@ -3,6 +3,7 @@ module github.com/lonng/nano
 go 1.12
 
 require (
+	github.com/bwmarrin/snowflake v0.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect

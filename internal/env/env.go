@@ -24,6 +24,7 @@ package env
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/lonng/nano/serialize"
@@ -50,6 +51,8 @@ var (
 	Serializer serialize.Serializer
 
 	GrpcOptions = []grpc.DialOption{grpc.WithInsecure()}
+
+	NodeId uint64 // when cluster mode, as sessionId snowflake nodeId
 )
 
 func init() {
@@ -59,4 +62,6 @@ func init() {
 	CheckOrigin = func(_ *http.Request) bool { return true }
 	HandshakeValidator = func(_ []byte) error { return nil }
 	Serializer = protobuf.NewSerializer()
+	// default use pid
+	NodeId = uint64(os.Getpid())
 }
