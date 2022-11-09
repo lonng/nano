@@ -11,6 +11,7 @@ import (
 	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/serialize"
+	"github.com/lonng/nano/service"
 	"google.golang.org/grpc"
 )
 
@@ -157,5 +158,6 @@ func WithHandshakeValidator(fn func([]byte) error) Option {
 func WithNodeId(nodeId uint64) Option {
 	return func(opt *cluster.Options) {
 		env.NodeId = nodeId
+		service.ResetNodeId()
 	}
 }

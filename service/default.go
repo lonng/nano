@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/bwmarrin/snowflake"
 	"sync/atomic"
+
+	"github.com/bwmarrin/snowflake"
 )
 
 // implement Connection

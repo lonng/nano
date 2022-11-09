@@ -21,8 +21,9 @@
 package service
 
 import (
-	"github.com/lonng/nano/internal/env"
 	"sync/atomic"
+
+	"github.com/lonng/nano/internal/env"
 )
 
 type Connection interface {
@@ -31,6 +32,10 @@ type Connection interface {
 	Count() int64
 	Reset()
 	SessionID() int64
+}
+
+func ResetNodeId() {
+	Connections = newDefaultConnectionServer(env.NodeId)
 }
 
 // Connections is a global variable which is used by session.
