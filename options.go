@@ -157,7 +157,6 @@ func WithHandshakeValidator(fn func([]byte) error) Option {
 // WithNodeId set nodeId use snowflake nodeId generate sessionId, default: pid
 func WithNodeId(nodeId uint64) Option {
 	return func(opt *cluster.Options) {
-		env.NodeId = nodeId
-		service.ResetNodeId()
+		service.ResetNodeId(nodeId)
 	}
 }
