@@ -11,6 +11,7 @@ import (
 	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/serialize"
+	"github.com/lonng/nano/service"
 	"google.golang.org/grpc"
 )
 
@@ -150,5 +151,12 @@ func WithLogger(l log.Logger) Option {
 func WithHandshakeValidator(fn func([]byte) error) Option {
 	return func(opt *cluster.Options) {
 		env.HandshakeValidator = fn
+	}
+}
+
+// WithNodeId set nodeId use snowflake nodeId generate sessionId, default: pid
+func WithNodeId(nodeId uint64) Option {
+	return func(opt *cluster.Options) {
+		service.ResetNodeId(nodeId)
 	}
 }

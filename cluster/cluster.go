@@ -52,6 +52,7 @@ func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*
 	}
 
 	resp := &clusterpb.RegisterResponse{}
+	c.mu.Lock()
 	for k, m := range c.members {
 		if m.memberInfo.ServiceAddr == req.MemberInfo.ServiceAddr {
 			// 节点异常崩溃，不会执行unregister，此时再次启动该节点，由于已存在注册信息，将再也无法成功注册，这里做个修改，先移除后重新注册
@@ -64,6 +65,7 @@ func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*
 			//return nil, fmt.Errorf("address %s has registered", req.MemberInfo.ServiceAddr)
 		}
 	}
+	c.mu.Unlock()
 
 	// Notify registered node to update remote services
 	newMember := &clusterpb.NewMemberRequest{MemberInfo: req.MemberInfo}

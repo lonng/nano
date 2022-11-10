@@ -146,6 +146,7 @@ func runGate(args *cli.Context) error {
 		nano.WithWSPath("/nano"),
 		nano.WithCheckOriginFunc(func(_ *http.Request) bool { return true }),
 		nano.WithDebugMode(),
+		nano.WithNodeId(2), // if you deploy multi gate, option set nodeId, default nodeId = os.Getpid()
 	)
 	return nil
 }
