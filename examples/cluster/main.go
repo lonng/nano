@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/lonng/nano"
+	"github.com/lonng/nano/cluster"
 	"github.com/lonng/nano/examples/cluster/chat"
 	"github.com/lonng/nano/examples/cluster/gate"
 	"github.com/lonng/nano/examples/cluster/master"
@@ -111,6 +112,9 @@ func runMaster(args *cli.Context) error {
 		nano.WithComponents(master.Services),
 		nano.WithSerializer(json.NewSerializer()),
 		nano.WithDebugMode(),
+		nano.WithUnregisterCallback(func(m cluster.Member) {
+			log.Println("Todo alarm unregister:", m.String())
+		}),
 	)
 
 	return nil

@@ -160,3 +160,10 @@ func WithNodeId(nodeId uint64) Option {
 		service.ResetNodeId(nodeId)
 	}
 }
+
+// WithUnregisterCallback master unregister member event call fn
+func WithUnregisterCallback(fn func(member cluster.Member)) Option {
+	return func(opt *cluster.Options) {
+		opt.UnregisterCallback = fn
+	}
+}
