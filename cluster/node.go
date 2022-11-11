@@ -73,7 +73,7 @@ type Node struct {
 	sessions map[int64]*session.Session
 
 	once          sync.Once
-	heartbeatExit chan struct{}
+	keepaliveExit chan struct{}
 }
 
 func (n *Node) Startup() error {
@@ -204,8 +204,8 @@ func (n *Node) Shutdown() {
 		components[i].Comp.Shutdown()
 	}
 	// close sendHeartbeat
-	if n.heartbeatExit != nil {
-		close(n.heartbeatExit)
+	if n.keepaliveExit != nil {
+		close(n.keepaliveExit)
 	}
 	if !n.IsMaster && n.AdvertiseAddr != "" {
 		pool, err := n.rpcClient.getConnPool(n.AdvertiseAddr)
@@ -422,8 +422,8 @@ func (n *Node) CloseSession(_ context.Context, req *clusterpb.CloseSessionReques
 
 // ticker send heartbeat register info to master
 func (n *Node) keepalive() {
-	if n.heartbeatExit == nil {
-		n.heartbeatExit = make(chan struct{})
+	if n.keepaliveExit == nil {
+		n.keepaliveExit = make(chan struct{})
 	}
 	if n.AdvertiseAddr == "" || n.IsMaster {
 		return
@@ -451,7 +451,7 @@ func (n *Node) keepalive() {
 			select {
 			case <-ticker.C:
 				heartbeat()
-			case <-n.heartbeatExit:
+			case <-n.keepaliveExit:
 				log.Println("Exit member node heartbeat ")
 				ticker.Stop()
 				return
