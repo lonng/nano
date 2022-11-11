@@ -44,17 +44,17 @@ import (
 
 // Options contains some configurations for current node
 type Options struct {
-	Pipeline       pipeline.Pipeline
-	IsMaster       bool
-	AdvertiseAddr  string
-	RetryInterval  time.Duration
-	ClientAddr     string
-	Components     *component.Components
-	Label          string
-	IsWebsocket    bool
-	TSLCertificate string
-	TSLKey         string
-	OnUnregister   func(string)
+	Pipeline           pipeline.Pipeline
+	IsMaster           bool
+	AdvertiseAddr      string
+	RetryInterval      time.Duration
+	ClientAddr         string
+	Components         *component.Components
+	Label              string
+	IsWebsocket        bool
+	TSLCertificate     string
+	TSLKey             string
+	UnregisterCallback func(Member)
 }
 
 // Node represents a node in nano cluster, which will contains a group of services.
@@ -394,7 +394,7 @@ func (n *Node) NewMember(_ context.Context, req *clusterpb.NewMemberRequest) (*c
 }
 
 func (n *Node) DelMember(_ context.Context, req *clusterpb.DelMemberRequest) (*clusterpb.DelMemberResponse, error) {
-	log.Println("Node DelMember", req.String())
+	log.Println("DelMember member", req.String())
 	n.handler.delMember(req.ServiceAddr)
 	n.cluster.delMember(req.ServiceAddr)
 	return &clusterpb.DelMemberResponse{}, nil
@@ -439,15 +439,14 @@ func (n *Node) sendHeartbeat() {
 			return
 		}
 		masterCli := clusterpb.NewMasterClient(pool.Get())
-		if _, err := masterCli.Register(context.Background(), &clusterpb.RegisterRequest{
+		if _, err := masterCli.Heartbeat(context.Background(), &clusterpb.HeartbeatRequest{
 			MemberInfo: &clusterpb.MemberInfo{
 				Label:       n.Label,
 				ServiceAddr: n.ServiceAddr,
 				Services:    n.handler.LocalService(),
 			},
-			IsHeartbeat: true,
 		}); err != nil {
-			log.Println("heartbeat Register", err)
+			log.Println("Member send heartbeat error", err)
 		}
 	}
 	go func() {
@@ -457,7 +456,7 @@ func (n *Node) sendHeartbeat() {
 			case <-ticker.C:
 				heartbeat()
 			case <-n.heartbeatExit:
-				log.Println("member heartbeat exit")
+				log.Println("Exit member node heartbeat ")
 				ticker.Stop()
 				return
 			}

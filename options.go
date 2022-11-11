@@ -161,9 +161,9 @@ func WithNodeId(nodeId uint64) Option {
 	}
 }
 
-// WithOnUnregister master unregister member event call fn
-func WithOnUnregister(fn func(string)) Option {
+// WithUnregisterCallback master unregister member event call fn
+func WithUnregisterCallback(fn func(member cluster.Member)) Option {
 	return func(opt *cluster.Options) {
-		opt.OnUnregister = fn
+		opt.UnregisterCallback = fn
 	}
 }

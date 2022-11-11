@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/lonng/nano"
+	"github.com/lonng/nano/cluster"
 	"github.com/lonng/nano/examples/cluster/chat"
 	"github.com/lonng/nano/examples/cluster/gate"
 	"github.com/lonng/nano/examples/cluster/master"
@@ -111,8 +112,8 @@ func runMaster(args *cli.Context) error {
 		nano.WithComponents(master.Services),
 		nano.WithSerializer(json.NewSerializer()),
 		nano.WithDebugMode(),
-		nano.WithOnUnregister(func(svcAddr string) {
-			log.Println("todo alarm unregister:", svcAddr)
+		nano.WithUnregisterCallback(func(m cluster.Member) {
+			log.Println("Todo alarm unregister:", m.String())
 		}),
 	)
 
@@ -170,10 +171,7 @@ func runChat(args *cli.Context) error {
 
 	// Register session closed callback
 	session.Lifetime.OnClosed(chat.OnSessionClosed)
-	//go func() {
-	//	time.Sleep(time.Minute)
-	//	panic("mock exception exit")
-	//}()
+
 	// Startup Nano server with the specified listen address
 	nano.Listen(listen,
 		nano.WithAdvertiseAddr(masterAddr),

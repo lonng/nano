@@ -10,7 +10,6 @@ message MemberInfo {
 
 message RegisterRequest {
     MemberInfo memberInfo = 1;
-    bool isHeartbeat = 2;
 }
 
 message RegisterResponse {
@@ -23,9 +22,17 @@ message UnregisterRequest {
 
 message UnregisterResponse {}
 
+message HeartbeatRequest {
+    MemberInfo memberInfo = 1;
+}
+
+message HeartbeatResponse {
+}
+
 service Master {
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
     rpc Unregister (UnregisterRequest) returns (UnregisterResponse) {}
+    rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse) {}
 }
 
 message RequestMessage {
