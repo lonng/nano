@@ -184,11 +184,7 @@ func (n *Node) initNode() error {
 			log.Println("Register current node to cluster failed", err, "and will retry in", n.RetryInterval.String())
 			time.Sleep(n.RetryInterval)
 		}
-
-	}
-	// cluster mode
-	if !n.IsMaster {
-		n.once.Do(n.sendHeartbeat)
+		n.once.Do(n.keepalive)
 	}
 	return nil
 }
@@ -425,7 +421,7 @@ func (n *Node) CloseSession(_ context.Context, req *clusterpb.CloseSessionReques
 }
 
 // ticker send heartbeat register info to master
-func (n *Node) sendHeartbeat() {
+func (n *Node) keepalive() {
 	if n.heartbeatExit == nil {
 		n.heartbeatExit = make(chan struct{})
 	}

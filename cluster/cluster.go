@@ -117,8 +117,7 @@ func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest
 	if index < 0 {
 		return nil, fmt.Errorf("address %s has not registered", req.ServiceAddr)
 	}
-	// as UnregisterCallback arg
-	unregisterMember := *c.members[index]
+
 	// Notify registered node to update remote services
 	delMember := &clusterpb.DelMemberRequest{ServiceAddr: req.ServiceAddr}
 	for i, m := range c.members {
@@ -143,6 +142,10 @@ func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest
 
 	log.Println("Exists peer unregister to cluster", req.ServiceAddr)
 
+	if c.currentNode.UnregisterCallback != nil {
+		c.currentNode.UnregisterCallback(*c.members[index])
+	}
+
 	// Register services to current node
 	c.currentNode.handler.delMember(req.ServiceAddr)
 	c.mu.Lock()
@@ -152,10 +155,6 @@ func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest
 		c.members = append(c.members[:index], c.members[index+1:]...)
 	}
 	c.mu.Unlock()
-
-	if c.currentNode.UnregisterCallback != nil {
-		c.currentNode.UnregisterCallback(unregisterMember)
-	}
 
 	return resp, nil
 }
