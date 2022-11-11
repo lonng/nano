@@ -20,11 +20,17 @@
 
 package cluster
 
-import "github.com/lonng/nano/cluster/clusterpb"
+import (
+	"time"
+
+	"github.com/lonng/nano/cluster/clusterpb"
+)
 
 type Member struct {
 	isMaster   bool
 	memberInfo *clusterpb.MemberInfo
+
+	heartbeatLastAt time.Time // cluster member report heartbeat time to the master
 }
 
 func (m *Member) MemberInfo() *clusterpb.MemberInfo {

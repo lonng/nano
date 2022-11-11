@@ -54,6 +54,7 @@ type Options struct {
 	IsWebsocket    bool
 	TSLCertificate string
 	TSLKey         string
+	OnUnregister   func(string)
 }
 
 // Node represents a node in nano cluster, which will contains a group of services.
@@ -70,6 +71,9 @@ type Node struct {
 
 	mu       sync.RWMutex
 	sessions map[int64]*session.Session
+
+	once          sync.Once
+	heartbeatExit chan struct{}
 }
 
 func (n *Node) Startup() error {
@@ -182,7 +186,10 @@ func (n *Node) initNode() error {
 		}
 
 	}
-
+	// cluster mode
+	if !n.IsMaster {
+		n.once.Do(n.sendHeartbeat)
+	}
 	return nil
 }
 
@@ -200,7 +207,10 @@ func (n *Node) Shutdown() {
 	for i := length - 1; i >= 0; i-- {
 		components[i].Comp.Shutdown()
 	}
-
+	// close sendHeartbeat
+	if n.heartbeatExit != nil {
+		close(n.heartbeatExit)
+	}
 	if !n.IsMaster && n.AdvertiseAddr != "" {
 		pool, err := n.rpcClient.getConnPool(n.AdvertiseAddr)
 		if err != nil {
@@ -384,6 +394,7 @@ func (n *Node) NewMember(_ context.Context, req *clusterpb.NewMemberRequest) (*c
 }
 
 func (n *Node) DelMember(_ context.Context, req *clusterpb.DelMemberRequest) (*clusterpb.DelMemberResponse, error) {
+	log.Println("Node DelMember", req.String())
 	n.handler.delMember(req.ServiceAddr)
 	n.cluster.delMember(req.ServiceAddr)
 	return &clusterpb.DelMemberResponse{}, nil
@@ -411,4 +422,45 @@ func (n *Node) CloseSession(_ context.Context, req *clusterpb.CloseSessionReques
 		s.Close()
 	}
 	return &clusterpb.CloseSessionResponse{}, nil
+}
+
+// ticker send heartbeat register info to master
+func (n *Node) sendHeartbeat() {
+	if n.heartbeatExit == nil {
+		n.heartbeatExit = make(chan struct{})
+	}
+	if n.AdvertiseAddr == "" || n.IsMaster {
+		return
+	}
+	heartbeat := func() {
+		pool, err := n.rpcClient.getConnPool(n.AdvertiseAddr)
+		if err != nil {
+			log.Println("rpcClient master conn", err)
+			return
+		}
+		masterCli := clusterpb.NewMasterClient(pool.Get())
+		if _, err := masterCli.Register(context.Background(), &clusterpb.RegisterRequest{
+			MemberInfo: &clusterpb.MemberInfo{
+				Label:       n.Label,
+				ServiceAddr: n.ServiceAddr,
+				Services:    n.handler.LocalService(),
+			},
+			IsHeartbeat: true,
+		}); err != nil {
+			log.Println("heartbeat Register", err)
+		}
+	}
+	go func() {
+		ticker := time.NewTicker(env.Heartbeat)
+		for {
+			select {
+			case <-ticker.C:
+				heartbeat()
+			case <-n.heartbeatExit:
+				log.Println("member heartbeat exit")
+				ticker.Stop()
+				return
+			}
+		}
+	}()
 }

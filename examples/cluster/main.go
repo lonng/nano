@@ -111,6 +111,9 @@ func runMaster(args *cli.Context) error {
 		nano.WithComponents(master.Services),
 		nano.WithSerializer(json.NewSerializer()),
 		nano.WithDebugMode(),
+		nano.WithOnUnregister(func(svcAddr string) {
+			log.Println("todo alarm unregister:", svcAddr)
+		}),
 	)
 
 	return nil
@@ -167,7 +170,10 @@ func runChat(args *cli.Context) error {
 
 	// Register session closed callback
 	session.Lifetime.OnClosed(chat.OnSessionClosed)
-
+	//go func() {
+	//	time.Sleep(time.Minute)
+	//	panic("mock exception exit")
+	//}()
 	// Startup Nano server with the specified listen address
 	nano.Listen(listen,
 		nano.WithAdvertiseAddr(masterAddr),

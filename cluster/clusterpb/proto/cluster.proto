@@ -10,6 +10,7 @@ message MemberInfo {
 
 message RegisterRequest {
     MemberInfo memberInfo = 1;
+    bool isHeartbeat = 2;
 }
 
 message RegisterResponse {

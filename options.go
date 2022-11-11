@@ -160,3 +160,10 @@ func WithNodeId(nodeId uint64) Option {
 		service.ResetNodeId(nodeId)
 	}
 }
+
+// WithOnUnregister master unregister member event call fn
+func WithOnUnregister(fn func(string)) Option {
+	return func(opt *cluster.Options) {
+		opt.OnUnregister = fn
+	}
+}
