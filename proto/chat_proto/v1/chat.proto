@@ -25,7 +25,7 @@ message AppMsg {
   string action = 1;
   oneof data {
       AppMsgChat chatMsg = 2;// 应用数据：用户发消息聊天
-      AppMsgUserJoin joinUser = 3;// 应用数据：投资
+      AppMsgUserJoin joinUser = 3;// 应用数据：加入房间
   }
 }
 
