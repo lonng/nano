@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option go_package = "github.com/lonng/nano/proto/chat_proto/v1;v1";
+
+// ws 连接中的消息定义
+message WsMsg {
+  int32 MsgType = 1; // 消息类型：1 控制消息；2 应用消息；
+  SysMsg sys = 2; // 如果是系统控制消息，这该字段有值
+  AppMsg data = 3;// 如果是应用消息，则该字段有值
+}
+
+message SysMsg {
+  string ver = 1;
+  string typ = 2;// 控制类型
+  User user = 3;// 当前连接对应的用户信息
+}
+
+// 用户信息
+message User {
+  string token = 1;
+}
+message AppMsg {
+  // 应用消息类型。发文本消息、进入房间、投掷标枪、退出房间、投降
+  // 每种类型都有对应的消息体
+  string action = 1;
+  oneof data {
+      AppMsgChat chatMsg = 2;// 应用数据：用户发消息聊天
+      AppMsgUserJoin joinUser = 3;// 应用数据：投资
+  }
+}
+
+message AppMsgChat {
+  int64 targetUid = 1; // -1 表示所有人
+  string content = 2;// 聊天内容
+}
+
+message AppMsgUserJoin {}
+
