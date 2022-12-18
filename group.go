@@ -22,6 +22,7 @@ package nano
 
 import (
 	"fmt"
+	originLog "log"
 	"sync"
 	"sync/atomic"
 
@@ -115,13 +116,35 @@ func (c *Group) Multicast(route string, v interface{}, filter SessionFilter) err
 	return nil
 }
 
-// Broadcast push  the message(s) to  all members
 func (c *Group) Broadcast(route string, v interface{}) error {
+	var err error
 	if c.isClosed() {
 		return ErrClosedGroup
 	}
+	if env.Debug {
+		originLog.Printf("[Broadcast] route: %s, Data=%+v \n", route, v)
+	}
 
-	data, err := message.Serialize(v)
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	for _, s := range c.sessions {
+		if err = s.Push(route, v); err != nil {
+			log.Println(fmt.Sprintf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
+		}
+	}
+
+	return err
+}
+
+// Broadcast push  the message(s) to  all members
+func (c *Group) BroadcastOld(route string, v interface{}) error {
+	var err error
+	if c.isClosed() {
+		return ErrClosedGroup
+	}
+	var data []byte
+	data, err = message.Serialize(v)
 	if err != nil {
 		return err
 	}

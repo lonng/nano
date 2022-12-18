@@ -24,6 +24,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	originLog "log"
 	"net"
 	"net/http"
 	"strings"
@@ -296,6 +297,7 @@ func (n *Node) listenAndServeWSTLS() {
 func (n *Node) storeSession(s *session.Session) {
 	n.mu.Lock()
 	n.sessions[s.ID()] = s
+	originLog.Printf("[storeSession] new sid stroe in cur node's session list. sid: %d, sess count: %d", s.ID(), len(n.sessions))
 	n.mu.Unlock()
 }
 

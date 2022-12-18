@@ -66,9 +66,30 @@ func (c *Decoder) forward() error {
 	return nil
 }
 
+func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
+	c.buf.Write(data)
+
+	var (
+		packets []*packet.Packet
+	)
+	p1 := &packet.Packet{
+		Type:   packet.Type(packet.Data),
+		Data:   data,
+		Length: len(data),
+	}
+	packets = append(packets, p1)
+
+	//dataObj := v1.AppMsg{}
+	//if err = proto.Unmarshal(c.buf.Bytes(), &dataObj); err != nil {
+	//	p1.Data1 = dataObj
+	//}
+
+	return packets, nil
+}
+
 // Decode decode the network bytes slice to packet.Packet(s)
 // TODO(Warning): shared slice
-func (c *Decoder) Decode(data []byte) ([]*packet.Packet, error) {
+func (c *Decoder) DecodeOldV1(data []byte) ([]*packet.Packet, error) {
 	c.buf.Write(data)
 
 	var (

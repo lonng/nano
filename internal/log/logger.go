@@ -21,6 +21,7 @@
 package log
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
@@ -30,14 +31,17 @@ type Logger interface {
 	Println(v ...interface{})
 	Fatal(v ...interface{})
 	Fatalf(format string, v ...interface{})
+	Printf(format string, v ...interface{})
 }
 
 func init() {
-	SetLogger(log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile))
+	SetLogger(log.New(os.Stdout, "", log.LstdFlags|log.Lshortfile))
+	//SetLogger(log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile))
 }
 
 var (
 	Println func(v ...interface{})
+	Printf  func(format string, v ...interface{})
 	Fatal   func(v ...interface{})
 	Fatalf  func(format string, v ...interface{})
 )
@@ -48,6 +52,9 @@ func SetLogger(logger Logger) {
 		return
 	}
 	Println = logger.Println
+	Printf = func(format string, v ...interface{}) {
+		logger.Println(fmt.Sprintf(format, v...))
+	}
 	Fatal = logger.Fatal
 	Fatalf = logger.Fatalf
 }

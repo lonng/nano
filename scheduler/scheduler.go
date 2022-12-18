@@ -55,7 +55,7 @@ var (
 func try(f func()) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println(fmt.Sprintf("Handle message panic: %+v\n%s", err, debug.Stack()))
+			log.Println(fmt.Sprintf("[try] Handle message panic: %+v\n%s", err, debug.Stack()))
 		}
 	}()
 	f()
@@ -92,9 +92,10 @@ func Close() {
 	}
 	close(chDie)
 	<-chExit
-	log.Println("Scheduler stopped")
+	log.Println("[Close] Scheduler stopped")
 }
 
 func PushTask(task Task) {
+	// log.Printf("[PushTask] new task be pushed")
 	chTasks <- task
 }

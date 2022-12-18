@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	originLog "log"
 	"math/rand"
 	"net"
 	"reflect"
@@ -31,6 +32,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lonng/nano/pkg/utils/jsonx"
 
 	"github.com/gorilla/websocket"
 	"github.com/lonng/nano/cluster/clusterpb"
@@ -43,6 +46,8 @@ import (
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/session"
+	test1V1 "github.com/suhanyujie/throw_interface/golang_pb/test1/v1"
+	throwV1 "github.com/suhanyujie/throw_interface/golang_pb/throw/v1"
 )
 
 var (
@@ -123,6 +128,7 @@ func (h *LocalHandler) register(comp component.Component, opts []component.Optio
 		return fmt.Errorf("handler: service already defined: %s", s.Name)
 	}
 
+	// 从 component 中提取 handler
 	if err := s.ExtractHandler(); err != nil {
 		return err
 	}
@@ -203,9 +209,9 @@ func (h *LocalHandler) handle(conn net.Conn) {
 
 	// startup write goroutine
 	go agent.write()
-
+	originLog.Printf("[handle] env.debug: %v", env.Debug)
 	if env.Debug {
-		log.Println(fmt.Sprintf("New session established: %s", agent.String()))
+		log.Println(fmt.Sprintf("[handle] New session established: %s", agent.String()))
 	}
 
 	// guarantee agent related resource be destroyed
@@ -244,22 +250,21 @@ func (h *LocalHandler) handle(conn net.Conn) {
 	for {
 		n, err := conn.Read(buf)
 		if err != nil {
-			log.Println(fmt.Sprintf("Read message error: %s, session will be closed immediately", err.Error()))
+			log.Println(fmt.Sprintf("[handle] Read message error: %s, session will be closed immediately", err.Error()))
 			return
 		}
 
 		// TODO(warning): decoder use slice for performance, packet data should be copy before next Decode
 		packets, err := agent.decoder.Decode(buf[:n])
 		if err != nil {
-			log.Println(err.Error())
-
+			originLog.Printf("[handle] Decode err: %v", err)
 			// process packets decoded
-			for _, p := range packets {
-				if err := h.processPacket(agent, p); err != nil {
-					log.Println(err.Error())
-					return
-				}
-			}
+			//for _, p := range packets {
+			//	if err := h.processPacket(agent, p); err != nil {
+			//		log.Println(err.Error())
+			//		return
+			//	}
+			//}
 			return
 		}
 
@@ -296,12 +301,40 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 		}
 
 	case packet.Data:
-		if agent.status() < statusWorking {
-			return fmt.Errorf("receive data on socket which not yet ACK, session will be closed immediately, remote=%s",
-				agent.conn.RemoteAddr().String())
+		// 因为定制化原因，只能接收数据帧，并解析出来 todo
+		originLog.Printf("[processPacket] pack data: %v \n", p.Data)
+		if len(p.Data) < 1 {
+			originLog.Printf("[processPacket] pack data len is 0, maybe it's heartbeat")
+			return nil
+		}
+		// 尝试解析为 特定对象
+		inputData := test1V1.IRequestProtocol{}
+		err := env.Serializer.Unmarshal(p.Data, &inputData)
+		if err != nil {
+			originLog.Printf("[processPacket] Unmarshal err: %v, data str: %s, data: %v\n", err, string(p.Data), p.Data)
+			// 发送一个错误响应 todo
+			SendErrReply(agent)
+			return nil
+		}
+		originLog.Printf("[processPacket] request: %s, Notice: data field maybe compressed", jsonx.ToJsonIgnoreErr(inputData))
+		if inputData.Method == "UserLogin" {
+			// 表示登录
+			agent.setStatus(statusWorking)
+			if env.Debug {
+				originLog.Printf("[processPacket] Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr())
+			}
+		} else {
+			// if inputData.Data
+			if agent.status() < statusWorking {
+				originLog.Printf("[processPacket] conn status is less than statusWorking, user should login first...\n")
+				SendErrReply(agent)
+				return nil
+				// return fmt.Errorf("[processPacket] receive data on socket which not yet ACK, session will be closed immediately, remote=%s", agent.conn.RemoteAddr().String())
+			}
 		}
 
-		msg, err := message.Decode(p.Data)
+		// 将数据转换为 Message 对象
+		msg, err := message.Decode(&inputData)
 		if err != nil {
 			return err
 		}
@@ -313,6 +346,30 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 
 	agent.lastAt = time.Now().Unix()
 	return nil
+}
+
+func SendErrReply(agent *agent) {
+	resp := &throwV1.IResponseProtocol{
+		Code:       -1,
+		IsCompress: true,
+		Data:       nil,
+		Callback:   "",
+	}
+	data := &throwV1.DataInfoResp{
+		Code: -1,
+		Msg:  "未识别的客户端数据...",
+	}
+	dataBytes, _ := env.Serializer.Marshal(data)
+	resp.Data = dataBytes
+	if err := agent.send(pendingMessage{
+		typ:        message.Notify,
+		route:      "error",
+		mid:        agent.lastMid,
+		payload:    dataBytes,
+		payloadObj: resp,
+	}); err != nil {
+		originLog.Printf("[SendErrReply] send err: %v", err)
+	}
 }
 
 func (h *LocalHandler) findMembers(service string) []*clusterpb.MemberInfo {
@@ -404,6 +461,7 @@ func (h *LocalHandler) processMessage(agent *agent, msg *message.Message) {
 
 	handler, found := h.localHandlers[msg.Route]
 	if !found {
+		originLog.Printf("[processMessage] coundnt found handler route: %s", msg.Route)
 		h.remoteProcess(agent.session, msg, false)
 	} else {
 		h.localProcess(handler, lastMid, agent.session, msg)
@@ -413,7 +471,7 @@ func (h *LocalHandler) processMessage(agent *agent, msg *message.Message) {
 func (h *LocalHandler) handleWS(conn *websocket.Conn) {
 	c, err := newWSConn(conn)
 	if err != nil {
-		log.Println(err)
+		originLog.Printf("[handleWS] ws conn err: %v", err)
 		return
 	}
 	go h.handle(c)
@@ -441,9 +499,9 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 		}
 	}
 
-	if env.Debug {
-		log.Println(fmt.Sprintf("UID=%d, Message={%s}, Data=%+v", session.UID(), msg.String(), data))
-	}
+	//if env.Debug {
+	//	log.Println(fmt.Sprintf("[localProcess] UID=%d, Message={%s}, Data=%+v", session.UID(), msg.String(), data))
+	//}
 
 	args := []reflect.Value{handler.Receiver, reflect.ValueOf(session), reflect.ValueOf(data)}
 	task := func() {

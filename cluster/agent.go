@@ -23,16 +23,18 @@ package cluster
 import (
 	"errors"
 	"fmt"
+	originLog "log"
 	"net"
 	"reflect"
 	"sync/atomic"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/lonng/nano/internal/codec"
 	"github.com/lonng/nano/internal/env"
 	"github.com/lonng/nano/internal/log"
 	"github.com/lonng/nano/internal/message"
-	"github.com/lonng/nano/internal/packet"
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/session"
@@ -69,10 +71,11 @@ type (
 	}
 
 	pendingMessage struct {
-		typ     message.Type // message type
-		route   string       // message route(push)
-		mid     uint64       // response message id(response)
-		payload interface{}  // payload
+		typ        message.Type // message type
+		route      string       // message route(push)
+		mid        uint64       // response message id(response)
+		payload    interface{}  // payload
+		payloadObj proto.Message
 	}
 )
 
@@ -103,6 +106,7 @@ func (a *agent) send(m pendingMessage) (err error) {
 			err = ErrBrokenPipe
 		}
 	}()
+	// 将 pendingMessage 消息进行转换
 	a.chSend <- m
 	return
 }
@@ -132,8 +136,12 @@ func (a *agent) Push(route string, v interface{}) error {
 				a.session.ID(), a.session.UID(), route, v))
 		}
 	}
+	pm := pendingMessage{typ: message.Push, route: route, payload: v}
+	if val, ok := v.(proto.Message); ok {
+		pm.payloadObj = val
+	}
 
-	return a.send(pendingMessage{typ: message.Push, route: route, payload: v})
+	return a.send(pm)
 }
 
 // RPC, implementation for session.NetworkEntity interface
@@ -187,8 +195,15 @@ func (a *agent) ResponseMid(mid uint64, v interface{}) error {
 				a.session.ID(), a.session.UID(), mid, v))
 		}
 	}
+	pm := pendingMessage{typ: message.Response, mid: mid, payload: v}
+	if val, ok := v.(proto.Message); ok {
+		pm.payloadObj = val
+	}
+	if err := a.send(pm); err != nil {
+		originLog.Printf("[ResponseMid] send err: %v\n", err)
+	}
 
-	return a.send(pendingMessage{typ: message.Response, mid: mid, payload: v})
+	return nil
 }
 
 // Close, implementation for session.NetworkEntity interface
@@ -268,25 +283,36 @@ func (a *agent) write() {
 			}
 
 		case data := <-a.chSend:
-			payload, err := message.Serialize(data.payload)
-			if err != nil {
-				switch data.typ {
-				case message.Push:
-					log.Println(fmt.Sprintf("Push: %s error: %s", data.route, err.Error()))
-				case message.Response:
-					log.Println(fmt.Sprintf("Response message(id: %d) error: %s", data.mid, err.Error()))
-				default:
-					// expect
-				}
-				break
+			//payload, err := message.Serialize(data.payload)
+			//if err != nil {
+			//	switch data.typ {
+			//	case message.Push:
+			//		log.Println(fmt.Sprintf("Push: %s error: %s", data.route, err.Error()))
+			//	case message.Response:
+			//		log.Println(fmt.Sprintf("Response message(id: %d) error: %s", data.mid, err.Error()))
+			//	default:
+			//		// expect
+			//	}
+			//	break
+			//}
+			// 检查是否是 proto 结构
+			dataForProto, ok := data.payloadObj.(proto.Message)
+			if !ok {
+				originLog.Printf("[write] payload is not proto struct")
+				continue
 			}
-
+			dataBytes, err := env.Serializer.Marshal(dataForProto)
+			if err != nil {
+				originLog.Printf("[write] Serializer.Marshal err: %v", err)
+				continue
+			}
 			// construct message and encode
 			m := &message.Message{
-				Type:  data.typ,
-				Data:  payload,
-				Route: data.route,
-				ID:    data.mid,
+				Type:    data.typ,
+				Data:    dataBytes, // payload
+				DataRaw: dataForProto,
+				Route:   data.route,
+				ID:      data.mid,
 			}
 			if pipe := a.pipeline; pipe != nil {
 				err := pipe.Outbound().Process(a.session, m)
@@ -296,18 +322,19 @@ func (a *agent) write() {
 				}
 			}
 
-			em, err := m.Encode()
-			if err != nil {
-				log.Println(err.Error())
-				break
-			}
+			p := m.Data
+			//p, err := m.Encode()
+			//if err != nil {
+			//	log.Println(err.Error())
+			//	break
+			//}
 
-			// packet encode
-			p, err := codec.Encode(packet.Data, em)
-			if err != nil {
-				log.Println(err)
-				break
-			}
+			// packet encode 这里不再需要了
+			//p, err := codec.Encode(packet.Data, em)
+			//if err != nil {
+			//	log.Println(err)
+			//	break
+			//}
 			chWrite <- p
 
 		case <-a.chDie: // agent closed signal

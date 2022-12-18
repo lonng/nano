@@ -54,6 +54,7 @@ type Packet struct {
 	Type   Type
 	Length int
 	Data   []byte
+	Data1  interface{}
 }
 
 //New create a Packet instance.

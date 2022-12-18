@@ -25,6 +25,8 @@ import (
 	"net"
 	"sync"
 
+	"github.com/lonng/nano/service/msg_svc"
+
 	"github.com/lonng/nano/internal/codec"
 	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/internal/packet"
@@ -262,7 +264,12 @@ func (c *Connector) processPacket(p *packet.Packet) {
 		c.send(had)
 		c.connectedCallback()
 	case packet.Data:
-		msg, err := message.Decode(p.Data)
+		input, err := msg_svc.DecodePacketData(p.Data)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		msg, err := message.Decode(&input)
 		if err != nil {
 			log.Println(err.Error())
 			return
