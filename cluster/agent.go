@@ -29,6 +29,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/lonng/nano/pkg/utils/jsonx"
+
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lonng/nano/internal/codec"
@@ -38,6 +40,7 @@ import (
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/session"
+	throwV1 "github.com/suhanyujie/throw_interface/golang_pb/throw/v1"
 )
 
 const (
@@ -129,10 +132,10 @@ func (a *agent) Push(route string, v interface{}) error {
 	if env.Debug {
 		switch d := v.(type) {
 		case []byte:
-			log.Println(fmt.Sprintf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%dbytes",
+			log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d, Route=%s, Data=%dbytes",
 				a.session.ID(), a.session.UID(), route, len(d)))
 		default:
-			log.Println(fmt.Sprintf("Type=Push, ID=%d, UID=%d, Route=%s, Data=%+v",
+			log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d, Route=%s, Data=%+v",
 				a.session.ID(), a.session.UID(), route, v))
 		}
 	}
@@ -188,11 +191,21 @@ func (a *agent) ResponseMid(mid uint64, v interface{}) error {
 	if env.Debug {
 		switch d := v.(type) {
 		case []byte:
-			log.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%dbytes",
+			log.Println(fmt.Sprintf("[ResponseMid] Type=Response, ID=%d, UID=%d, MID=%d, Data=%dbytes",
 				a.session.ID(), a.session.UID(), mid, len(d)))
 		default:
-			log.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%+v",
-				a.session.ID(), a.session.UID(), mid, v))
+			// 尝试解析
+			if obj, ok := v.(*throwV1.IResponseProtocol); ok {
+				dataObj := &throwV1.DataInfoResp{}
+				err := env.Serializer.Unmarshal(obj.Data, dataObj)
+				if err == nil {
+					log.Println(fmt.Sprintf("[ResponseMid] Type=Response, ID=%d, UID=%d, MID=%d, respData: %s",
+						a.session.ID(), a.session.UID(), mid, jsonx.ToJsonIgnoreErr(dataObj)))
+				}
+			} else {
+				log.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%+v",
+					a.session.ID(), a.session.UID(), mid, v))
+			}
 		}
 	}
 	pm := pendingMessage{typ: message.Response, mid: mid, payload: v}
@@ -308,11 +321,11 @@ func (a *agent) write() {
 			}
 			// construct message and encode
 			m := &message.Message{
-				Type:    data.typ,
-				Data:    dataBytes, // payload
-				DataRaw: dataForProto,
-				Route:   data.route,
-				ID:      data.mid,
+				Type: data.typ,
+				Data: dataBytes, // payload
+				// DataOfPb: dataForProto,
+				Route: data.route,
+				ID:    data.mid,
 			}
 			if pipe := a.pipeline; pipe != nil {
 				err := pipe.Outbound().Process(a.session, m)

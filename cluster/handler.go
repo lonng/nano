@@ -33,6 +33,8 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/lonng/nano/pkg/utils/jsonx"
 
 	"github.com/gorilla/websocket"
@@ -46,7 +48,6 @@ import (
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/scheduler"
 	"github.com/lonng/nano/session"
-	test1V1 "github.com/suhanyujie/throw_interface/golang_pb/test1/v1"
 	throwV1 "github.com/suhanyujie/throw_interface/golang_pb/throw/v1"
 )
 
@@ -209,7 +210,7 @@ func (h *LocalHandler) handle(conn net.Conn) {
 
 	// startup write goroutine
 	go agent.write()
-	originLog.Printf("[handle] env.debug: %v", env.Debug)
+	// originLog.Printf("[handle] env.debug: %v", env.Debug)
 	if env.Debug {
 		log.Println(fmt.Sprintf("[handle] New session established: %s", agent.String()))
 	}
@@ -308,12 +309,12 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 			return nil
 		}
 		// 尝试解析为 特定对象
-		inputData := test1V1.IRequestProtocol{}
+		inputData := throwV1.IRequestProtocol{}
 		err := env.Serializer.Unmarshal(p.Data, &inputData)
 		if err != nil {
 			originLog.Printf("[processPacket] Unmarshal err: %v, data str: %s, data: %v\n", err, string(p.Data), p.Data)
 			// 发送一个错误响应 todo
-			SendErrReply(agent)
+			SendErrReply(agent, &inputData)
 			return nil
 		}
 		originLog.Printf("[processPacket] request: %s, Notice: data field maybe compressed", jsonx.ToJsonIgnoreErr(inputData))
@@ -321,13 +322,18 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 			// 表示登录
 			agent.setStatus(statusWorking)
 			if env.Debug {
-				originLog.Printf("[processPacket] Receive handshake ACK Id=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr())
+				originLog.Printf("[processPacket] login sid=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr())
 			}
+		} else if inputData.Method == "HeartBeat" {
+			SendReply(agent, 1, &throwV1.DataInfoResp{
+				Code: 0,
+				Msg:  "heartbeat ok",
+			}, &inputData)
 		} else {
 			// if inputData.Data
 			if agent.status() < statusWorking {
 				originLog.Printf("[processPacket] conn status is less than statusWorking, user should login first...\n")
-				SendErrReply(agent)
+				SendErrReply(agent, &inputData)
 				return nil
 				// return fmt.Errorf("[processPacket] receive data on socket which not yet ACK, session will be closed immediately, remote=%s", agent.conn.RemoteAddr().String())
 			}
@@ -348,18 +354,21 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 	return nil
 }
 
-func SendErrReply(agent *agent) {
-	resp := &throwV1.IResponseProtocol{
-		Code:       -1,
-		IsCompress: true,
-		Data:       nil,
-		Callback:   "",
-	}
+func SendErrReply(agent *agent, req *throwV1.IRequestProtocol) {
 	data := &throwV1.DataInfoResp{
 		Code: -1,
 		Msg:  "未识别的客户端数据...",
 	}
+	SendReply(agent, -1, data, req)
+}
+
+func SendReply(agent *agent, code int32, data proto.Message, req *throwV1.IRequestProtocol) {
 	dataBytes, _ := env.Serializer.Marshal(data)
+	resp := &throwV1.IResponseProtocol{
+		Code:       code,
+		IsCompress: true,
+		Callback:   fmt.Sprintf("%s_%s", req.Action, req.Method),
+	}
 	resp.Data = dataBytes
 	if err := agent.send(pendingMessage{
 		typ:        message.Notify,
@@ -481,20 +490,21 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 	if pipe := h.pipeline; pipe != nil {
 		err := pipe.Inbound().Process(session, msg)
 		if err != nil {
-			log.Println("Pipeline process failed: " + err.Error())
+			log.Println("[localProcess] Pipeline process failed: " + err.Error())
 			return
 		}
 	}
 
-	var payload = msg.Data
+	var payload = msg.DataOfPb
 	var data interface{}
 	if handler.IsRawArg {
 		data = payload
 	} else {
+		log.Println(fmt.Sprintf("[localProcess] handler.IsRawArg is false"))
 		data = reflect.New(handler.Type.Elem()).Interface()
-		err := env.Serializer.Unmarshal(payload, data)
+		err := env.Serializer.Unmarshal(msg.Data, data)
 		if err != nil {
-			log.Println(fmt.Sprintf("Deserialize to %T failed: %+v (%v)", data, err, payload))
+			log.Println(fmt.Sprintf("[localProcess] Deserialize to %T failed: %+v (%v)", data, err, payload))
 			return
 		}
 	}
@@ -503,7 +513,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 	//	log.Println(fmt.Sprintf("[localProcess] UID=%d, Message={%s}, Data=%+v", session.UID(), msg.String(), data))
 	//}
 
-	args := []reflect.Value{handler.Receiver, reflect.ValueOf(session), reflect.ValueOf(data)}
+	args := []reflect.Value{handler.Receiver, reflect.ValueOf(session), reflect.ValueOf(payload)}
 	task := func() {
 		switch v := session.NetworkEntity().(type) {
 		case *agent:
@@ -522,7 +532,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 
 	index := strings.LastIndex(msg.Route, ".")
 	if index < 0 {
-		log.Println(fmt.Sprintf("nano/handler: invalid route %s", msg.Route))
+		log.Println(fmt.Sprintf("[localProcess] nano/handler: invalid route %s", msg.Route))
 		return
 	}
 
@@ -531,13 +541,13 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 	if s, found := h.localServices[service]; found && s.SchedName != "" {
 		sched := session.Value(s.SchedName)
 		if sched == nil {
-			log.Println(fmt.Sprintf("nanl/handler: cannot found `schedular.LocalScheduler` by %s", s.SchedName))
+			log.Println(fmt.Sprintf("[localProcess] nanl/handler: cannot found `schedular.LocalScheduler` by %s", s.SchedName))
 			return
 		}
 
 		local, ok := sched.(scheduler.LocalScheduler)
 		if !ok {
-			log.Println(fmt.Sprintf("nanl/handler: Type %T does not implement the `schedular.LocalScheduler` interface",
+			log.Println(fmt.Sprintf("[localProcess] nanl/handler: Type %T does not implement the `schedular.LocalScheduler` interface",
 				sched))
 			return
 		}

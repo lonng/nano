@@ -26,9 +26,12 @@ import (
 	"sync"
 	"sync/atomic"
 
+	throwV1 "github.com/suhanyujie/throw_interface/golang_pb/throw/v1"
+
 	"github.com/lonng/nano/internal/env"
 	"github.com/lonng/nano/internal/log"
 	"github.com/lonng/nano/internal/message"
+	"github.com/lonng/nano/pkg/utils/jsonx"
 	"github.com/lonng/nano/session"
 )
 
@@ -122,7 +125,14 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 		return ErrClosedGroup
 	}
 	if env.Debug {
-		originLog.Printf("[Broadcast] route: %s, Data=%+v \n", route, v)
+		if val, ok := v.(*throwV1.IResponseProtocol); ok {
+			pbBytes := val.Data
+			dataObj := throwV1.AttackOnceResult{}
+			if err := env.Serializer.Unmarshal(pbBytes, &dataObj); err == nil {
+				originLog.Printf("[Broadcast] route: %s, respData: %s", route, jsonx.ToJsonIgnoreErr(dataObj))
+			}
+		}
+		originLog.Printf("[Broadcast] route: %s, resp: %s", route, jsonx.ToJsonIgnoreErr(v))
 	}
 
 	c.mu.RLock()

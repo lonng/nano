@@ -31,7 +31,6 @@ import (
 	"github.com/lonng/nano/internal/env"
 	"github.com/lonng/nano/internal/log"
 	"github.com/lonng/nano/pkg/utils/encoding"
-	test1V1 "github.com/suhanyujie/throw_interface/golang_pb/test1/v1"
 	throwV1 "github.com/suhanyujie/throw_interface/golang_pb/throw/v1"
 	"google.golang.org/protobuf/proto"
 )
@@ -85,10 +84,10 @@ type Message struct {
 	Route      string // route for locating service
 	Action     string // Action、Method 的作用也是类似于 Route
 	Method     string
-	Data       []byte        // payload
-	DataRaw    proto.Message // payload
-	IsCompress bool          // 和前端商定的字段，为 true 表示 data 是 pb 数据
-	compressed bool          // is message compressed nano 库带的字段，暂时不用
+	Data       []byte                    // payload
+	DataOfPb   *throwV1.IRequestProtocol // payload, struct obj
+	IsCompress bool                      // 和前端商定的字段，为 true 表示 data 是 pb 数据
+	compressed bool                      // is message compressed nano 库带的字段，暂时不用
 }
 
 // New returns a new message instance
@@ -131,13 +130,13 @@ func Encode(m *Message) ([]byte, error) {
 			Callback:   "LoginAction_loadPlayer",
 		}
 		if resp.IsCompress {
-			bArr, err = proto.Marshal(m.DataRaw)
+			bArr, err = proto.Marshal(m.DataOfPb)
 			if err != nil {
 				return bArr, err
 			}
 			resp.Data = bArr
 		} else {
-			jsonBytes, _ := encoding.GetJsonCodec().Marshal(m.DataRaw)
+			jsonBytes, _ := encoding.GetJsonCodec().Marshal(m.DataOfPb)
 			resp.Data = jsonBytes
 		}
 		var respIf interface{}
@@ -217,7 +216,7 @@ func EncodeOld(m *Message) ([]byte, error) {
 }
 
 // Decode 将消息转换为 Message
-func Decode(data *test1V1.IRequestProtocol) (*Message, error) {
+func Decode(data *throwV1.IRequestProtocol) (*Message, error) {
 	m := New()
 	m.ID = uint64(time.Now().UnixMilli())
 	m.Type = Request
@@ -225,6 +224,7 @@ func Decode(data *test1V1.IRequestProtocol) (*Message, error) {
 	m.Method = data.Method
 	m.Route = strings.ToLower(fmt.Sprintf("%s.%s", data.Action, data.Method))
 	m.Data = data.Data
+	m.DataOfPb = data
 
 	return m, nil
 }
