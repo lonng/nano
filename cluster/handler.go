@@ -53,6 +53,9 @@ var (
 
 type rpcHandler func(session *session.Session, msg *message.Message, noCopy bool)
 
+// CustomerRemoteServiceRoute customer remote service route
+type CustomerRemoteServiceRoute func(service string, session *session.Session, members []*clusterpb.MemberInfo) *clusterpb.MemberInfo
+
 func cache() {
 	hrdata := map[string]interface{}{
 		"code": 200,
@@ -336,14 +339,29 @@ func (h *LocalHandler) remoteProcess(session *session.Session, msg *message.Mess
 	}
 
 	// Select a remote service address
-	// 1. Use the service address directly if the router contains binding item
-	// 2. Select a remote service address randomly and bind to router
+	// 1. if exist customer remote service route ,use it, otherwise use default strategy
+	// 2. Use the service address directly if the router contains binding item
+	// 3. Select a remote service address randomly and bind to router
 	var remoteAddr string
-	if addr, found := session.Router().Find(service); found {
-		remoteAddr = addr
+	if h.currentNode.Options.RemoteServiceRoute != nil {
+		if addr, found := session.Router().Find(service); found {
+			remoteAddr = addr
+		} else {
+			member := h.currentNode.Options.RemoteServiceRoute(service, session, members)
+			if member == nil {
+				log.Println(fmt.Sprintf("customize remoteServiceRoute handler: %s is not found", msg.Route))
+				return
+			}
+			remoteAddr = member.ServiceAddr
+			session.Router().Bind(service, remoteAddr)
+		}
 	} else {
-		remoteAddr = members[rand.Intn(len(members))].ServiceAddr
-		session.Router().Bind(service, remoteAddr)
+		if addr, found := session.Router().Find(service); found {
+			remoteAddr = addr
+		} else {
+			remoteAddr = members[rand.Intn(len(members))].ServiceAddr
+			session.Router().Bind(service, remoteAddr)
+		}
 	}
 	pool, err := h.currentNode.rpcClient.getConnPool(remoteAddr)
 	if err != nil {

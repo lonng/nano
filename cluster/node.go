@@ -55,6 +55,7 @@ type Options struct {
 	TSLCertificate     string
 	TSLKey             string
 	UnregisterCallback func(Member)
+	RemoteServiceRoute CustomerRemoteServiceRoute
 }
 
 // Node represents a node in nano cluster, which will contains a group of services.
