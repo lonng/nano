@@ -357,7 +357,7 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 func SendErrReply(agent *agent, req *throwV1.IRequestProtocol) {
 	data := &throwV1.DataInfoResp{
 		Code: -1,
-		Msg:  "未识别的客户端数据...",
+		Msg:  "[SendErrReply] please login first...",
 	}
 	SendReply(agent, -1, data, req)
 }
