@@ -304,7 +304,7 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 
 	case packet.Data:
 		// 因为定制化原因，只能接收数据帧，并解析出来 todo
-		originLog.Printf("[processPacket] pack data: %v \n", p.Data)
+		// originLog.Printf("[processPacket] pack data: %v \n", p.Data)
 		if len(p.Data) < 1 {
 			originLog.Printf("[processPacket] pack data len is 0, maybe it's heartbeat")
 			return nil
