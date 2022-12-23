@@ -24,6 +24,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/lonng/nano/serialize/msgpack"
 	originLog "log"
 	"math/rand"
 	"net"
@@ -363,7 +364,8 @@ func SendErrReply(agent *agent, req *throwV1.IRequestProtocol) {
 }
 
 func SendReply(agent *agent, code int32, data proto.Message, req *throwV1.IRequestProtocol) {
-	dataBytes, _ := env.Serializer.Marshal(data)
+	msgPackCoder := msgpack.NewSerializer()
+	dataBytes, _ := msgPackCoder.Marshal(data)
 	resp := &throwV1.IResponseProtocol{
 		Code:       code,
 		IsCompress: true,
@@ -502,7 +504,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 	} else {
 		log.Println(fmt.Sprintf("[localProcess] handler.IsRawArg is false"))
 		data = reflect.New(handler.Type.Elem()).Interface()
-		err := env.Serializer.Unmarshal(msg.Data, data)
+		err := msgpack.NewSerializer().Unmarshal(msg.Data, data)
 		if err != nil {
 			log.Println(fmt.Sprintf("[localProcess] Deserialize to %T failed: %+v (%v)", data, err, payload))
 			return
