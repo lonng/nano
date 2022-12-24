@@ -33,6 +33,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lonng/nano/serialize/msgpack"
+
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lonng/nano/pkg/utils/jsonx"
@@ -502,7 +504,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 	} else {
 		log.Println(fmt.Sprintf("[localProcess] handler.IsRawArg is false"))
 		data = reflect.New(handler.Type.Elem()).Interface()
-		err := env.Serializer.Unmarshal(msg.Data, data)
+		err := msgpack.NewSerializer().Unmarshal(msg.Data, data)
 		if err != nil {
 			log.Println(fmt.Sprintf("[localProcess] Deserialize to %T failed: %+v (%v)", data, err, payload))
 			return

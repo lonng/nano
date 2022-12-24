@@ -26,8 +26,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	throwV1 "github.com/suhanyujie/throw_interface/golang_pb/throw/v1"
-
 	"github.com/lonng/nano/internal/env"
 	"github.com/lonng/nano/internal/log"
 	"github.com/lonng/nano/internal/message"
@@ -125,13 +123,6 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 		return ErrClosedGroup
 	}
 	if env.Debug {
-		if val, ok := v.(*throwV1.IResponseProtocol); ok {
-			pbBytes := val.Data
-			dataObj := throwV1.AttackOnceResult{}
-			if err := env.Serializer.Unmarshal(pbBytes, &dataObj); err == nil {
-				originLog.Printf("[Broadcast] route: %s, respData: %s", route, jsonx.ToJsonIgnoreErr(dataObj))
-			}
-		}
 		originLog.Printf("[Broadcast] route: %s, resp: %s", route, jsonx.ToJsonIgnoreErr(v))
 	}
 
@@ -147,7 +138,30 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 	return err
 }
 
-// Broadcast push  the message(s) to  all members
+func (c *Group) BroadcastToAnother(route string, curUid int32, v interface{}) error {
+	var err error
+	if c.isClosed() {
+		return ErrClosedGroup
+	}
+	if env.Debug {
+		originLog.Printf("[Broadcast] route: %s, resp: %s", route, jsonx.ToJsonIgnoreErr(v))
+	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	for _, s := range c.sessions {
+		if s.UID() == int64(curUid) {
+			continue
+		}
+		if err = s.Push(route, v); err != nil {
+			log.Println(fmt.Sprintf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
+		}
+	}
+	return nil
+}
+
+// BroadcastOld push  the message(s) to  all members
 func (c *Group) BroadcastOld(route string, v interface{}) error {
 	var err error
 	if c.isClosed() {

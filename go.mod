@@ -15,6 +15,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/suhanyujie/throw_interface v0.0.0-20221216051716-ee1d176a6593
 	github.com/urfave/cli v1.22.5
+	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	go.uber.org/atomic v1.8.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.18.1 // indirect
