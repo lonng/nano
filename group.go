@@ -138,7 +138,7 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 
 // BroadcastToAnother 排除自己的广播。
 // @param selfUid 自己的 uid
-func (c *Group) BroadcastToAnother(route string, selfUid int, v interface{}) error {
+func (c *Group) BroadcastToAnother(route string, selfUid int32, v interface{}) error {
 	var err error
 	if c.isClosed() {
 		return ErrClosedGroup
