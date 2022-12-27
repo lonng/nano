@@ -22,16 +22,12 @@ package nano
 
 import (
 	"fmt"
-	originLog "log"
 	"sync"
 	"sync/atomic"
-
-	throwV1 "github.com/suhanyujie/throw_interface/golang_pb/throw/v1"
 
 	"github.com/lonng/nano/internal/env"
 	"github.com/lonng/nano/internal/log"
 	"github.com/lonng/nano/internal/message"
-	"github.com/lonng/nano/pkg/utils/jsonx"
 	"github.com/lonng/nano/session"
 )
 
@@ -124,16 +120,9 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 	if c.isClosed() {
 		return ErrClosedGroup
 	}
-	if env.Debug {
-		if val, ok := v.(*throwV1.IResponseProtocol); ok {
-			pbBytes := val.Data
-			dataObj := throwV1.AttackOnceResult{}
-			if err := env.Serializer.Unmarshal(pbBytes, &dataObj); err == nil {
-				originLog.Printf("[Broadcast] route: %s, respData: %s", route, jsonx.ToJsonIgnoreErr(dataObj))
-			}
-		}
-		originLog.Printf("[Broadcast] route: %s, resp: %s", route, jsonx.ToJsonIgnoreErr(v))
-	}
+	//if env.Debug {
+	//	originLog.Printf("[Broadcast] route: %s, resp: %s", route, jsonx.ToJsonIgnoreErr(v))
+	//}
 
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -141,6 +130,29 @@ func (c *Group) Broadcast(route string, v interface{}) error {
 	for _, s := range c.sessions {
 		if err = s.Push(route, v); err != nil {
 			log.Println(fmt.Sprintf("Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
+		}
+	}
+
+	return err
+}
+
+// BroadcastToAnother 排除自己的广播。
+// @param selfUid 自己的 uid
+func (c *Group) BroadcastToAnother(route string, selfUid int, v interface{}) error {
+	var err error
+	if c.isClosed() {
+		return ErrClosedGroup
+	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	for _, s := range c.sessions {
+		if s.UID() == int64(selfUid) {
+			continue
+		}
+		if err = s.Push(route, v); err != nil {
+			log.Println(fmt.Sprintf("[BroadcastToAnother] Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
 		}
 	}
 
