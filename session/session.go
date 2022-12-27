@@ -120,9 +120,9 @@ func (s *Session) LastMid() uint64 {
 
 // Bind bind UID to current session
 func (s *Session) Bind(uid int64) error {
-	if uid < 1 {
-		return ErrIllegalUID
-	}
+	//if uid < 1 {
+	//	return ErrIllegalUID
+	//}
 
 	atomic.StoreInt64(&s.uid, uid)
 	return nil
