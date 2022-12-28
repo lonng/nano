@@ -305,7 +305,7 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 
 	case packet.Data:
 		// 因为定制化原因，只能接收数据帧，并解析出来 todo
-		originLog.Printf("[processPacket] pack data: %v \n", p.Data)
+		// originLog.Printf("[processPacket] pack data: %v \n", p.Data)
 		if len(p.Data) < 1 {
 			originLog.Printf("[processPacket] pack data len is 0, maybe it's heartbeat")
 			return nil
@@ -359,13 +359,14 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 func SendErrReply(agent *agent, req *throwV1.IRequestProtocol) {
 	data := &throwV1.DataInfoResp{
 		Code: -1,
-		Msg:  "未识别的客户端数据...",
+		Msg:  "[SendErrReply] please login first...",
 	}
 	SendReply(agent, -1, data, req)
 }
 
 func SendReply(agent *agent, code int32, data proto.Message, req *throwV1.IRequestProtocol) {
-	dataBytes, _ := env.Serializer.Marshal(data)
+	msgPackCoder := msgpack.NewSerializer()
+	dataBytes, _ := msgPackCoder.Marshal(data)
 	resp := &throwV1.IResponseProtocol{
 		Code:       code,
 		IsCompress: true,
