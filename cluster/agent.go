@@ -132,10 +132,10 @@ func (a *agent) Push(route string, v interface{}) error {
 	if env.Debug {
 		switch d := v.(type) {
 		case []byte:
-			log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d, Route=%s, Data=%dbytes",
+			log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d, Data=%dbytes",
 				a.session.ID(), a.session.UID(), route, len(d)))
 		default:
-			log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d, Route=%s, Data=%+v",
+			log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d,Data=%+v",
 				a.session.ID(), a.session.UID(), route, v))
 		}
 	}
