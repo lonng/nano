@@ -36,8 +36,6 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/lonng/nano/pkg/utils/jsonx"
-
 	"github.com/gorilla/websocket"
 	"github.com/lonng/nano/cluster/clusterpb"
 	"github.com/lonng/nano/component"
@@ -303,7 +301,7 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 		}
 
 	case packet.Data:
-		// 因为定制化原因，只能接收数据帧，并解析出来 todo
+		// 因为定制化原因，只能接收数据帧，并解析出来
 		// originLog.Printf("[processPacket] pack data: %v \n", p.Data)
 		if len(p.Data) < 1 {
 			originLog.Printf("[processPacket] pack data len is 0, maybe it's heartbeat")
@@ -318,7 +316,6 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 			SendErrReply(agent, &inputData)
 			return nil
 		}
-		originLog.Printf("[processPacket] request: %s, Notice: data field maybe compressed", jsonx.ToJsonIgnoreErr(inputData))
 		if inputData.Method == "UserLogin" {
 			// 表示登录
 			agent.setStatus(statusWorking)

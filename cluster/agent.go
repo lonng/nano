@@ -130,14 +130,12 @@ func (a *agent) Push(route string, v interface{}) error {
 	}
 
 	if env.Debug {
-		switch d := v.(type) {
-		case []byte:
-			log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d, Data=%dbytes",
-				a.session.ID(), a.session.UID(), route, len(d)))
-		default:
-			log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d,Data=%+v",
-				a.session.ID(), a.session.UID(), route, v))
-		}
+		//switch d := v.(type) {
+		//case []byte:
+		//	log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d, Data=%dbytes", a.session.ID(), a.session.UID(), len(d)))
+		//default:
+		//	log.Println(fmt.Sprintf("[Push] sid=%d, uid=%d,Data=%+v", a.session.ID(), a.session.UID(), v))
+		//}
 	}
 	pm := pendingMessage{typ: message.Push, route: route, payload: v}
 	if val, ok := v.(proto.Message); ok {
