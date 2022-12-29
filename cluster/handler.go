@@ -24,7 +24,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/lonng/nano/serialize/msgpack"
 	originLog "log"
 	"math/rand"
 	"net"
@@ -33,6 +32,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lonng/nano/serialize/msgpack"
 
 	"google.golang.org/protobuf/proto"
 
