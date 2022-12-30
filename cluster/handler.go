@@ -500,7 +500,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 	if handler.IsRawArg {
 		data = payload
 	} else {
-		log.Println(fmt.Sprintf("[localProcess] handler.IsRawArg is false"))
+		// log.Println(fmt.Sprintf("[localProcess] handler.IsRawArg is false"))
 		data = reflect.New(handler.Type.Elem()).Interface()
 		err := msgpack.NewSerializer().Unmarshal(msg.Data, data)
 		if err != nil {
