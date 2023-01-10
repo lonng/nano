@@ -151,6 +151,9 @@ func (c *Group) BroadcastToAnother(route string, selfUid int32, v interface{}) e
 		if s.UID() == int64(selfUid) {
 			continue
 		}
+		if s.UID() <= 0 {
+			continue
+		}
 		if err = s.Push(route, v); err != nil {
 			log.Println(fmt.Sprintf("[BroadcastToAnother] Session push message error, ID=%d, UID=%d, Error=%s", s.ID(), s.UID(), err.Error()))
 		}
