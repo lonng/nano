@@ -317,7 +317,7 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 			SendErrReply(agent, &inputData)
 			return nil
 		}
-		if inputData.Method == "UserLogin" {
+		if inputData.Method == "UserLogin" || inputData.Method == "Reconnect" {
 			// 表示登录
 			agent.setStatus(statusWorking)
 			if env.Debug {
