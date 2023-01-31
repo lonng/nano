@@ -467,7 +467,11 @@ func (h *LocalHandler) processMessage(agent *agent, msg *message.Message) {
 		log.Println("Invalid message type: " + msg.Type.String())
 		return
 	}
-
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("[processMessage] panic err： %v", err)
+		}
+	}()
 	handler, found := h.localHandlers[msg.Route]
 	if !found {
 		originLog.Printf("[processMessage] coundnt found handler route: %s", msg.Route)
