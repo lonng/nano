@@ -341,6 +341,7 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 		// 将数据转换为 Message 对象
 		msg, err := message.Decode(&inputData)
 		if err != nil {
+			originLog.Printf("[processPacket] message.Decode err: %v\n", err)
 			return err
 		}
 		h.processMessage(agent, msg)
@@ -512,10 +513,9 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 			return
 		}
 	}
-
-	//if env.Debug {
-	//	log.Println(fmt.Sprintf("[localProcess] UID=%d, Message={%s}, Data=%+v", session.UID(), msg.String(), data))
-	//}
+	if env.Debug {
+		log.Println(fmt.Sprintf("[localProcess] UID=%d, Message={%s}, Data=%+v", session.UID(), msg.String(), data))
+	}
 
 	args := []reflect.Value{handler.Receiver, reflect.ValueOf(session), reflect.ValueOf(payload)}
 	task := func() {
