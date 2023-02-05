@@ -98,7 +98,7 @@ func WithWSPath(path string) Option {
 	}
 }
 
-func WithWSCustomAuthorization(f func(w http.ResponseWriter, r *http.Request) error) Option {
+func WithWSCustomAuthorization(f func(w http.ResponseWriter, r *http.Request) (interface{}, error)) Option {
 	return func(_ *cluster.Options) {
 		env.CustomAuthorization = f
 	}

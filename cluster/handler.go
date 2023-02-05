@@ -482,8 +482,13 @@ func (h *LocalHandler) processMessage(agent *agent, msg *message.Message) {
 	}
 }
 
-func (h *LocalHandler) handleWS(conn *websocket.Conn) {
-	c, err := newWSConn(conn)
+type WsConnWrapper struct {
+	conn *websocket.Conn
+	Data interface{}
+}
+
+func (h *LocalHandler) handleWS(connWrapper WsConnWrapper) {
+	c, err := newWSConn(connWrapper.conn)
 	if err != nil {
 		originLog.Printf("[handleWS] ws conn err: %v", err)
 		return

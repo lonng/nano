@@ -51,7 +51,7 @@ var (
 
 	GrpcOptions = []grpc.DialOption{grpc.WithInsecure()}
 
-	CustomAuthorization func(w http.ResponseWriter, r *http.Request) error
+	CustomAuthorization func(w http.ResponseWriter, r *http.Request) (interface{}, error)
 )
 
 func init() {
