@@ -50,6 +50,8 @@ var (
 	Serializer serialize.Serializer
 
 	GrpcOptions = []grpc.DialOption{grpc.WithInsecure()}
+
+	CustomAuthorization func(w http.ResponseWriter, r *http.Request) error
 )
 
 func init() {

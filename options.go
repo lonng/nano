@@ -98,6 +98,12 @@ func WithWSPath(path string) Option {
 	}
 }
 
+func WithWSCustomAuthorization(f func(w http.ResponseWriter, r *http.Request) error) Option {
+	return func(_ *cluster.Options) {
+		env.CustomAuthorization = f
+	}
+}
+
 // SetTimerPrecision sets the ticker precision, and time precision can not less
 // than a Millisecond, and can not change after application running. The default
 // precision is time.Second

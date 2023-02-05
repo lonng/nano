@@ -258,7 +258,17 @@ func (n *Node) listenAndServeWS() {
 	}
 
 	http.HandleFunc("/"+strings.TrimPrefix(env.WSPath, "/"), func(w http.ResponseWriter, r *http.Request) {
-		conn, err := upgrader.Upgrade(w, r, nil)
+		log.Printf("[listenAndServeWS] 从 ws 连接获取 header 信息。info: %v", r.Header["Sec-Websocket-Protocol"])
+		headers := r.Header
+		// 验证 token
+		if env.CustomAuthorization != nil {
+			if err := env.CustomAuthorization(w, r); err != nil {
+				log.Printf("[listenAndServeWS] CustomAuthorization err: %v", err)
+				w.Write([]byte("invalid token"))
+				return
+			}
+		}
+		conn, err := upgrader.Upgrade(w, r, headers)
 		if err != nil {
 			log.Println(fmt.Sprintf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error()))
 			return
