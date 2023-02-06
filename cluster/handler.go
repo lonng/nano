@@ -548,6 +548,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 	// A message can be dispatch to global thread or a user customized thread
 	service := msg.Route[:index]
 	if s, found := h.localServices[service]; found && s.SchedName != "" {
+		log.Printf("[localProcess] scheduler: localServices")
 		sched := session.Value(s.SchedName)
 		if sched == nil {
 			log.Println(fmt.Sprintf("[localProcess] nanl/handler: cannot found `schedular.LocalScheduler` by %s", s.SchedName))
@@ -562,6 +563,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 		}
 		local.Schedule(task)
 	} else {
+		log.Printf("[localProcess] scheduler: scheduler")
 		scheduler.PushTask(task)
 	}
 }

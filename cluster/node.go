@@ -267,7 +267,7 @@ func (n *Node) listenAndServeWS() {
 				return
 			}
 		}
-		conn, err := upgrader.Upgrade(w, r, r.Header)
+		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Println(fmt.Sprintf("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error()))
 			return
