@@ -96,6 +96,6 @@ func Close() {
 }
 
 func PushTask(task Task) {
-	// log.Printf("[PushTask] new task be pushed")
 	chTasks <- task
+	log.Printf("[PushTask] new task be pushed. len: %d", len(chTasks))
 }
