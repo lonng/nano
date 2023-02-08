@@ -33,10 +33,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lonng/nano/serialize/msgpack"
-
-	"google.golang.org/protobuf/proto"
-
 	"github.com/gorilla/websocket"
 	"github.com/lonng/nano/cluster/clusterpb"
 	"github.com/lonng/nano/component"
@@ -47,8 +43,11 @@ import (
 	"github.com/lonng/nano/internal/packet"
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/scheduler"
+	"github.com/lonng/nano/serialize/msgpack"
 	"github.com/lonng/nano/session"
+	farmV1 "github.com/suhanyujie/throw_interface/golang_pb/farm/v1"
 	throwV1 "github.com/suhanyujie/throw_interface/golang_pb/throw/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -309,24 +308,36 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 			return nil
 		}
 		// 尝试解析为 特定对象
-		inputData := throwV1.IRequestProtocol{}
-		err := env.Serializer.Unmarshal(p.Data, &inputData)
+		// inputDataOri := throwV1.IRequestProtocol{}
+		inputDataOri := farmV1.IRequest{}
+		err := env.Serializer.Unmarshal(p.Data, &inputDataOri)
 		if err != nil {
 			originLog.Printf("[processPacket] Unmarshal err: %v, data str: %s, data: %v\n", err, string(p.Data), p.Data)
 			// 发送一个错误响应 todo
-			SendErrReply(agent, &inputData)
+			SendErrReply(agent, &inputDataOri)
 			return nil
 		}
-		if inputData.Method == "UserLogin" || inputData.Method == "Reconnect" {
+		inputData := throwV1.IRequestProtocol{
+			Action:     inputDataOri.Action,
+			Method:     inputDataOri.Method,
+			Callback:   inputDataOri.Callback,
+			IsCompress: inputDataOri.IsCompress,
+			ChannelId:  0,
+			Data:       inputDataOri.Data,
+		}
+		if inputData.Method == "UserLogin" || inputData.Method == "FarmUserLogin" || inputData.Method == "Reconnect" {
 			// 表示登录
 			agent.setStatus(statusWorking)
 			if env.Debug {
 				originLog.Printf("[processPacket] login sid=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr())
 			}
 		} else if inputData.Method == "HeartBeat" {
-			SendReply(agent, 1, &throwV1.DataInfoResp{
-				Code: 0,
-				Msg:  "heartbeat ok",
+			//SendReply(agent, 1, &throwV1.DataInfoResp{
+			//	Code: 0,
+			//	Msg:  "heartbeat ok",
+			//}, &inputData)
+			SendReply(agent, 1, &farmV1.NormalInfo{
+				Msg: "heartbeat ok",
 			}, &inputData)
 		} else {
 			// if inputData.Data
@@ -337,7 +348,6 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 				// return fmt.Errorf("[processPacket] receive data on socket which not yet ACK, session will be closed immediately, remote=%s", agent.conn.RemoteAddr().String())
 			}
 		}
-
 		// 将数据转换为 Message 对象
 		msg, err := message.Decode(&inputData)
 		if err != nil {
@@ -354,23 +364,47 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 	return nil
 }
 
-func SendErrReply(agent *agent, req *throwV1.IRequestProtocol) {
-	data := &throwV1.DataInfoResp{
-		Code: -1,
-		Msg:  "[SendErrReply] please login first...",
+// *throwV1.IRequestProtocol
+func SendErrReply(agent *agent, req interface{}) {
+	var data proto.Message
+	if _, ok := req.(*throwV1.IRequestProtocol); ok {
+		data = &throwV1.DataInfoResp{
+			Code: -1,
+			Msg:  "[SendErrReply] please login first...",
+		}
+	} else if _, ok := req.(*farmV1.IRequest); ok {
+		data = &farmV1.NormalInfo{
+			Msg: "[SendErrReply] please login first...",
+		}
 	}
+
 	SendReply(agent, -1, data, req)
 }
 
-func SendReply(agent *agent, code int32, data proto.Message, req *throwV1.IRequestProtocol) {
+// req *throwV1.IRequestProtocol
+func SendReply(agent *agent, code int32, data proto.Message, req interface{}) {
+	var resp proto.Message
 	msgPackCoder := msgpack.NewSerializer()
 	dataBytes, _ := msgPackCoder.Marshal(data)
-	resp := &throwV1.IResponseProtocol{
-		Code:       code,
-		IsCompress: true,
-		Callback:   fmt.Sprintf("%s_%s", req.Action, req.Method),
+	callbackName := ""
+	if reqVal, ok := req.(*throwV1.IRequestProtocol); ok {
+		callbackName = fmt.Sprintf("%s_%s", reqVal.Action, reqVal.Method)
+		resp = &throwV1.IResponseProtocol{
+			Code:       code,
+			IsCompress: true,
+			Callback:   callbackName,
+			Data:       dataBytes,
+		}
+	} else if reqVal, ok := req.(*farmV1.IRequest); ok {
+		callbackName = fmt.Sprintf("%s_%s", reqVal.Action, reqVal.Method)
+		resp = &farmV1.IResponse{
+			Code:       code,
+			IsCompress: true,
+			Callback:   callbackName,
+			Data:       dataBytes,
+		}
 	}
-	resp.Data = dataBytes
+
 	if err := agent.send(pendingMessage{
 		typ:        message.Notify,
 		route:      "error",
