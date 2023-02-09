@@ -24,6 +24,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/lonng/nano/pkg/utils/jsonx"
 	originLog "log"
 	"net"
 	"net/http"
@@ -258,7 +259,7 @@ func (n *Node) listenAndServeWS() {
 	}
 
 	http.HandleFunc("/"+strings.TrimPrefix(env.WSPath, "/"), func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[listenAndServeWS] 从 ws 连接获取 header 信息。info: %v", r.Header["Sec-Websocket-Protocol"])
+		log.Printf("[listenAndServeWS] 从 ws 连接获取 header 信息。info: %v", jsonx.ToJsonIgnoreErr(r.Header["Sec-Websocket-Protocol"]))
 		// 验证 token
 		if env.CustomAuthorization != nil {
 			if _, err := env.CustomAuthorization(w, r); err != nil {

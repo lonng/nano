@@ -104,6 +104,12 @@ func WithWSCustomAuthorization(f func(w http.ResponseWriter, r *http.Request) (i
 	}
 }
 
+func WithWSCustomProtocolStructType(v int) Option {
+	return func(_ *cluster.Options) {
+		env.CustomProtocolStructType = v
+	}
+}
+
 // SetTimerPrecision sets the ticker precision, and time precision can not less
 // than a Millisecond, and can not change after application running. The default
 // precision is time.Second

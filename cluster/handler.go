@@ -308,23 +308,41 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 			return nil
 		}
 		// 尝试解析为 特定对象
-		// inputDataOri := throwV1.IRequestProtocol{}
-		inputDataOri := farmV1.IRequest{}
-		err := env.Serializer.Unmarshal(p.Data, &inputDataOri)
-		if err != nil {
-			originLog.Printf("[processPacket] Unmarshal err: %v, data str: %s, data: %v\n", err, string(p.Data), p.Data)
-			// 发送一个错误响应 todo
-			SendErrReply(agent, &inputDataOri)
-			return nil
+		var inputDataOri interface{}
+		switch env.CustomProtocolStructType {
+		case 2:
+			inputDataOri = &farmV1.IRequest{}
+			err := env.Serializer.Unmarshal(p.Data, inputDataOri)
+			if err != nil {
+				originLog.Printf("[processPacket] Unmarshal err: %v, data str: %s, data: %v\n", err, string(p.Data), p.Data)
+				// 发送一个错误响应
+				SendErrReply(agent, inputDataOri)
+				return nil
+			}
+		default:
+			inputDataOri = &throwV1.IRequestProtocol{}
+			err := env.Serializer.Unmarshal(p.Data, inputDataOri)
+			if err != nil {
+				originLog.Printf("[processPacket] Unmarshal err: %v, data str: %s, data: %v\n", err, string(p.Data), p.Data)
+				// 发送一个错误响应
+				SendErrReply(agent, inputDataOri)
+				return nil
+			}
 		}
-		inputData := throwV1.IRequestProtocol{
-			Action:     inputDataOri.Action,
-			Method:     inputDataOri.Method,
-			Callback:   inputDataOri.Callback,
-			IsCompress: inputDataOri.IsCompress,
-			ChannelId:  0,
-			Data:       inputDataOri.Data,
+		inputData := throwV1.IRequestProtocol{}
+		switch env.CustomProtocolStructType {
+		case 2:
+			asserVal := inputDataOri.(*farmV1.IRequest)
+			inputData.Action = asserVal.Action
+			inputData.Method = asserVal.Method
+			inputData.Callback = asserVal.Callback
+			inputData.IsCompress = asserVal.IsCompress
+			inputData.Data = asserVal.Data
+		default:
+			assertVal := inputDataOri.(*throwV1.IRequestProtocol)
+			inputData = *assertVal
 		}
+
 		if inputData.Method == "UserLogin" || inputData.Method == "FarmUserLogin" || inputData.Method == "Reconnect" {
 			// 表示登录
 			agent.setStatus(statusWorking)
@@ -332,13 +350,17 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 				originLog.Printf("[processPacket] login sid=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr())
 			}
 		} else if inputData.Method == "HeartBeat" {
-			//SendReply(agent, 1, &throwV1.DataInfoResp{
-			//	Code: 0,
-			//	Msg:  "heartbeat ok",
-			//}, &inputData)
-			SendReply(agent, 1, &farmV1.NormalInfo{
-				Msg: "heartbeat ok",
-			}, &inputData)
+			switch env.CustomProtocolStructType {
+			case 2:
+				SendReply(agent, 1, &farmV1.NormalInfo{
+					Msg: "heartbeat ok",
+				}, &inputData)
+			default:
+				SendReply(agent, 1, &throwV1.DataInfoResp{
+					Code: 0,
+					Msg:  "heartbeat ok",
+				}, &inputData)
+			}
 		} else {
 			// if inputData.Data
 			if agent.status() < statusWorking {
