@@ -410,20 +410,22 @@ func SendReply(agent *agent, code int32, data proto.Message, req interface{}) {
 	dataBytes, _ := msgPackCoder.Marshal(data)
 	callbackName := ""
 	if reqVal, ok := req.(*throwV1.IRequestProtocol); ok {
-		callbackName = fmt.Sprintf("%s_%s", reqVal.Action, reqVal.Method)
-		resp = &throwV1.IResponseProtocol{
-			Code:       code,
-			IsCompress: true,
-			Callback:   callbackName,
-			Data:       dataBytes,
-		}
-	} else if reqVal, ok := req.(*farmV1.IRequest); ok {
-		callbackName = fmt.Sprintf("%s_%s", reqVal.Action, reqVal.Method)
-		resp = &farmV1.IResponse{
-			Code:       code,
-			IsCompress: true,
-			Callback:   callbackName,
-			Data:       dataBytes,
+		switch env.CustomProtocolStructType {
+		case 2:
+			resp = &farmV1.IResponse{
+				Code:       code,
+				IsCompress: true,
+				Callback:   reqVal.Callback,
+				Data:       dataBytes,
+			}
+		default:
+			callbackName = fmt.Sprintf("%s_%s", reqVal.Action, reqVal.Method)
+			resp = &throwV1.IResponseProtocol{
+				Code:       code,
+				IsCompress: true,
+				Callback:   callbackName,
+				Data:       dataBytes,
+			}
 		}
 	}
 
