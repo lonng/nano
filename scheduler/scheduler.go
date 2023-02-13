@@ -62,15 +62,13 @@ func try(f func()) {
 }
 
 func Sched() {
-	defer func() {
-		log.Printf("[Sched] func exit...")
-	}()
 	if atomic.AddInt32(&started, 1) != 1 {
 		return
 	}
 
 	ticker := time.NewTicker(env.TimerPrecision)
 	defer func() {
+		log.Printf("[Sched] func exit...")
 		ticker.Stop()
 		close(chExit)
 	}()
@@ -82,10 +80,11 @@ func Sched() {
 		select {
 		case <-ticker.C:
 			cron()
-
+			// log.Printf("[Sched] ticker.C end")
 		case f := <-chTasks:
+			log.Printf("[Sched] chTasks start")
 			try(f)
-
+			log.Printf("[Sched] chTasks end")
 		case <-chDie:
 			return
 		}
