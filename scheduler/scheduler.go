@@ -62,6 +62,9 @@ func try(f func()) {
 }
 
 func Sched() {
+	defer func() {
+		log.Printf("[Sched] func exit...")
+	}()
 	if atomic.AddInt32(&started, 1) != 1 {
 		return
 	}
@@ -73,6 +76,9 @@ func Sched() {
 	}()
 
 	for {
+		if time.Now().Second() == 10 {
+			log.Printf("[Sched] new round. chTasks len: %d", len(chTasks))
+		}
 		select {
 		case <-ticker.C:
 			cron()
