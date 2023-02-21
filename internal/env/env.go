@@ -52,6 +52,9 @@ var (
 	GrpcOptions = []grpc.DialOption{grpc.WithInsecure()}
 
 	CustomAuthorization func(w http.ResponseWriter, r *http.Request) (interface{}, error)
+	// 使用特定的结构体接收客户端发送过来的数据，并用之解码
+	// 1:farmV1.throwV1.IRequestProtocol, 2:farmV1.IRequest
+	CustomProtocolStructType int
 )
 
 func init() {

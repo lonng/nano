@@ -33,10 +33,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lonng/nano/serialize/msgpack"
-
-	"google.golang.org/protobuf/proto"
-
 	"github.com/gorilla/websocket"
 	"github.com/lonng/nano/cluster/clusterpb"
 	"github.com/lonng/nano/component"
@@ -47,8 +43,11 @@ import (
 	"github.com/lonng/nano/internal/packet"
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/scheduler"
+	"github.com/lonng/nano/serialize/msgpack"
 	"github.com/lonng/nano/session"
+	farmV1 "github.com/suhanyujie/throw_interface/golang_pb/farm/v1"
 	throwV1 "github.com/suhanyujie/throw_interface/golang_pb/throw/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -309,25 +308,59 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 			return nil
 		}
 		// 尝试解析为 特定对象
-		inputData := throwV1.IRequestProtocol{}
-		err := env.Serializer.Unmarshal(p.Data, &inputData)
-		if err != nil {
-			originLog.Printf("[processPacket] Unmarshal err: %v, data str: %s, data: %v\n", err, string(p.Data), p.Data)
-			// 发送一个错误响应 todo
-			SendErrReply(agent, &inputData)
-			return nil
+		var inputDataOri interface{}
+		switch env.CustomProtocolStructType {
+		case 2:
+			inputDataOri = &farmV1.IRequest{}
+			err := env.Serializer.Unmarshal(p.Data, inputDataOri)
+			if err != nil {
+				originLog.Printf("[processPacket] Unmarshal err: %v, data str: %s, data: %v\n", err, string(p.Data), p.Data)
+				// 发送一个错误响应
+				SendErrReply(agent, inputDataOri)
+				return nil
+			}
+		default:
+			inputDataOri = &throwV1.IRequestProtocol{}
+			err := env.Serializer.Unmarshal(p.Data, inputDataOri)
+			if err != nil {
+				originLog.Printf("[processPacket] Unmarshal err: %v, data str: %s, data: %v\n", err, string(p.Data), p.Data)
+				// 发送一个错误响应
+				SendErrReply(agent, inputDataOri)
+				return nil
+			}
 		}
-		if inputData.Method == "UserLogin" || inputData.Method == "Reconnect" {
+		inputData := throwV1.IRequestProtocol{}
+		switch env.CustomProtocolStructType {
+		case 2:
+			asserVal := inputDataOri.(*farmV1.IRequest)
+			inputData.Action = asserVal.Action
+			inputData.Method = asserVal.Method
+			inputData.Callback = asserVal.Callback
+			inputData.IsCompress = asserVal.IsCompress
+			inputData.Data = asserVal.Data
+		default:
+			assertVal := inputDataOri.(*throwV1.IRequestProtocol)
+			inputData = *assertVal
+		}
+
+		if inputData.Method == "UserLogin" || inputData.Method == "FarmUserLogin" || inputData.Method == "Reconnect" {
 			// 表示登录
 			agent.setStatus(statusWorking)
 			if env.Debug {
 				originLog.Printf("[processPacket] login sid=%d, Remote=%s", agent.session.ID(), agent.conn.RemoteAddr())
 			}
 		} else if inputData.Method == "HeartBeat" {
-			SendReply(agent, 1, &throwV1.DataInfoResp{
-				Code: 0,
-				Msg:  "heartbeat ok",
-			}, &inputData)
+			switch env.CustomProtocolStructType {
+			case 2:
+				SendReply(agent, 1, &farmV1.NormalInfo{
+					Msg: "heartbeat ok",
+				}, &inputData)
+			default:
+				SendReply(agent, 1, &throwV1.DataInfoResp{
+					Code: 0,
+					Msg:  "heartbeat ok",
+				}, &inputData)
+			}
 		} else {
 			// if inputData.Data
 			if agent.status() < statusWorking {
@@ -337,7 +370,6 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 				// return fmt.Errorf("[processPacket] receive data on socket which not yet ACK, session will be closed immediately, remote=%s", agent.conn.RemoteAddr().String())
 			}
 		}
-
 		// 将数据转换为 Message 对象
 		msg, err := message.Decode(&inputData)
 		if err != nil {
@@ -354,23 +386,49 @@ func (h *LocalHandler) processPacket(agent *agent, p *packet.Packet) error {
 	return nil
 }
 
-func SendErrReply(agent *agent, req *throwV1.IRequestProtocol) {
-	data := &throwV1.DataInfoResp{
-		Code: -1,
-		Msg:  "[SendErrReply] please login first...",
+// *throwV1.IRequestProtocol
+func SendErrReply(agent *agent, req interface{}) {
+	var data proto.Message
+	if _, ok := req.(*throwV1.IRequestProtocol); ok {
+		data = &throwV1.DataInfoResp{
+			Code: -1,
+			Msg:  "[SendErrReply] please login first...",
+		}
+	} else if _, ok := req.(*farmV1.IRequest); ok {
+		data = &farmV1.NormalInfo{
+			Msg: "[SendErrReply] please login first...",
+		}
 	}
+
 	SendReply(agent, -1, data, req)
 }
 
-func SendReply(agent *agent, code int32, data proto.Message, req *throwV1.IRequestProtocol) {
+// req *throwV1.IRequestProtocol
+func SendReply(agent *agent, code int32, data proto.Message, req interface{}) {
+	var resp proto.Message
 	msgPackCoder := msgpack.NewSerializer()
 	dataBytes, _ := msgPackCoder.Marshal(data)
-	resp := &throwV1.IResponseProtocol{
-		Code:       code,
-		IsCompress: true,
-		Callback:   fmt.Sprintf("%s_%s", req.Action, req.Method),
+	callbackName := ""
+	if reqVal, ok := req.(*throwV1.IRequestProtocol); ok {
+		switch env.CustomProtocolStructType {
+		case 2:
+			resp = &farmV1.IResponse{
+				Code:       code,
+				IsCompress: true,
+				Callback:   reqVal.Callback,
+				Data:       dataBytes,
+			}
+		default:
+			callbackName = fmt.Sprintf("%s_%s", reqVal.Action, reqVal.Method)
+			resp = &throwV1.IResponseProtocol{
+				Code:       code,
+				IsCompress: true,
+				Callback:   callbackName,
+				Data:       dataBytes,
+			}
+		}
 	}
-	resp.Data = dataBytes
+
 	if err := agent.send(pendingMessage{
 		typ:        message.Notify,
 		route:      "error",
@@ -519,7 +577,7 @@ func (h *LocalHandler) localProcess(handler *component.Handler, lastMid uint64, 
 		}
 	}
 	if env.Debug {
-		log.Println(fmt.Sprintf("[localProcess] UID=%d, Message={%s}, Data=%+v", session.UID(), msg.String(), data))
+		// log.Println(fmt.Sprintf("[localProcess] UID=%d, Message={%s}, Data=%+v", session.UID(), msg.String(), data))
 	}
 
 	args := []reflect.Value{handler.Receiver, reflect.ValueOf(session), reflect.ValueOf(payload)}

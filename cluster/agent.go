@@ -294,18 +294,6 @@ func (a *agent) write() {
 			}
 
 		case data := <-a.chSend:
-			//payload, err := message.Serialize(data.payload)
-			//if err != nil {
-			//	switch data.typ {
-			//	case message.Push:
-			//		log.Println(fmt.Sprintf("Push: %s error: %s", data.route, err.Error()))
-			//	case message.Response:
-			//		log.Println(fmt.Sprintf("Response message(id: %d) error: %s", data.mid, err.Error()))
-			//	default:
-			//		// expect
-			//	}
-			//	break
-			//}
 			// 检查是否是 proto 结构
 			dataForProto, ok := data.payloadObj.(proto.Message)
 			if !ok {

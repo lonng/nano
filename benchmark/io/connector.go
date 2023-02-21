@@ -25,11 +25,10 @@ import (
 	"net"
 	"sync"
 
-	"github.com/lonng/nano/service/msg_svc"
-
 	"github.com/lonng/nano/internal/codec"
 	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/internal/packet"
+	"github.com/lonng/nano/service/msg_svc"
 	"google.golang.org/protobuf/proto"
 )
 

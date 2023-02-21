@@ -68,18 +68,23 @@ func Sched() {
 
 	ticker := time.NewTicker(env.TimerPrecision)
 	defer func() {
+		log.Printf("[Sched] func exit...")
 		ticker.Stop()
 		close(chExit)
 	}()
 
 	for {
+		if time.Now().Second() == 10 {
+			log.Printf("[Sched] new round. chTasks len: %d", len(chTasks))
+		}
 		select {
 		case <-ticker.C:
 			cron()
-
+			// log.Printf("[Sched] ticker.C end")
 		case f := <-chTasks:
+			log.Printf("[Sched] chTasks start")
 			try(f)
-
+			log.Printf("[Sched] chTasks end")
 		case <-chDie:
 			return
 		}
@@ -96,6 +101,6 @@ func Close() {
 }
 
 func PushTask(task Task) {
-	// log.Printf("[PushTask] new task be pushed")
 	chTasks <- task
+	log.Printf("[PushTask] new task be pushed. len: %d", len(chTasks))
 }
