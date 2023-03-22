@@ -128,6 +128,15 @@ func (s *Session) Bind(uid int64) error {
 	return nil
 }
 
+// 记录当前会话最近一次的心跳操作
+func (s *Session) SetLastTime() {
+	s.lastTime = time.Now().Unix()
+}
+
+func (s *Session) GetLastTime() int64 {
+	return s.lastTime
+}
+
 // Close terminate current session, session related data will not be released,
 // all related data should be Clear explicitly in Session closed callback
 func (s *Session) Close() {
