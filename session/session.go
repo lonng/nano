@@ -137,6 +137,10 @@ func (s *Session) GetLastTime() int64 {
 	return s.lastTime
 }
 
+func (s *Session) IsActive() bool {
+	return (time.Now().Unix() - s.lastTime) < 60
+}
+
 // Close terminate current session, session related data will not be released,
 // all related data should be Clear explicitly in Session closed callback
 func (s *Session) Close() {
