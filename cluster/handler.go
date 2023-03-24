@@ -271,7 +271,7 @@ func (h *LocalHandler) handle(conn net.Conn) {
 		// process all packets
 		for _, p := range packets {
 			if err := h.processPacket(agent, p); err != nil {
-				log.Println(err.Error())
+				log.Printf("[handle] processPacket err: %v", err)
 				return
 			}
 		}
