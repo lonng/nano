@@ -252,8 +252,8 @@ func (n *Node) listenAndServe() {
 
 func (n *Node) listenAndServeWS() {
 	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+		ReadBufferSize:  15360,
+		WriteBufferSize: 15360,
 		CheckOrigin:     env.CheckOrigin,
 	}
 
