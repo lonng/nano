@@ -101,6 +101,9 @@ func Close() {
 }
 
 func PushTask(task Task) {
+	if len(chTasks) > 2000000 {
+		log.Printf("[PushTask] err. msg length is too many. length:%d", len(chTasks))
+	}
 	chTasks <- task
 	log.Printf("[PushTask] new task be pushed. len: %d", len(chTasks))
 }
