@@ -47,7 +47,7 @@ type Hook func()
 var (
 	chDie   = make(chan struct{})
 	chExit  = make(chan struct{})
-	chTasks = make(chan Task, 1<<8)
+	chTasks = make(chan Task, 10240) // 1<<8
 	started int32
 	closed  int32
 )
