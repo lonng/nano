@@ -29,8 +29,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lonng/nano/pkg/utils/jsonx"
-
 	"google.golang.org/protobuf/proto"
 
 	"github.com/lonng/nano/internal/codec"
@@ -197,8 +195,9 @@ func (a *agent) ResponseMid(mid uint64, v interface{}) error {
 				dataObj := &throwV1.DataInfoResp{}
 				err := env.Serializer.Unmarshal(obj.Data, dataObj)
 				if err == nil {
-					log.Println(fmt.Sprintf("[ResponseMid] Type=Response, ID=%d, UID=%d, MID=%d, respData: %s",
-						a.session.ID(), a.session.UID(), mid, jsonx.ToJsonIgnoreErr(dataObj)))
+					//log.Println(fmt.Sprintf("[ResponseMid] Type=Response, ID=%d, UID=%d, MID=%d, respData: %s",
+					//	a.session.ID(), a.session.UID(), mid, jsonx.ToJsonIgnoreErr(dataObj)))
+					// jsonx.ToJsonIgnoreErr(dataObj)
 				}
 			} else {
 				log.Println(fmt.Sprintf("Type=Response, ID=%d, UID=%d, MID=%d, Data=%+v",
