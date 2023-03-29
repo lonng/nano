@@ -23,6 +23,13 @@ func WithPipeline(pipeline pipeline.Pipeline) Option {
 	}
 }
 
+// WithCustomerRemoteServiceRoute register remote service route
+func WithCustomerRemoteServiceRoute(route cluster.CustomerRemoteServiceRoute) Option {
+	return func(opt *cluster.Options) {
+		opt.RemoteServiceRoute = route
+	}
+}
+
 // WithAdvertiseAddr sets the advertise address option, it will be the listen address in
 // master node and an advertise address which cluster member to connect
 func WithAdvertiseAddr(addr string, retryInterval ...time.Duration) Option {
