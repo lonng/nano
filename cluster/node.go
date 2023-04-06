@@ -54,6 +54,7 @@ type Options struct {
 	IsWebsocket    bool
 	TSLCertificate string
 	TSLKey         string
+	SignalHandler  func()
 }
 
 // Node represents a node in nano cluster, which will contains a group of services.

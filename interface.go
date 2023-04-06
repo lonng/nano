@@ -116,6 +116,7 @@ func Listen(addr string, opts ...Option) {
 		log.Println("The app will shutdown in a few seconds")
 	case s := <-sg:
 		log.Println("Nano server got signal", s)
+		node.Options.SignalHandler()
 	}
 
 	log.Println("Nano server is stopping...")

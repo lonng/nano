@@ -22,6 +22,12 @@ func WithPipeline(pipeline pipeline.Pipeline) Option {
 	}
 }
 
+func WithSignalHandler(signalHandler func()) Option {
+	return func(opt *cluster.Options) {
+		opt.SignalHandler = signalHandler
+	}
+}
+
 // WithAdvertiseAddr sets the advertise address option, it will be the listen address in
 // master node and an advertise address which cluster member to connect
 func WithAdvertiseAddr(addr string, retryInterval ...time.Duration) Option {
