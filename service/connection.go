@@ -21,11 +21,25 @@
 package service
 
 import (
+	"os"
 	"sync/atomic"
 )
 
+type Connection interface {
+	Increment()
+	Decrement()
+	Count() int64
+	Reset()
+	SessionID() int64
+}
+
+func ResetNodeId(nodeId uint64) {
+	Connections = newDefaultConnectionServer(nodeId)
+}
+
 // Connections is a global variable which is used by session.
-var Connections = newConnectionService()
+//var Connections  = newConnectionService()
+var Connections Connection = newDefaultConnectionServer(uint64(os.Getpid()))
 
 type connectionService struct {
 	count int64

@@ -11,6 +11,7 @@ import (
 	"github.com/lonng/nano/internal/message"
 	"github.com/lonng/nano/pipeline"
 	"github.com/lonng/nano/serialize"
+	"github.com/lonng/nano/service"
 	"google.golang.org/grpc"
 )
 
@@ -22,9 +23,16 @@ func WithPipeline(pipeline pipeline.Pipeline) Option {
 	}
 }
 
+
 func WithSignalHandler(signalHandler func()) Option {
 	return func(opt *cluster.Options) {
 		opt.SignalHandler = signalHandler
+  }
+}
+// WithCustomerRemoteServiceRoute register remote service route
+func WithCustomerRemoteServiceRoute(route cluster.CustomerRemoteServiceRoute) Option {
+	return func(opt *cluster.Options) {
+		opt.RemoteServiceRoute = route
 	}
 }
 
@@ -149,5 +157,26 @@ func WithTSLConfig(certificate, key string) Option {
 func WithLogger(l log.Logger) Option {
 	return func(opt *cluster.Options) {
 		log.SetLogger(l)
+	}
+}
+
+// WithHandshakeValidator sets the function that Verify `handshake` data
+func WithHandshakeValidator(fn func([]byte) error) Option {
+	return func(opt *cluster.Options) {
+		env.HandshakeValidator = fn
+	}
+}
+
+// WithNodeId set nodeId use snowflake nodeId generate sessionId, default: pid
+func WithNodeId(nodeId uint64) Option {
+	return func(opt *cluster.Options) {
+		service.ResetNodeId(nodeId)
+	}
+}
+
+// WithUnregisterCallback master unregister member event call fn
+func WithUnregisterCallback(fn func(member cluster.Member)) Option {
+	return func(opt *cluster.Options) {
+		opt.UnregisterCallback = fn
 	}
 }

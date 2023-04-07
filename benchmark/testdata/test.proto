@@ -1,5 +1,6 @@
 syntax = "proto3";
 package testdata;
+option go_package = "/testdata";
 
 message Ping {
     string Content = 1;

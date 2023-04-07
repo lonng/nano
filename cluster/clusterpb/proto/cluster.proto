@@ -1,5 +1,6 @@
 syntax = "proto3";
 package clusterpb;
+option go_package = "/clusterpb";
 
 message MemberInfo {
     string label = 1;
@@ -21,9 +22,17 @@ message UnregisterRequest {
 
 message UnregisterResponse {}
 
+message HeartbeatRequest {
+    MemberInfo memberInfo = 1;
+}
+
+message HeartbeatResponse {
+}
+
 service Master {
     rpc Register (RegisterRequest) returns (RegisterResponse) {}
     rpc Unregister (UnregisterRequest) returns (UnregisterResponse) {}
+    rpc Heartbeat (HeartbeatRequest) returns (HeartbeatResponse) {}
 }
 
 message RequestMessage {

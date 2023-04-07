@@ -43,18 +43,20 @@ import (
 )
 
 // Options contains some configurations for current node
-type Options struct {
-	Pipeline       pipeline.Pipeline
-	IsMaster       bool
-	AdvertiseAddr  string
-	RetryInterval  time.Duration
-	ClientAddr     string
-	Components     *component.Components
-	Label          string
-	IsWebsocket    bool
-	TSLCertificate string
-	TSLKey         string
-	SignalHandler  func()
+type Options struct {	
+	Pipeline           pipeline.Pipeline
+	IsMaster           bool
+	AdvertiseAddr      string
+	RetryInterval      time.Duration
+	ClientAddr         string
+	Components         *component.Components
+	Label              string
+	IsWebsocket        bool
+	TSLCertificate     string
+	TSLKey             string
+	UnregisterCallback func(Member)
+	RemoteServiceRoute CustomerRemoteServiceRoute
+  SignalHandler  func()
 }
 
 // Node represents a node in nano cluster, which will contains a group of services.
@@ -71,6 +73,9 @@ type Node struct {
 
 	mu       sync.RWMutex
 	sessions map[int64]*session.Session
+
+	once          sync.Once
+	keepaliveExit chan struct{}
 }
 
 func (n *Node) Startup() error {
@@ -181,9 +186,8 @@ func (n *Node) initNode() error {
 			log.Println("Register current node to cluster failed", err, "and will retry in", n.RetryInterval.String())
 			time.Sleep(n.RetryInterval)
 		}
-
+		n.once.Do(n.keepalive)
 	}
-
 	return nil
 }
 
@@ -201,7 +205,10 @@ func (n *Node) Shutdown() {
 	for i := length - 1; i >= 0; i-- {
 		components[i].Comp.Shutdown()
 	}
-
+	// close sendHeartbeat
+	if n.keepaliveExit != nil {
+		close(n.keepaliveExit)
+	}
 	if !n.IsMaster && n.AdvertiseAddr != "" {
 		pool, err := n.rpcClient.getConnPool(n.AdvertiseAddr)
 		if err != nil {
@@ -385,6 +392,7 @@ func (n *Node) NewMember(_ context.Context, req *clusterpb.NewMemberRequest) (*c
 }
 
 func (n *Node) DelMember(_ context.Context, req *clusterpb.DelMemberRequest) (*clusterpb.DelMemberResponse, error) {
+	log.Println("DelMember member", req.String())
 	n.handler.delMember(req.ServiceAddr)
 	n.cluster.delMember(req.ServiceAddr)
 	return &clusterpb.DelMemberResponse{}, nil
@@ -412,4 +420,44 @@ func (n *Node) CloseSession(_ context.Context, req *clusterpb.CloseSessionReques
 		s.Close()
 	}
 	return &clusterpb.CloseSessionResponse{}, nil
+}
+
+// ticker send heartbeat register info to master
+func (n *Node) keepalive() {
+	if n.keepaliveExit == nil {
+		n.keepaliveExit = make(chan struct{})
+	}
+	if n.AdvertiseAddr == "" || n.IsMaster {
+		return
+	}
+	heartbeat := func() {
+		pool, err := n.rpcClient.getConnPool(n.AdvertiseAddr)
+		if err != nil {
+			log.Println("rpcClient master conn", err)
+			return
+		}
+		masterCli := clusterpb.NewMasterClient(pool.Get())
+		if _, err := masterCli.Heartbeat(context.Background(), &clusterpb.HeartbeatRequest{
+			MemberInfo: &clusterpb.MemberInfo{
+				Label:       n.Label,
+				ServiceAddr: n.ServiceAddr,
+				Services:    n.handler.LocalService(),
+			},
+		}); err != nil {
+			log.Println("Member send heartbeat error", err)
+		}
+	}
+	go func() {
+		ticker := time.NewTicker(env.Heartbeat)
+		for {
+			select {
+			case <-ticker.C:
+				heartbeat()
+			case <-n.keepaliveExit:
+				log.Println("Exit member node heartbeat ")
+				ticker.Stop()
+				return
+			}
+		}
+	}()
 }

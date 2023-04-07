@@ -165,15 +165,22 @@ func (r *Room) Message(s *session.Session, msg *UserMessage) error {
 }
 
 func main() {
-	nano.Register(NewRoom())
-	nano.SetSerializer(json.NewSerializer())
-	nano.EnableDebug()
+	components := &component.Components{}
+	components.Register(NewRoom())
+	
 	log.SetFlags(log.LstdFlags | log.Llongfile)
 
 	http.Handle("/web/", http.StripPrefix("/web/", http.FileServer(http.Dir("web"))))
 
 	nano.SetCheckOriginFunc(func(_ *http.Request) bool { return true })
-	nano.Listen(":3250", nano.WithIsWebsocket(true))
+	nano.Listen(":3250",
+		nano.WithIsWebsocket(true),
+		nano.WithCheckOriginFunc(func(_ *http.Request) bool { return true }),
+		nano.WithWSPath("/ws"),
+		nano.WithDebugMode(),
+		nano.WithSerializer(json.NewSerializer()), // override default serializer
+		nano.WithComponents(components),
+	)
 }
 ```
 

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/lonng/nano/cluster/clusterpb"
 	"log"
 	"net/http"
 	"os"
@@ -8,10 +10,8 @@ import (
 	"runtime"
 
 	"github.com/lonng/nano"
-	"github.com/lonng/nano/cluster"
-	"github.com/lonng/nano/examples/cluster/chat"
-	"github.com/lonng/nano/examples/cluster/gate"
-	"github.com/lonng/nano/examples/cluster/master"
+	"github.com/lonng/nano/examples/customerroute/onegate"
+	"github.com/lonng/nano/examples/customerroute/tworoom"
 	"github.com/lonng/nano/serialize/json"
 	"github.com/lonng/nano/session"
 	"github.com/pingcap/errors"
@@ -20,7 +20,7 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "NanoClusterDemo"
+	app.Name = "NanoCustomerRouteDemo"
 	app.Author = "Lonng"
 	app.Email = "heng@lonng.org"
 	app.Description = "Nano cluster demo"
@@ -91,7 +91,7 @@ func runMaster(args *cli.Context) error {
 		return errors.Errorf("master listen address cannot empty")
 	}
 
-	webDir := filepath.Join(srcPath(), "master", "web")
+	webDir := filepath.Join(srcPath(), "onemaster", "web")
 	log.Println("Nano master server web content directory", webDir)
 	log.Println("Nano master listen address", listen)
 	log.Println("Open http://127.0.0.1:12345/web/ in browser")
@@ -103,18 +103,11 @@ func runMaster(args *cli.Context) error {
 		}
 	}()
 
-	// Register session closed callback
-	session.Lifetime.OnClosed(master.OnSessionClosed)
-
 	// Startup Nano server with the specified listen address
 	nano.Listen(listen,
 		nano.WithMaster(),
-		nano.WithComponents(master.Services),
 		nano.WithSerializer(json.NewSerializer()),
 		nano.WithDebugMode(),
-		nano.WithUnregisterCallback(func(m cluster.Member) {
-			log.Println("Todo alarm unregister:", m.String())
-		}),
 	)
 
 	return nil
@@ -144,12 +137,14 @@ func runGate(args *cli.Context) error {
 	nano.Listen(listen,
 		nano.WithAdvertiseAddr(masterAddr),
 		nano.WithClientAddr(gateAddr),
-		nano.WithComponents(gate.Services),
+		nano.WithComponents(onegate.Services),
 		nano.WithSerializer(json.NewSerializer()),
 		nano.WithIsWebsocket(true),
 		nano.WithWSPath("/nano"),
 		nano.WithCheckOriginFunc(func(_ *http.Request) bool { return true }),
 		nano.WithDebugMode(),
+		//set remote service route for gate
+		nano.WithCustomerRemoteServiceRoute(customerRemoteServiceRoute),
 		nano.WithNodeId(2), // if you deploy multi gate, option set nodeId, default nodeId = os.Getpid()
 	)
 	return nil
@@ -170,15 +165,22 @@ func runChat(args *cli.Context) error {
 	log.Println("Remote master server address", masterAddr)
 
 	// Register session closed callback
-	session.Lifetime.OnClosed(chat.OnSessionClosed)
+	session.Lifetime.OnClosed(tworoom.OnSessionClosed)
 
 	// Startup Nano server with the specified listen address
 	nano.Listen(listen,
 		nano.WithAdvertiseAddr(masterAddr),
-		nano.WithComponents(chat.Services),
+		nano.WithComponents(tworoom.Services),
 		nano.WithSerializer(json.NewSerializer()),
 		nano.WithDebugMode(),
 	)
 
 	return nil
+}
+
+func customerRemoteServiceRoute(service string, session *session.Session, members []*clusterpb.MemberInfo) *clusterpb.MemberInfo {
+	count := int64(len(members))
+	var index = session.UID() % count
+	fmt.Printf("remote service:%s route to :%v \n", service, members[index])
+	return members[index]
 }

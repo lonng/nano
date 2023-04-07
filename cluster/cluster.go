@@ -24,8 +24,10 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/lonng/nano/cluster/clusterpb"
+	"github.com/lonng/nano/internal/env"
 	"github.com/lonng/nano/internal/log"
 )
 
@@ -42,7 +44,11 @@ type cluster struct {
 }
 
 func newCluster(currentNode *Node) *cluster {
-	return &cluster{currentNode: currentNode}
+	c := &cluster{currentNode: currentNode}
+	if currentNode.IsMaster {
+		c.checkMemberHeartbeat()
+	}
+	return c
 }
 
 // Register implements the MasterServer gRPC service
@@ -50,13 +56,21 @@ func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*
 	if req.MemberInfo == nil {
 		return nil, ErrInvalidRegisterReq
 	}
-
 	resp := &clusterpb.RegisterResponse{}
-	for _, m := range c.members {
+	c.mu.Lock()
+	for k, m := range c.members {
 		if m.memberInfo.ServiceAddr == req.MemberInfo.ServiceAddr {
-			return nil, fmt.Errorf("address %s has registered", req.MemberInfo.ServiceAddr)
+			// 节点异常崩溃，不会执行unregister，此时再次启动该节点，由于已存在注册信息，将再也无法成功注册，这里做个修改，先移除后重新注册
+			if k >= len(c.members)-1 {
+				c.members = c.members[:k]
+			} else {
+				c.members = append(c.members[:k], c.members[k+1:]...)
+			}
+			break
+			//return nil, fmt.Errorf("address %s has registered", req.MemberInfo.ServiceAddr)
 		}
 	}
+	c.mu.Unlock()
 
 	// Notify registered node to update remote services
 	newMember := &clusterpb.NewMemberRequest{MemberInfo: req.MemberInfo}
@@ -81,12 +95,12 @@ func (c *cluster) Register(_ context.Context, req *clusterpb.RegisterRequest) (*
 	// Register services to current node
 	c.currentNode.handler.addRemoteService(req.MemberInfo)
 	c.mu.Lock()
-	c.members = append(c.members, &Member{isMaster: false, memberInfo: req.MemberInfo})
+	c.members = append(c.members, &Member{isMaster: false, memberInfo: req.MemberInfo, lastHeartbeatAt: time.Now()})
 	c.mu.Unlock()
 	return resp, nil
 }
 
-// Register implements the MasterServer gRPC service
+// Unregister implements the MasterServer gRPC service
 func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest) (*clusterpb.UnregisterResponse, error) {
 	if req.ServiceAddr == "" {
 		return nil, ErrInvalidRegisterReq
@@ -101,12 +115,17 @@ func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest
 		}
 	}
 	if index < 0 {
-		return nil, fmt.Errorf("address %s has  notregistered", req.ServiceAddr)
+		return nil, fmt.Errorf("address %s has not registered", req.ServiceAddr)
 	}
 
 	// Notify registered node to update remote services
 	delMember := &clusterpb.DelMemberRequest{ServiceAddr: req.ServiceAddr}
-	for _, m := range c.members {
+	for i, m := range c.members {
+		if i == index {
+			// this node is down.
+			continue
+		}
+
 		if m.MemberInfo().ServiceAddr == c.currentNode.ServiceAddr {
 			continue
 		}
@@ -123,16 +142,80 @@ func (c *cluster) Unregister(_ context.Context, req *clusterpb.UnregisterRequest
 
 	log.Println("Exists peer unregister to cluster", req.ServiceAddr)
 
+	if c.currentNode.UnregisterCallback != nil {
+		c.currentNode.UnregisterCallback(*c.members[index])
+	}
+
 	// Register services to current node
 	c.currentNode.handler.delMember(req.ServiceAddr)
 	c.mu.Lock()
-	if index == len(c.members)-1 {
+	if index >= len(c.members)-1 {
 		c.members = c.members[:index]
 	} else {
 		c.members = append(c.members[:index], c.members[index+1:]...)
 	}
 	c.mu.Unlock()
+
 	return resp, nil
+}
+
+func (c *cluster) Heartbeat(_ context.Context, req *clusterpb.HeartbeatRequest) (*clusterpb.HeartbeatResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	isHit := false
+	for i, m := range c.members {
+		if m.MemberInfo().GetServiceAddr() == req.GetMemberInfo().GetServiceAddr() {
+			c.members[i].lastHeartbeatAt = time.Now()
+			isHit = true
+		}
+	}
+	if !isHit {
+		// master local not binding this node, other members do not need to be notified, because this node registered.
+		// maybe the master process reload
+		m := &Member{
+			isMaster:        false,
+			memberInfo:      req.GetMemberInfo(),
+			lastHeartbeatAt: time.Now(),
+		}
+		c.members = append(c.members, m)
+		c.currentNode.handler.addRemoteService(req.MemberInfo)
+		log.Println("Heartbeat peer register to cluster", req.MemberInfo.ServiceAddr)
+	}
+	return &clusterpb.HeartbeatResponse{}, nil
+}
+
+func (c *cluster) checkMemberHeartbeat() {
+	check := func() {
+		unregisterMembers := make([]*Member, 0)
+		// check heartbeat time
+		for _, m := range c.members {
+			if time.Now().Sub(m.lastHeartbeatAt) > 4*env.Heartbeat && !m.isMaster {
+				unregisterMembers = append(unregisterMembers, m)
+			}
+		}
+
+		for _, m := range unregisterMembers {
+			if _, err := c.Unregister(context.Background(), &clusterpb.UnregisterRequest{
+				ServiceAddr: m.MemberInfo().ServiceAddr,
+			}); err != nil {
+				log.Println("Heartbeat unregister error", err)
+			}
+		}
+	}
+	go func() {
+		ticker := time.NewTicker(env.Heartbeat)
+		for {
+			select {
+			case <-ticker.C:
+				if !c.currentNode.IsMaster {
+					ticker.Stop()
+					return
+				}
+				check()
+			}
+		}
+	}()
 }
 
 func (c *cluster) setRpcClient(client *rpcClient) {
@@ -187,7 +270,7 @@ func (c *cluster) delMember(addr string) {
 		}
 	}
 	if index != -1 {
-		if index == len(c.members)-1 {
+		if index >= len(c.members)-1 {
 			c.members = c.members[:index]
 		} else {
 			c.members = append(c.members[:index], c.members[index+1:]...)
