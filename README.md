@@ -82,6 +82,9 @@ func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) err
   + [nano-websocket-client](https://github.com/lonnng/nano-websocket-client)
   + [nano-egret-client](https://github.com/lonnng/nano-egret-client)
 
+- Typescript/cocos-creator
+  + [nano-client-ts](https://github.com/adoontheway/nano-client-ts)
+
 - Demo
   + [Implement a chat room in 100 lines with nano and WebSocket](./examples/demo/chat)
   + [Tadpole demo](./examples/demo/tadpole)
