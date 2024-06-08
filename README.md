@@ -18,6 +18,8 @@ spend time on repetitious network related programming.
 Nano was designed for server-side applications like real-time games, social games,
 mobile games, etc of all sizes.
 
+Join to Discord: [Nano Community](https://discord.gg/eHEDrBH5PV) 
+
 ## How to build a system with `Nano`
 
 #### What does a `Nano` application look like?
