@@ -94,7 +94,7 @@ func (manager *PlayerManager) Login(s *session.Session, msg *ReqPlayerLogin) err
 
 ## Community
 
-- QQGroup: [289680347](https://jq.qq.com/?_wv=1027&k=4EMMaha)
+- ~~QQGroup: [289680347](https://jq.qq.com/?_wv=1027&k=4EMMaha)~~ Q群已满员(加微信 `gsw_945` 邀请进微信群, 需备注 `nano加群`)
 - Reddit: [nanolabs](https://www.reddit.com/r/nanolabs/)
 
 ## Successful cases
