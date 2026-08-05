@@ -213,6 +213,8 @@ func (h *LocalHandler) handle(conn net.Conn) {
 
 	// guarantee agent related resource be destroyed
 	defer func() {
+		h.currentNode.deleteSession(agent.session.ID())
+
 		request := &clusterpb.SessionClosedRequest{
 			SessionId: agent.session.ID(),
 		}

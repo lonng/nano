@@ -300,6 +300,12 @@ func (n *Node) storeSession(s *session.Session) {
 	n.mu.Unlock()
 }
 
+func (n *Node) deleteSession(sid int64) {
+	n.mu.Lock()
+	delete(n.sessions, sid)
+	n.mu.Unlock()
+}
+
 func (n *Node) findSession(sid int64) *session.Session {
 	n.mu.RLock()
 	s := n.sessions[sid]
