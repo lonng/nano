@@ -296,6 +296,9 @@ func (n *Node) listenAndServeWSTLS() {
 
 func (n *Node) storeSession(s *session.Session) {
 	n.mu.Lock()
+	if n.sessions == nil {
+		n.sessions = map[int64]*session.Session{}
+	}
 	n.sessions[s.ID()] = s
 	n.mu.Unlock()
 }
@@ -305,6 +308,12 @@ func (n *Node) findSession(sid int64) *session.Session {
 	s := n.sessions[sid]
 	n.mu.RUnlock()
 	return s
+}
+
+func (n *Node) deleteSession(sid int64) {
+	n.mu.Lock()
+	delete(n.sessions, sid)
+	n.mu.Unlock()
 }
 
 func (n *Node) findOrCreateSession(sid int64, gateAddr string) (*session.Session, error) {
